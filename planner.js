@@ -1,18 +1,12 @@
-// planner.js
 document.addEventListener("click", (e) => {
-  if (e.target.id === "planner-generate") {
-    runPlanner();
-  }
-
-  if (e.target.id === "planner-print") {
-    window.print();
-  }
-
+  if (e.target.id === "planner-generate") runPlanner();
+  if (e.target.id === "planner-print") window.print();
   if (e.target.id === "planner-modal-close") {
     const modalOverlay = document.getElementById("planner-modal-overlay");
-    modalOverlay.style.display = "none";
+    if (modalOverlay) modalOverlay.style.display = "none";
   }
 });
+
 
 document.body.insertAdjacentHTML(
   "beforeend",
@@ -691,7 +685,7 @@ function visibilityScore(eph, magInput, observationDate) {
   if (score < 20) score = 20;
   return score;
 }
-"<div style='position:fixed;bottom:120px;right:10px;background:#444;color:#fff;padding:6px;border-radius:4px;z-index:99999;'>Score</div>"
+
 // ------------------------------------------------------------
 // EPHEMERIS ENGINE
 // ------------------------------------------------------------
