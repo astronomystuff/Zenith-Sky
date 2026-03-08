@@ -426,7 +426,6 @@ button:active,
 /* ============ */
 @media print {
 
-  /* Remove browser margins */
   @page {
     margin: 0;
   }
@@ -437,7 +436,6 @@ button:active,
     overflow: hidden !important;
   }
 
-  /* Hide everything except the modal */
   body * {
     visibility: hidden !important;
   }
@@ -447,50 +445,42 @@ button:active,
     visibility: visible !important;
   }
 
-  /* Force overlay to fill the page */
   #planner-modal-overlay {
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
     width: 100vw !important;
-    height: 100vh !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    height: 98vh !important;
+    max-height: 98vh !important;
+    background: white !important;
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
-    background: white !important; /* remove dimming */
   }
 
-  /* Force modal to fit inside the page */
   #planner-modal {
     width: 100vw !important;
-    height: 100vh !important;
-    max-width: 100vw !important;
-    max-height: 100vh !important;
-    border-radius: 0 !important;
-    border: none !important;
+    height: 98vh !important;
+    max-height: 98vh !important;
     padding: 20px !important;
-    box-sizing: border-box !important;
+    border: none !important;
+    border-radius: 0 !important;
     overflow: hidden !important;
+    box-sizing: border-box !important;
   }
 
-  /* Ensure content scrolls instead of overflowing */
   #planner-modal-content {
     overflow: hidden !important;
   }
 
-  /* Force the star map to scale to print area */
   #planner-star-map {
     width: 100% !important;
     height: auto !important;
-    max-height: 45vh !important;
+    max-height: 40vh !important;
   }
 
-  /* Hide print + close buttons */
   #planner-print,
   #planner-modal-close {
     display: none !important;
   }
 }
-
