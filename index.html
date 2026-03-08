@@ -88,20 +88,22 @@ z-index:9999;
   flex-direction:column;
 ">
 
-  <!-- HEADER WITH PRINT + CLOSE -->
+<div id="planner-pdf-root" style="position:absolute; top:-9999px; left:-9999px;"></div>
+  
+  <!-- HEADER WITH DOWNLOAD + CLOSE -->
 <div style="
 display:flex;
 justify-content:space-between;
 align-items:center;
 margin-bottom:10px;
 ">
-<button id="planner-print" style="
+<button id="planner-download" style="
 font-size:20px;
 background:none;
 border:none;
 cursor:pointer;
 color:black;
-">Print</button>
+">Download</button>
 
 <button id="planner-modal-close" style="
 font-size:20px;
