@@ -1495,14 +1495,20 @@ document.addEventListener("DOMContentLoaded", () => {
 });  // closes DOMContentLoaded
   </script>
 
+
+  
   <script>
   // planner.js
 
-const btnGenerate = document.getElementById("planner-generate");
-if (!btnGenerate) {
-    console.warn("planner-generate not found");
-    return;
-}
+    document.addEventListener("DOMContentLoaded", () => {
+  const btnGenerate = document.getElementById("planner-generate");
+  document.addEventListener("click", (e) => {
+  if (e.target.id === "planner-generate") {
+    runPlanner();
+  }
+});
+});
+
 
 document.body.insertAdjacentHTML(
   "beforeend",
