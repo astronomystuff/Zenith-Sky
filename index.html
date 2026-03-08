@@ -1267,7 +1267,18 @@ downloadImageBtn.addEventListener("click", () => {
 
   <script>
 // WOIT.js
-document.addEventListener("DOMContentLoaded", () => {
+// EVENT DELEGATION FOR WOIT
+document.addEventListener("click", (e) => {
+  if (e.target.id === "woit-identify") {
+    runWOIT();
+  }
+
+  if (e.target.id === "woit-close") {
+    const modal = document.getElementById("woit-modal");
+    modal.style.display = "none";
+  }
+});
+
   const input = document.getElementById("woit-input");
   const btn = document.getElementById("woit-btn");
   const fileName = document.getElementById("woit-file-name");
@@ -1499,16 +1510,20 @@ document.addEventListener("DOMContentLoaded", () => {
   
   <script>
   // planner.js
-
-    document.addEventListener("DOMContentLoaded", () => {
-  const btnGenerate = document.getElementById("planner-generate");
-  document.addEventListener("click", (e) => {
+document.addEventListener("click", (e) => {
   if (e.target.id === "planner-generate") {
     runPlanner();
   }
-});
-});
 
+  if (e.target.id === "planner-print") {
+    window.print();
+  }
+
+  if (e.target.id === "planner-modal-close") {
+    const modalOverlay = document.getElementById("planner-modal-overlay");
+    modalOverlay.style.display = "none";
+  }
+});
 
 document.body.insertAdjacentHTML(
   "beforeend",
@@ -2187,7 +2202,7 @@ function visibilityScore(eph, magInput, observationDate) {
   if (score < 20) score = 20;
   return score;
 }
-
+"<div style='position:fixed;bottom:120px;right:10px;background:#444;color:#fff;padding:6px;border-radius:4px;z-index:99999;'>Score</div>"
 // ------------------------------------------------------------
 // EPHEMERIS ENGINE
 // ------------------------------------------------------------
