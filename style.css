@@ -450,8 +450,8 @@ button:active,
     top: 0 !important;
     left: 0 !important;
     width: 100vw !important;
-    height: 98vh !important;
-    max-height: 98vh !important;
+    height: 10.9in !important;
+    max-height: 10.9in !important;
     background: white !important;
     display: flex !important;
     justify-content: center !important;
@@ -460,23 +460,26 @@ button:active,
 
   #planner-modal {
     width: 100vw !important;
-    height: 98vh !important;
-    max-height: 98vh !important;
+    height: 10.9in !important;
+    max-height: 10.9in !important;
     padding: 20px !important;
     border: none !important;
     border-radius: 0 !important;
     overflow: hidden !important;
     box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
   }
 
   #planner-modal-content {
+    flex: 1 1 auto !important;
     overflow: hidden !important;
   }
 
   #planner-star-map {
     width: 100% !important;
     height: auto !important;
-    max-height: 40vh !important;
+    max-height: 4.5in !important;
   }
 
   #planner-print,
