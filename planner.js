@@ -1,37 +1,21 @@
+// EVENT DELEGATION (attach once)
 document.addEventListener("DOMContentLoaded", () => {
-  // Attach delegated click handler
   document.addEventListener("click", (e) => {
-    const id = e.target && e.target.id;
-    if (!id) return;
-
-    if (id === "planner-generate") {
-      // runPlanner is defined above
+    if (e.target.id === "planner-generate") {
       runPlanner();
-      return;
     }
-
-    if (id === "planner-print") {
+    if (e.target.id === "planner-print") {
       window.print();
-      return;
     }
-
-    if (id === "planner-modal-close") {
-      const modalOverlay = el("planner-modal-overlay");
+    if (e.target.id === "planner-modal-close") {
+      const modalOverlay = document.getElementById("planner-modal-overlay");
       if (modalOverlay) modalOverlay.style.display = "none";
-      return;
     }
   });
-  try {
-    document.body.insertAdjacentHTML(
-      "beforeend",
-      "<div style='position:fixed;bottom:120px;right:10px;background:#444;color:#fff;padding:6px;border-radius:4px;z-index:99999;'>TOP OF SCRIPT REACHED</div>"
-    );
-  } catch (e) {
-    console.warn("Could not insert debug marker", e);
-  }
 
-  console.debug("planner.js: event delegation attached");
+  console.log("planner.js loaded — delegation attached");
 });
+
 
 function deg2rad(d) { return d * Math.PI / 180; }
 function rad2deg(r) { return r * 180 / Math.PI; }
@@ -684,6 +668,72 @@ async function loadObjects() {
     ["Beta Trianguli Australis", "Gamma Trianguli Australis"],
     ["Gamma Trianguli Australis", "Atria"],
   ];
+
+async function runPlanner() {
+  console.log("runPlanner() called");
+
+  const modalOverlay = document.getElementById("planner-modal-overlay");
+  const modalContent = document.getElementById("planner-modal-content");
+
+  if (!modalOverlay || !modalContent) {
+    console.warn("Planner modal elements missing");
+    return;
+  }
+
+  const dateStr = document.getElementById("planner-date").value;
+  const timeStr = document.getElementById("planner-time").value;
+  const lat = parseFloat(document.getElementById("planner-lat").value);
+  const lon = parseFloat(document.getElementById("planner-lon").value);
+
+  if (!dateStr || !timeStr || isNaN(lat) || isNaN(lon)) {
+    alert("Please enter date, time, latitude, and longitude.");
+    return;
+  }
+
+  const dt = new Date(`${dateStr}T${timeStr}:00`);
+
+  const objects = await loadObjects();
+  const planets = computeAllPlanets(dt).map(p => ({
+    id: p.id,
+    name: p.name,
+    type: "Planet",
+    mag: p.mag,
+    ra_h: p.raHours,
+    dec_deg: p.decDeg
+  }));
+
+  const objectsNoPlanets = objects.filter(o => (o.type || "").toLowerCase() !== "planet");
+
+  const objMap = new Map();
+  objectsNoPlanets.forEach(o => objMap.set(o.id.toLowerCase(), { ...o }));
+  planets.forEach(p => objMap.set(p.id.toLowerCase(), { ...objMap.get(p.id.toLowerCase()), ...p }));
+
+  const allObjects = Array.from(objMap.values());
+
+  const resultsRaw = allObjects.map(obj => {
+    const eph = computeEphemerisForNight(lat, lon, dt, {
+      ra: Number(obj.ra_h),
+      dec: Number(obj.dec_deg)
+    });
+    const score = visibilityScore(eph, obj.mag, dt);
+    return { ...obj, ...eph, score };
+  });
+
+  const results = resultsRaw
+    .filter(r => r.altAtObs >= 25 && r.score >= 30 && r.mag <= 10)
+    .sort((a, b) => b.score - a.score);
+
+  modalContent.innerHTML = `
+    <h2>Results</h2>
+    <p>Found ${results.length} objects.</p>
+    <canvas id="planner-star-map" style="width:100%;height:300px;"></canvas>
+  `;
+
+  modalOverlay.style.display = "flex";
+
+  drawAzimuthalStarMap(lat, lon, dt);
+}
+
 
 // ------------------------------------------------------------
 // VISIBILITY SCORE
