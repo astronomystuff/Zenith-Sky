@@ -1497,17 +1497,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
   <script>
   // planner.js
-const btnGenerate = document.getElementById("planner-generate");
-
-if (!btnGenerate) {
-  console.warn("planner-generate not found");
-  return;
-}
+btnGenerate.addEventListener("click", async () => {
 
 document.body.insertAdjacentHTML(
   "beforeend",
-  "<div style='position:fixed;bottom:120px;right:10px;background:#444;color:#fff;padding:6px;border-radius:4px;z-index:99999;'>TOP OF SCRIPT REACHED</div>"
+  "<div style='position:fixed;bottom:70px;right:10px;background:#c60;color:#fff;padding:6px;border-radius:4px;z-index:99999;'>planner logic start</div>"
 );
+
+const modalOverlay = document.getElementById("planner-modal-overlay");
+const modalContent = document.getElementById("planner-modal-content");
+const modalClose = document.getElementById("planner-modal-close");
+
+if (modalClose) {
+    modalClose.onclick = () => {
+        modalOverlay.style.display = "none";
+    };
+}
 
 // ------------------------------------------------------------
 // LOAD OBJECTS FROM objects.json
@@ -2911,7 +2916,6 @@ const results = resultsRaw
                 <th>Score</th>
               </tr>
               ${results.map(r => {
-                const surfMag = computeSurfaceMagnitude(r);
               
                 return `
                   <tr>
