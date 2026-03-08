@@ -4,9 +4,18 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.target.id === "planner-generate") {
       runPlanner();
     }
-    if (e.target.id === "planner-print") {
-      window.print();
-    }
+    
+   if (e.target.id === "planner-print") {
+  downloadPlannerPDF(
+    lastResults,   // your filtered results array
+    lastLat,
+    lastLon,
+    lastDt,
+    lastDateStr,
+    lastTimeStr
+  );
+}
+
     if (e.target.id === "planner-modal-close") {
       const modalOverlay = document.getElementById("planner-modal-overlay");
       if (modalOverlay) modalOverlay.style.display = "none";
@@ -669,8 +678,15 @@ async function loadObjects() {
     ["Gamma Trianguli Australis", "Atria"],
   ];
 
-async function runPlanner() {
+  async function runPlanner() {
   console.log("runPlanner() called");
+
+  window.lastResults = results;
+  window.lastLat = lat;
+  window.lastLon = lon;
+  window.lastDt = dt;
+  window.lastDateStr = dateStr;
+  window.lastTimeStr = timeStr;
 
   const modalOverlay = document.getElementById("planner-modal-overlay");
   const modalContent = document.getElementById("planner-modal-content");
@@ -1290,6 +1306,149 @@ async function runPlanner() {
 
     modalOverlay.style.display = "flex";
 
+/* ========================================================= */
+/* PDF GENERATION (Portrait 8.5x11, Multi‑Page)              */
+/* ========================================================= */
+
+async function downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr) {
+  const root = document.getElementById("planner-pdf-root");
+  root.innerHTML = "";
+
+  const PAGE_WIDTH = 816;
+  const PAGE_HEIGHT = 1056;
+  const LEFT_WIDTH = 336;
+  const RIGHT_WIDTH = 480;
+  const ROW_HEIGHT = 22; // table row height
+  const TABLE_TOP_OFFSET = 0;
+
+  // Build the first page (with details + map)
+  function createPage() {
+    const page = document.createElement("div");
+    page.className = "planner-pdf-page";
+
+    const left = document.createElement("div");
+    left.className = "planner-pdf-left";
+
+    const right = document.createElement("div");
+    right.className = "planner-pdf-right";
+
+    page.appendChild(left);
+    page.appendChild(right);
+    return { page, left, right };
+  }
+
+  // Render star map for PDF
+  function renderPDFStarMap() {
+    const canvas = document.createElement("canvas");
+    canvas.width = LEFT_WIDTH;
+    canvas.height = LEFT_WIDTH;
+    drawAzimuthalStarMapToCanvas(canvas, lat, lon, dt);
+    canvas.className = "planner-pdf-map";
+    return canvas;
+  }
+
+  // Build details block
+  function buildDetails() {
+    const div = document.createElement("div");
+    div.innerHTML = `
+      <h3>Observation Details – Zenith Sky</h3>
+      <p>Date: ${dateStr}</p>
+      <p>Time: ${timeStr}</p>
+      <p>Latitude: ${lat}</p>
+      <p>Longitude: ${lon}</p>
+    `;
+    return div;
+  }
+
+  // Build table rows
+  function buildTableRows(rows) {
+    const table = document.createElement("table");
+    table.innerHTML = `
+      <tr>
+        <th>Object</th>
+        <th>Type</th>
+        <th>Mag</th>
+        <th>RA</th>
+        <th>Dec</th>
+        <th>Transit</th>
+        <th>Alt</th>
+        <th>Score</th>
+      </tr>
+    `;
+
+    rows.forEach(r => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${r.name || r.id}</td>
+        <td>${r.type || ""}</td>
+        <td>${r.mag}</td>
+        <td>${formatRA(r.ra_h)}</td>
+        <td>${formatDec(r.dec_deg)}</td>
+        <td>${r.transit ? r.transit.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",hour12:false}) : "—"}</td>
+        <td>${r.altAtObs.toFixed(1)}°</td>
+        <td>${r.score.toFixed(0)}</td>
+      `;
+      table.appendChild(tr);
+    });
+
+    return table;
+  }
+
+  // Paginate table rows
+  const rowsPerPage = Math.floor((PAGE_HEIGHT - 40) / ROW_HEIGHT);
+  let index = 0;
+
+  // First page
+  const { page: firstPage, left: firstLeft, right: firstRight } = createPage();
+  firstLeft.appendChild(buildDetails());
+  firstLeft.appendChild(renderPDFStarMap());
+
+  const firstRows = results.slice(0, rowsPerPage);
+  const firstTableContainer = document.createElement("div");
+  firstTableContainer.className = "planner-pdf-table";
+  firstTableContainer.appendChild(buildTableRows(firstRows));
+  firstRight.appendChild(firstTableContainer);
+
+  root.appendChild(firstPage);
+  index += rowsPerPage;
+
+  // Additional pages
+  while (index < results.length) {
+    const { page, left, right } = createPage();
+
+    // Left column empty on subsequent pages
+    left.innerHTML = "";
+
+    const pageRows = results.slice(index, index + rowsPerPage);
+    const tableContainer = document.createElement("div");
+    tableContainer.className = "planner-pdf-table";
+    tableContainer.appendChild(buildTableRows(pageRows));
+    right.appendChild(tableContainer);
+
+    root.appendChild(page);
+    index += rowsPerPage;
+  }
+
+  // Convert to PDF
+  const pdf = new jspdf.jsPDF({
+    orientation: "portrait",
+    unit: "pt",
+    format: "letter"
+  });
+
+  const pages = root.querySelectorAll(".planner-pdf-page");
+
+  for (let i = 0; i < pages.length; i++) {
+    const canvas = await html2canvas(pages[i], { scale: 2 });
+    const img = canvas.toDataURL("image/png");
+    if (i > 0) pdf.addPage();
+    pdf.addImage(img, "PNG", 0, 0, 612, 792);
+  }
+
+  pdf.save("observation-planner.pdf");
+}
+
+    
     // draw star map (canvas must exist now)
     try {
       drawAzimuthalStarMap(lat, lon, dt);
@@ -1297,8 +1456,13 @@ async function runPlanner() {
       console.warn("drawAzimuthalStarMap failed", err);
     }
 
-    const btnPrint = el("planner-print");
-    if (btnPrint) btnPrint.onclick = () => window.print();
+    const btnPrint = document.getElementById("planner-print");
+  if (btnPrint) {
+  btnPrint.onclick = () => {
+    downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr);
+  };
+}
+
 
   } catch (err) {
     console.error("runPlanner error", err);
