@@ -1497,38 +1497,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
   <script>
   // planner.js
-btnGenerate.addEventListener("click", async () => {
+
+const btnGenerate = document.getElementById("planner-generate");
+if (!btnGenerate) {
+    console.warn("planner-generate not found");
+    return;
+}
 
 document.body.insertAdjacentHTML(
   "beforeend",
-  "<div style='position:fixed;bottom:70px;right:10px;background:#c60;color:#fff;padding:6px;border-radius:4px;z-index:99999;'>planner logic start</div>"
+  "<div style='position:fixed;bottom:120px;right:10px;background:#444;color:#fff;padding:6px;border-radius:4px;z-index:99999;'>TOP OF SCRIPT REACHED</div>"
 );
 
-const modalOverlay = document.getElementById("planner-modal-overlay");
-const modalContent = document.getElementById("planner-modal-content");
-const modalClose = document.getElementById("planner-modal-close");
-
-if (modalClose) {
-    modalClose.onclick = () => {
-        modalOverlay.style.display = "none";
-    };
-}
-
 // ------------------------------------------------------------
-// LOAD OBJECTS FROM objects.json
+// LOAD OBJECTS
 // ------------------------------------------------------------
 async function loadObjects() {
     try {
-      const res = await fetch("objects.json");
-      if (!res.ok) return [];
-      return await res.json();
+        const res = await fetch("objects.json");
+        if (!res.ok) return [];
+        return await res.json();
     } catch (e) {
-      console.warn("Failed to load objects.json, using empty array", e);
-      return [];
+        console.warn("Failed to load objects.json", e);
+        return [];
     }
-  }
+}
 
-  // ------------------------------------------------------------
+// ------------------------------------------------------------
   // STAR CATALOG + CONSTELLATION LINES
   // (your catalog and lines, unchanged)
   // ------------------------------------------------------------
@@ -2158,33 +2153,34 @@ async function loadObjects() {
     ["Beta Trianguli Australis", "Gamma Trianguli Australis"],
     ["Gamma Trianguli Australis", "Atria"],
   ];
-  
-  function visibilityScore(eph, magInput, observationDate) {
-    if (!eph.maxAlt || eph.maxAlt < 10) return 0;
-  
-    let mag = Number(magInput);
-    if (!isFinite(mag)) mag = 99;
-    mag = parseFloat(mag.toFixed(1));
-  
-    const magNorm = Math.max(0, Math.min(1, (6 - mag) / 6));
-    const altNorm = Math.max(0, Math.min(1, eph.altAtObs / 90));
-  
-    let transitNorm = 0;
-    if (eph.transit) {
-      const obsH = observationDate.getHours() + observationDate.getMinutes() / 60;
-      const trH = eph.transit.getHours() + eph.transit.getMinutes() / 60;
-      let diff = Math.abs(obsH - trH);
-      if (diff > 12) diff = 24 - diff;
-      transitNorm = Math.max(0, 1 - diff / 6);
-    }
-  
-    let score = altNorm * 50 + magNorm * 30 + transitNorm * 20;
-    score = Math.min(100, score);
-    if (score < 20) score = 20;
-  
-    return score;
+
+// ------------------------------------------------------------
+// VISIBILITY SCORE
+// ------------------------------------------------------------
+function visibilityScore(eph, magInput, observationDate) {
+  if (!eph.maxAlt || eph.maxAlt < 10) return 0;
+
+  let mag = Number(magInput);
+  if (!isFinite(mag)) mag = 99;
+  mag = parseFloat(mag.toFixed(1));
+
+  const magNorm = Math.max(0, Math.min(1, (6 - mag) / 6));
+  const altNorm = Math.max(0, Math.min(1, eph.altAtObs / 90));
+
+  let transitNorm = 0;
+  if (eph.transit) {
+    const obsH = observationDate.getHours() + observationDate.getMinutes() / 60;
+    const trH = eph.transit.getHours() + eph.transit.getMinutes() / 60;
+    let diff = Math.abs(obsH - trH);
+    if (diff > 12) diff = 24 - diff;
+    transitNorm = Math.max(0, 1 - diff / 6);
   }
-  
+
+  let score = altNorm * 50 + magNorm * 30 + transitNorm * 20;
+  score = Math.min(100, score);
+  if (score < 20) score = 20;
+  return score;
+}
 
 // ------------------------------------------------------------
 // EPHEMERIS ENGINE
@@ -2215,16 +2211,12 @@ function rad2deg(r) { return r * 180 / Math.PI; }
 
 function localSiderealTime(jd, lonRad) {
   const T = (jd - 2451545.0) / 36525.0;
-
-  // GMST in degrees
-  let GMST = 280.46061837 +
-             360.98564736629 * (jd - 2451545.0) +
-             0.000387933 * T * T -
-             (T * T * T) / 38710000;
-
-  GMST = (GMST % 360 + 360) % 360; // normalize 0–360
-
-  // Convert to radians and add local longitude
+  let GMST =
+    280.46061837 +
+    360.98564736629 * (jd - 2451545.0) +
+    0.000387933 * T * T -
+    (T * T * T) / 38710000;
+  GMST = (GMST % 360 + 360) % 360;
   return deg2rad(GMST) + lonRad;
 }
 
@@ -2232,22 +2224,18 @@ function altitudeAtTime(date, latRad, lonRad, raRad, decRad) {
   const jd = toJulianDate(date);
   const lst = localSiderealTime(jd, lonRad);
   const ha = normalizeAngle(lst - raRad);
-
   const sinAlt =
     Math.sin(latRad) * Math.sin(decRad) +
     Math.cos(latRad) * Math.cos(decRad) * Math.cos(ha);
-
-  return rad2deg(Math.asin(sinAlt)); // degrees
+  return rad2deg(Math.asin(sinAlt));
 }
 
 function refineCrossing(t1, t2, latRad, lonRad, raRad, decRad, targetAltDeg) {
   let a = new Date(t1);
   let b = new Date(t2);
-
   for (let i = 0; i < 10; i++) {
     const mid = new Date((a.getTime() + b.getTime()) / 2);
-    const alt = altitudeAtTime(mid, latRad, lonRad, raRad, decRad); // degrees
-
+    const alt = altitudeAtTime(mid, latRad, lonRad, raRad, decRad);
     if (alt > targetAltDeg) {
       b = mid;
     } else {
@@ -2257,28 +2245,22 @@ function refineCrossing(t1, t2, latRad, lonRad, raRad, decRad, targetAltDeg) {
   return new Date((a.getTime() + b.getTime()) / 2);
 }
 
-
 function computeEphemerisForNight(latDeg, lonDeg, dateLocal, target) {
-  // Full 24h window for true rise/set/transit
   const start = new Date(dateLocal);
-  start.setHours(0, 0, 0, 0); // local midnight
-
+  start.setHours(0, 0, 0, 0);
   const end = new Date(start);
-  end.setDate(end.getDate() + 1); // +24h
+  end.setDate(end.getDate() + 1);
 
   const samples = sampleTimes(start, end, 5);
-
   const latRad = deg2rad(latDeg);
   const lonRad = deg2rad(lonDeg);
-  const raRad = deg2rad(target.ra * 15); // ra in hours -> deg -> rad
+  const raRad = deg2rad(target.ra * 15);
   const decRad = deg2rad(target.dec);
 
   let maxAlt = -90;
   let maxAltTime = null;
-
   let riseTime = null;
   let setTime = null;
-
   let prevAlt = null;
   let prevTime = null;
 
@@ -2303,7 +2285,6 @@ function computeEphemerisForNight(latDeg, lonDeg, dateLocal, target) {
     prevTime = t;
   }
 
-  // ⭐ THIS is the correct place for altitude at observation time
   const altAtObs = altitudeAtTime(dateLocal, latRad, lonRad, raRad, decRad);
 
   return {
@@ -2311,280 +2292,242 @@ function computeEphemerisForNight(latDeg, lonDeg, dateLocal, target) {
     set: setTime,
     transit: maxAltTime,
     maxAlt,
-    altAtObs
+    altAtObs,
   };
 }
 
-  // ------------------------------------------------------------
-  // STAR MAP: AZIMUTHAL EQUIDISTANT, WHITE BACKGROUND
-  // ------------------------------------------------------------
-  
-  // Prevent division-by-zero at the poles
+// ------------------------------------------------------------
+// STAR MAP: AZIMUTHAL EQUIDISTANT, WHITE BACKGROUND
+// ------------------------------------------------------------
+function drawAzimuthalStarMap(latDeg, lonDeg, date) {
+  // clamp inside function (fix)
   if (latDeg > 89.9) latDeg = 89.9;
   if (latDeg < -89.9) latDeg = -89.9;
 
-  
-  function drawAzimuthalStarMap(latDeg, lonDeg, date) {
-    const canvas = document.getElementById("planner-star-map");
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+  const canvas = document.getElementById("planner-star-map");
+  if (!canvas) return;
 
-    // Force square canvas based on rendered width
-    const size = canvas.clientWidth || 400;
-    canvas.width = size;
-    canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  const size = canvas.clientWidth || 400;
+  canvas.width = size;
+  canvas.height = size;
 
-    const w = canvas.width;
-    const h = canvas.height;
-    const cx = w / 2;
-    const cy = h / 2;
-    const padding = 40;
-    const radius = (size / 2) - padding;
+  const w = canvas.width;
+  const h = canvas.height;
+  const cx = w / 2;
+  const cy = h / 2;
+  const padding = 40;
+  const radius = size / 2 - padding;
 
-    
-    // White background for low-ink print
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, w, h);
 
-    // Horizon circle
-    ctx.strokeStyle = "#000000";
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-    ctx.stroke();
+  ctx.strokeStyle = "#000000";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.stroke();
 
-    // Cardinal directions (N up, E left)
-    const cardinals = [
-      { label: "N", azDeg: 0 },
-      { label: "E", azDeg: 90 },
-      { label: "S", azDeg: 180 },
-      { label: "W", azDeg: 270 }
-    ];
+  const cardinals = [
+    { label: "N", azDeg: 0 },
+    { label: "E", azDeg: 90 },
+    { label: "S", azDeg: 180 },
+    { label: "W", azDeg: 270 },
+  ];
 
-    ctx.fillStyle = "#000000";
-    ctx.font = `${Math.round(radius * 0.05)}px sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
+  ctx.fillStyle = "#000000";
+  ctx.font = `${Math.round(radius * 0.05)}px sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
 
-    cardinals.forEach(c => {
-      const azRad = deg2rad(c.azDeg);
-      const r = radius + 18;
-      const x = cx + -r * Math.sin(azRad); // east left
-      const y = cy + -r * Math.cos(azRad); // north up
-      ctx.fillText(c.label, x, y);
+  cardinals.forEach((c) => {
+    const azRad = deg2rad(c.azDeg);
+    const r = radius + 18;
+    const x = cx + -r * Math.sin(azRad);
+    const y = cy + -r * Math.cos(azRad);
+    ctx.fillText(c.label, x, y);
+  });
+
+  const latRad = deg2rad(latDeg);
+  const lonRad = deg2rad(lonDeg);
+  const jd = toJulianDate(date);
+  const lst = localSiderealTime(jd, lonRad);
+
+  const stars = decodeStarCatalog();
+  const projectedStars = [];
+
+  stars.forEach((star) => {
+    const raRad = deg2rad(star.ra * 15);
+    const decRad = deg2rad(star.dec);
+    const ha = normalizeAngle(lst - raRad);
+
+    const sinAlt =
+      Math.sin(latRad) * Math.sin(decRad) +
+      Math.cos(latRad) * Math.cos(decRad) * Math.cos(ha);
+    const alt = Math.asin(sinAlt);
+
+    const cosAz =
+      (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
+      (Math.cos(alt) * Math.cos(latRad));
+    let az = Math.acos(Math.max(-1, Math.min(1, cosAz)));
+    if (Math.sin(ha) > 0) az = 2 * Math.PI - az;
+
+    const altDeg = rad2deg(alt);
+    const r = radius * (90 - altDeg) / 90;
+    const x = cx + -r * Math.sin(az);
+    const y = cy + -r * Math.cos(az);
+
+    projectedStars.push({
+      id: star.id,
+      x,
+      y,
+      mag: star.mag,
+      altDeg,
     });
+  });
 
-    const latRad = deg2rad(latDeg);
-    const lonRad = deg2rad(lonDeg);
-    const jd = toJulianDate(date);
-    const lst = localSiderealTime(jd, lonRad);
-
-    const stars = decodeStarCatalog();
-    const projectedStars = [];
-
-    stars.forEach(star => {
-      const raRad = deg2rad(star.ra * 15);
-      const decRad = deg2rad(star.dec);
-    
-      const ha = normalizeAngle(lst - raRad);
-      const sinAlt =
-        Math.sin(latRad) * Math.sin(decRad) +
-        Math.cos(latRad) * Math.cos(decRad) * Math.cos(ha);
-      const alt = Math.asin(sinAlt);
-    
-      const cosAz =
-        (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
-        (Math.cos(alt) * Math.cos(latRad));
-      let az = Math.acos(Math.max(-1, Math.min(1, cosAz)));
-    
-      if (Math.sin(ha) > 0) {
-        az = 2 * Math.PI - az;
-      }
-    
-      const altDeg = rad2deg(alt);
-    
-      // Project even if below horizon
-      const r = radius * (90 - altDeg) / 90;
-    
-      const x = cx + -r * Math.sin(az);
-      const y = cy + -r * Math.cos(az);
-    
-      projectedStars.push({
-        id: star.id,
-        x,
-        y,
-        mag: star.mag,
-        altDeg
-      });
-    });
-    
-    // ------------------------------------------------------------
-    // PROJECT PLANETS (Step 6)
-    // ------------------------------------------------------------
-    const planets = computeAllPlanets(date);
-
-    planets.forEach(p => {
+  // Planets
+  const planets = computeAllPlanets(date);
+  planets.forEach((p) => {
     const raRad = deg2rad(p.raHours * 15);
     const decRad = deg2rad(p.decDeg);
+    const ha = normalizeAngle(lst - raRad);
 
-   const ha = normalizeAngle(lst - raRad);
-   const sinAlt =
-    Math.sin(latRad) * Math.sin(decRad) +
-    Math.cos(latRad) * Math.cos(decRad) * Math.cos(ha);
-   const alt = Math.asin(sinAlt);
+    const sinAlt =
+      Math.sin(latRad) * Math.sin(decRad) +
+      Math.cos(latRad) * Math.cos(decRad) * Math.cos(ha);
+    const alt = Math.asin(sinAlt);
+    const altDeg = rad2deg(alt);
 
-   const altDeg = rad2deg(alt);
+    const r = radius * (90 - altDeg) / 90;
+    const cosAz =
+      (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
+      (Math.cos(alt) * Math.cos(latRad));
+    let az = Math.acos(Math.max(-1, Math.min(1, cosAz)));
+    if (Math.sin(ha) > 0) az = 2 * Math.PI - az;
 
-   // Project even if below horizon (same as stars)
-   const r = radius * (90 - altDeg) / 90;
+    const x = cx + -r * Math.sin(az);
+    const y = cy + -r * Math.cos(az);
 
-   const cosAz =
-   (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
-   (Math.cos(alt) * Math.cos(latRad));
+    projectedStars.push({
+      id: p.id,
+      x,
+      y,
+      mag: p.mag,
+      altDeg,
+      isPlanet: true,
+    });
+  });
 
-   let az = Math.acos(Math.max(-1, Math.min(1, cosAz)));
-   if (Math.sin(ha) > 0) az = 2 * Math.PI - az;
+  ctx.strokeStyle = "#888";
+  ctx.lineWidth = 1;
 
-const x = cx + -r * Math.sin(az);
-const y = cy + -r * Math.cos(az);
+  function clipLineToCircle(x1, y1, x2, y2, cx, cy, r) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const fx = x1 - cx;
+    const fy = y1 - cy;
 
+    const a = dx * dx + dy * dy;
+    const b = 2 * (fx * dx + fy * dy);
+    const c = fx * fx + fy * fy - r * r;
 
-projectedStars.push({
-  id: p.id,
-  x,
-  y,
-  mag: p.mag,
-  altDeg,
-  isPlanet: true
-});
+    const discriminant = b * b - 4 * a * c;
+    if (discriminant < 0) return null;
 
-});
+    const sqrtD = Math.sqrt(discriminant);
+    const t1 = (-b - sqrtD) / (2 * a);
+    const t2 = (-b + sqrtD) / (2 * a);
 
-    ctx.strokeStyle = "#888";
-    ctx.lineWidth = 1;
+    let t = null;
+    if (t1 >= 0 && t1 <= 1) t = t1;
+    else if (t2 >= 0 && t2 <= 1) t = t2;
+    else return null;
 
-// -----------------------------
-// Line–circle clipping helper
-// -----------------------------
-function clipLineToCircle(x1, y1, x2, y2, cx, cy, r) {
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-  const fx = x1 - cx;
-  const fy = y1 - cy;
-
-  const a = dx*dx + dy*dy;
-  const b = 2 * (fx*dx + fy*dy);
-  const c = fx*fx + fy*fy - r*r;
-
-  const discriminant = b*b - 4*a*c;
-  if (discriminant < 0) return null;
-
-  const sqrtD = Math.sqrt(discriminant);
-  const t1 = (-b - sqrtD) / (2*a);
-  const t2 = (-b + sqrtD) / (2*a);
-
-  let t = null;
-  if (t1 >= 0 && t1 <= 1) t = t1;
-  else if (t2 >= 0 && t2 <= 1) t = t2;
-  else return null;
-
-  return {
-    x: x1 + t * dx,
-    y: y1 + t * dy
-  };
-}
-
-CONST_LINES.forEach(pair => {
-  const a = projectedStars.find(s => s.id === pair[0]);
-  const b = projectedStars.find(s => s.id === pair[1]);
-  if (!a || !b) return;
-
-  const da = Math.hypot(a.x - cx, a.y - cy);
-  const db = Math.hypot(b.x - cx, b.y - cy);
-
-  const aInside = da <= radius;
-  const bInside = db <= radius;
-
-  // Case 1: both inside → draw full line
-  if (aInside && bInside) {
-    ctx.beginPath();
-    ctx.moveTo(a.x, a.y);
-    ctx.lineTo(b.x, b.y);
-    ctx.stroke();
-    return;
+    return {
+      x: x1 + t * dx,
+      y: y1 + t * dy,
+    };
   }
 
-  // Case 2: one inside, one outside → clip to circle
-  if (aInside && !bInside) {
-    const p = clipLineToCircle(a.x, a.y, b.x, b.y, cx, cy, radius);
-    if (p) {
+  CONST_LINES.forEach((pair) => {
+    const a = projectedStars.find((s) => s.id === pair[0]);
+    const b = projectedStars.find((s) => s.id === pair[1]);
+    if (!a || !b) return;
+
+    const da = Math.hypot(a.x - cx, a.y - cy);
+    const db = Math.hypot(b.x - cx, b.y - cy);
+    const aInside = da <= radius;
+    const bInside = db <= radius;
+
+    if (aInside && bInside) {
       ctx.beginPath();
       ctx.moveTo(a.x, a.y);
-      ctx.lineTo(p.x, p.y);
+      ctx.lineTo(b.x, b.y);
       ctx.stroke();
+      return;
     }
-    return;
-  }
 
-  if (!aInside && bInside) {
-    const p = clipLineToCircle(b.x, b.y, a.x, a.y, cx, cy, radius);
-    if (p) {
-      ctx.beginPath();
-      ctx.moveTo(b.x, b.y);
-      ctx.lineTo(p.x, p.y);
-      ctx.stroke();
-    }
-    return;
-  }
-
-  // Case 3: both outside → draw nothing
-});
-
-
-    // Stars + planets
-    projectedStars.forEach(function(s) {
-      if (s.altDeg <= 0) return;
-
-      if (s.isPlanet) {
-        ctx.fillStyle = "#000000";
-        ctx.font = Math.max(12, 20 - s.mag * 1.2) + "px serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("✦", s.x, s.y);
-        return;
+    if (aInside && !bInside) {
+      const p = clipLineToCircle(a.x, a.y, b.x, b.y, cx, cy, radius);
+      if (p) {
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
       }
-      
+      return;
+    }
 
-      var size = Math.max(0.6, 3.5 - s.mag * 0.5);
+    if (!aInside && bInside) {
+      const p = clipLineToCircle(b.x, b.y, a.x, a.y, cx, cy, radius);
+      if (p) {
+        ctx.beginPath();
+        ctx.moveTo(b.x, b.y);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+      }
+      return;
+    }
+  });
+
+  projectedStars.forEach((s) => {
+    if (s.altDeg <= 0) return;
+
+    if (s.isPlanet) {
       ctx.fillStyle = "#000000";
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, size, 0, Math.PI * 2);
-      ctx.fill();
-    });
-  }
+      ctx.font = Math.max(12, 20 - s.mag * 1.2) + "px serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("✦", s.x, s.y);
+      return;
+    }
 
-// ============================================================
-// PLANETARY EPHEMERIS — DECENT PRECISION (Meeus)
-// Returns RA (hours), Dec (deg), magnitude
-// ============================================================
+    const size = Math.max(0.6, 3.5 - s.mag * 0.5);
+    ctx.fillStyle = "#000000";
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, size, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
 
-// Orbital elements for decent-precision heliocentric positions (J2000)
+// ------------------------------------------------------------
+// PLANETARY EPHEMERIS (Meeus-style)
+// ------------------------------------------------------------
 const planetElements = {
   Mercury: { a: 0.387098, e: 0.205635, i: 7.005, L: 252.250, w: 77.457, o: 48.330 },
   Venus:   { a: 0.723330, e: 0.006773, i: 3.394, L: 181.979, w: 131.602, o: 76.680 },
   Earth:   { a: 1.000000, e: 0.016709, i: 0.000, L: 100.464, w: 102.937, o: 0.000 },
-  Mars:    { a: 1.523679, e: 0.093400, i: 1.850, L: -4.553, w: -23.943, o: 49.558 },
-  Jupiter: { a: 5.20260,  e: 0.048498, i: 1.303, L: 34.396, w: 14.728, o: 100.473 },
-  Saturn:  { a: 9.55491,  e: 0.055508, i: 2.489, L: 49.954, w: 92.598, o: 113.662 },
+  Mars:    { a: 1.523679, e: 0.093400, i: 1.850, L: -4.553,  w: -23.943, o: 49.558 },
+  Jupiter: { a: 5.20260,  e: 0.048498, i: 1.303, L: 34.396,  w: 14.728,  o: 100.473 },
+  Saturn:  { a: 9.55491,  e: 0.055508, i: 2.489, L: 49.954,  w: 92.598,  o: 113.662 },
   Uranus:  { a: 19.2184,  e: 0.046295, i: 0.773, L: 313.238, w: 170.954, o: 74.016 },
-  Neptune: { a: 30.1104,  e: 0.008988, i: 1.770, L: -55.120, w: 44.964, o: 131.784 }
+  Neptune: { a: 30.1104,  e: 0.008988, i: 1.770, L: -55.120, w: 44.964,  o: 131.784 },
 };
 
-// Convert degrees to radians
 function d2r(d) { return d * Math.PI / 180; }
 function r2d(r) { return r * 180 / Math.PI; }
 
-// Solve Kepler's equation
 function solveKepler(M, e) {
   let E = M;
   for (let i = 0; i < 6; i++) {
@@ -2593,7 +2536,6 @@ function solveKepler(M, e) {
   return E;
 }
 
-// Compute heliocentric ecliptic coordinates
 function heliocentricPosition(planet, jd) {
   const T = (jd - 2451545.0) / 36525;
   const el = planetElements[planet];
@@ -2610,18 +2552,18 @@ function heliocentricPosition(planet, jd) {
 
   const xv = a * (Math.cos(E) - e);
   const yv = a * Math.sqrt(1 - e * e) * Math.sin(E);
-
   const v = Math.atan2(yv, xv);
   const r = Math.sqrt(xv * xv + yv * yv);
 
-  const xh = r * (Math.cos(o) * Math.cos(v + w - o) - Math.sin(o) * Math.sin(v + w - o) * Math.cos(i));
-  const yh = r * (Math.sin(o) * Math.cos(v + w - o) + Math.cos(o) * Math.sin(v + w - o) * Math.cos(i));
+  const xh =
+    r * (Math.cos(o) * Math.cos(v + w - o) - Math.sin(o) * Math.sin(v + w - o) * Math.cos(i));
+  const yh =
+    r * (Math.sin(o) * Math.cos(v + w - o) + Math.cos(o) * Math.sin(v + w - o) * Math.cos(i));
   const zh = r * (Math.sin(v + w - o) * Math.sin(i));
 
   return { xh, yh, zh, r };
 }
 
-// Convert ecliptic to equatorial
 function eclipticToEquatorial(xe, ye, ze) {
   const eps = d2r(23.439291);
   const x = xe;
@@ -2634,14 +2576,10 @@ function eclipticToEquatorial(xe, ye, ze) {
   return { raHours: r2d(ra) / 15, decDeg: r2d(dec) };
 }
 
-// ============================================================
-// MAIN: Get RA/Dec + magnitude for a planet
-// ============================================================
 function getPlanetPositionEquatorial(planetId, jd) {
   const sun = heliocentricPosition("Earth", jd);
   const p = heliocentricPosition(planetId, jd);
 
-  // Geocentric vector
   const xe = p.xh - sun.xh;
   const ye = p.yh - sun.yh;
   const ze = p.zh - sun.zh;
@@ -2649,12 +2587,10 @@ function getPlanetPositionEquatorial(planetId, jd) {
   const delta = Math.sqrt(xe * xe + ye * ye + ze * ze);
   const r = p.r;
 
-  // Phase angle
   const cosAlpha = (r * r + delta * delta - sun.r * sun.r) / (2 * r * delta);
   const alpha = Math.acos(Math.max(-1, Math.min(1, cosAlpha)));
   const phaseDeg = r2d(alpha);
 
-  // Convert to RA/Dec
   const eq = eclipticToEquatorial(xe, ye, ze);
 
   return {
@@ -2662,82 +2598,57 @@ function getPlanetPositionEquatorial(planetId, jd) {
     decDeg: eq.decDeg,
     rAu: r,
     deltaAu: delta,
-    phaseDeg
+    phaseDeg,
   };
 }
 
-// ============================================================
-// Magnitude formulas
-// ============================================================
 function computePlanetMagnitude(planetId, r, delta, alpha) {
   switch (planetId) {
     case "Mercury":
-      return 5 * Math.log10(r * delta)
-        + 0.02 * alpha
-        - 0.000007 * alpha * alpha
-        + 0.00000003 * alpha * alpha * alpha;
-
+      return (
+        5 * Math.log10(r * delta) +
+        0.02 * alpha -
+        0.000007 * alpha * alpha +
+        0.00000003 * alpha * alpha * alpha
+      );
     case "Venus":
-      return 5 * Math.log10(r * delta)
-        - 4.384
-        - 0.0009 * alpha
-        + 0.000239 * alpha * alpha
-        - 0.00000065 * alpha * alpha * alpha;
-
+      return (
+        5 * Math.log10(r * delta) -
+        4.384 -
+        0.0009 * alpha +
+        0.000239 * alpha * alpha -
+        0.00000065 * alpha * alpha * alpha
+      );
     case "Mars":
-      return 5 * Math.log10(r * delta)
-        - 1.52
-        + 0.016 * alpha;
-
+      return 5 * Math.log10(r * delta) - 1.52 + 0.016 * alpha;
     case "Jupiter":
-      return 5 * Math.log10(r * delta)
-        - 9.40
-        + 0.005 * alpha;
-
+      return 5 * Math.log10(r * delta) - 9.40 + 0.005 * alpha;
     case "Saturn":
-      return 5 * Math.log10(r * delta)
-        - 8.88
-        + 0.044 * alpha;
-
+      return 5 * Math.log10(r * delta) - 8.88 + 0.044 * alpha;
     case "Uranus":
-      return 5 * Math.log10(r * delta)
-        - 7.19;
-
+      return 5 * Math.log10(r * delta) - 7.19;
     case "Neptune":
-      return 5 * Math.log10(r * delta)
-        - 6.87;
+      return 5 * Math.log10(r * delta) - 6.87;
   }
 }
 
-// ============================================================
-// Wrapper: One planet
-// ============================================================
 function computePlanetEphemeris(planetId, date) {
   const jd = toJulianDate(date);
   const pos = getPlanetPositionEquatorial(planetId, jd);
-
-  const mag = computePlanetMagnitude(
-    planetId,
-    pos.rAu,
-    pos.deltaAu,
-    pos.phaseDeg
-  );
+  const mag = computePlanetMagnitude(planetId, pos.rAu, pos.deltaAu, pos.phaseDeg);
 
   return {
     id: planetId,
     name: planetId,
     raHours: pos.raHours,
     decDeg: pos.decDeg,
-    mag: parseFloat(mag.toFixed(1))
-  };  
+    mag: parseFloat(mag.toFixed(1)),
+  };
 }
 
-// ============================================================
-// Wrapper: All planets
-// ============================================================
 function computeAllPlanets(date) {
   const ids = ["Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"];
-  return ids.map(id => computePlanetEphemeris(id, date));
+  return ids.map((id) => computePlanetEphemeris(id, date));
 }
 
 function formatRA(hours) {
@@ -2756,18 +2667,25 @@ function formatDec(deg) {
   return `${sign}${d}° ${m.toString().padStart(2, "0")}′`;
 }
 
-
-  // ------------------------------------------------------------
-  // GENERATE BUTTON
-  // ------------------------------------------------------------
-  if (btnGenerate) {
+// ------------------------------------------------------------
+// GENERATE BUTTON HANDLER (single, non-duplicated)
+// ------------------------------------------------------------
+if (btnGenerate) {
   btnGenerate.addEventListener("click", async () => {
-
-    // gg
     document.body.insertAdjacentHTML(
       "beforeend",
       "<div style='position:fixed;bottom:70px;right:10px;background:#c60;color:#fff;padding:6px;border-radius:4px;z-index:99999;'>planner logic start</div>"
     );
+
+    const modalOverlay = document.getElementById("planner-modal-overlay");
+    const modalContent = document.getElementById("planner-modal-content");
+    const modalClose = document.getElementById("planner-modal-close");
+
+    if (modalClose) {
+      modalClose.onclick = () => {
+        modalOverlay.style.display = "none";
+      };
+    }
 
     const dateStr = document.getElementById("planner-date").value;
     const timeStr = document.getElementById("planner-time").value;
@@ -2781,174 +2699,143 @@ function formatDec(deg) {
 
     const dt = new Date(`${dateStr}T${timeStr}:00`);
 
-    // Load Messier objects from objects.json
     const objects = await loadObjects();
 
-// ------------------------------------------------------------//
-// Inject planets into the visibility pipeline.                //
-// ------------------------------------------------------------//
+    const planetObjects = computeAllPlanets(dt).map((p) => ({
+      id: p.id,
+      name: p.name,
+      type: "Pl",
+      mag: p.mag,
+      ra_h: p.raHours,
+      dec_deg: p.decDeg,
+    }));
 
-// 1. Compute dynamic planets for this date
-const planetObjects = computeAllPlanets(dt).map(p => ({
-  id: p.id,
-  name: p.name,
-  type: "Pl",
-  mag: p.mag,
-  ra_h: p.raHours,
-  dec_deg: p.decDeg
-}));
+    const objectsNoPlanets = objects.filter(
+      (o) => (o.type || "").toLowerCase() !== "planet"
+    );
 
-// ------------------------------------------------------------
-// 2. Merge DSOs + planets with dedupe (planets overwrite DSOs)
-// ------------------------------------------------------------
-
-// Remove any catalog entries that are planets
-const objectsNoPlanets = objects.filter(o =>
-  (o.type || "").toLowerCase() !== "planet"
-);
-
-// Build a map keyed by lowercase ID
-const objMap = new Map();
-
-// Add DSOs first
-objectsNoPlanets.forEach(o => {
-  objMap.set(o.id.toLowerCase(), { ...o });
-});
-
-// Add planets (overwrite any existing entry)
-planetObjects.forEach(p => {
-  objMap.set(p.id.toLowerCase(), { ...objMap.get(p.id.toLowerCase()), ...p });
-});
-
-// Final merged list
-const allObjects = Array.from(objMap.values());
-
-// ------------------------------------------------------------
-// 3. Run the full visibility pipeline on everything
-// ------------------------------------------------------------
-const resultsRaw = allObjects.map(obj => {
-  const eph = computeEphemerisForNight(
-    lat,
-    lon,
-    dt,
-    {
-      ra: Number(obj.ra_h),
-      dec: Number(obj.dec_deg)
-    }
-  );
-
-  const score = visibilityScore(eph, obj.mag, dt);
-
-  return { ...obj, ...eph, score };
-});
-
-// ------------------------------------------------------------
-// 4. Filter + sort
-// ------------------------------------------------------------
-const results = resultsRaw
-.filter(r => r.altAtObs >= 25 && r.score >= 30 && r.mag <= 10)
-  .sort((a, b) => b.score - a.score);
-
-
-      modalContent.innerHTML = `
-        <div style="
-          display: flex;
-          flex-direction: row;
-          width: 100%;
-          height: 100%;
-          gap: 20px;
-        ">
-
-          <!-- LEFT HALF -->
-          <div style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
-
-            <!-- DETAILS BLOCK -->
-            <div style="
-              background: #f5f5f5;
-              border: 1px solid #ccc;
-              border-radius: 12px;
-              padding: 12px;
-              height: 180px;
-            ">
-              <h3 style="margin-top:0;">Observation Details - Zenith Sky</h3>
-              <p>Date: ${dateStr}</p>
-              <p>Time: ${timeStr}</p>
-              <p>Latitude: ${lat}</p>
-              <p>Longitude: ${lon}</p>
-            </div>
-
-            <!-- STAR MAP BLOCK -->
-            <div style="
-              background: #ffffff;
-              border-radius: 12px;
-              padding: 10px;
-              flex: 1;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              border: 1px solid #ccc;
-            ">
-              <canvas id="planner-star-map" style="width:100%; height:100%; border-radius:8px;"></canvas>
-            </div>
-
-          </div>
-
-          <!-- RIGHT HALF -->
-          <div style="
-            flex: 1;
-            background: #f5f5f5;
-            border: 1px solid #ccc;
-            border-radius: 12px;
-            padding: 12px;
-            overflow: visible;
-          ">
-            <h3 style="margin-top:0;">Visible Objects</h3>
-
-            <table border="1" cellspacing="0" cellpadding="6" style="width:100%; font-size:13px; border-collapse:collapse;">
-              <tr>
-                <th>Object</th>
-                <th>Type</th>
-                <th>Mag</th>
-                <th>RA</th>
-                <th>Dec</th>
-                <th>Transit</th>
-                <th>Alt</th>
-                <th>Score</th>
-              </tr>
-              ${results.map(r => {
-              
-                return `
-                  <tr>
-                  <td>${
-                    r.type === "Planet"
-                      ? r.name
-                      : (r.name && r.name !== r.id ? `${r.id} — ${r.name}` : r.id)
-                  }</td>                  
-                    <td>${r.type || ""}</td>
-                    <td>${r.mag ?? "—"}</td>
-                    <td>${formatRA(r.ra_h)}</td>
-                    <td>${formatDec(r.dec_deg)}</td>
-                    <td>${r.transit ? r.transit.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false }) : "Never"}</td>
-                    <td>${r.altAtObs ? r.altAtObs.toFixed(1) + "°" : "N/A"}</td>
-                    <td>${r.score.toFixed(0)}</td>
-                  </tr>
-                `;
-              }).join("")}              
-            </table>
-          </div>
-
-        </div>
-      `;
-
-      modalOverlay.style.display = "flex";
-      drawAzimuthalStarMap(lat, lon, dt);
-      const btnPrint = document.getElementById("planner-print");
-       if (btnPrint) {
-       btnPrint.onclick = () => window.print();
-       }
-
+    const objMap = new Map();
+    objectsNoPlanets.forEach((o) => {
+      objMap.set(o.id.toLowerCase(), { ...o });
     });
-  }
+
+    planetObjects.forEach((p) => {
+      objMap.set(p.id.toLowerCase(), { ...objMap.get(p.id.toLowerCase()), ...p });
+    });
+
+    const allObjects = Array.from(objMap.values());
+
+    const resultsRaw = allObjects.map((obj) => {
+      const eph = computeEphemerisForNight(lat, lon, dt, {
+        ra: Number(obj.ra_h),
+        dec: Number(obj.dec_deg),
+      });
+      const score = visibilityScore(eph, obj.mag, dt);
+      return { ...obj, ...eph, score };
+    });
+
+    const results = resultsRaw
+      .filter((r) => r.altAtObs >= 25 && r.score >= 30 && r.mag <= 10)
+      .sort((a, b) => b.score - a.score);
+
+    modalContent.innerHTML = `
+<div style="
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 100%;
+  gap: 20px;
+">
+  <div style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+    <div style="
+      background: #f5f5f5;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      padding: 12px;
+      height: 180px;
+    ">
+      <h3 style="margin-top:0;">Observation Details - Zenith Sky</h3>
+      <p>Date: ${dateStr}</p>
+      <p>Time: ${timeStr}</p>
+      <p>Latitude: ${lat}</p>
+      <p>Longitude: ${lon}</p>
+    </div>
+    <div style="
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 10px;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #ccc;
+    ">
+      <canvas id="planner-star-map" style="width:100%; height:100%; border-radius:8px;"></canvas>
+    </div>
+  </div>
+  <div style="
+    flex: 1;
+    background: #f5f5f5;
+    border: 1px solid #ccc;
+    border-radius: 12px;
+    padding: 12px;
+    overflow: visible;
+  ">
+    <h3 style="margin-top:0;">Visible Objects</h3>
+    <table border="1" cellspacing="0" cellpadding="6" style="width:100%; font-size:13px; border-collapse:collapse;">
+      <tr>
+        <th>Object</th>
+        <th>Type</th>
+        <th>Mag</th>
+        <th>RA</th>
+        <th>Dec</th>
+        <th>Transit</th>
+        <th>Alt</th>
+        <th>Score</th>
+      </tr>
+      ${results
+        .map((r) => {
+          return `
+        <tr>
+          <td>${
+            r.type === "Planet"
+              ? r.name
+              : r.name && r.name !== r.id
+              ? `${r.id} — ${r.name}`
+              : r.id
+          }</td>
+          <td>${r.type || ""}</td>
+          <td>${r.mag ?? "—"}</td>
+          <td>${formatRA(r.ra_h)}</td>
+          <td>${formatDec(r.dec_deg)}</td>
+          <td>${
+            r.transit
+              ? r.transit.toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: false,
+                })
+              : "Never"
+          }</td>
+          <td>${r.altAtObs ? r.altAtObs.toFixed(1) + "°" : "N/A"}</td>
+          <td>${r.score.toFixed(0)}</td>
+        </tr>`;
+        })
+        .join("")}
+    </table>
+  </div>
+</div>
+`;
+
+    modalOverlay.style.display = "flex";
+    drawAzimuthalStarMap(lat, lon, dt);
+
+    const btnPrint = document.getElementById("planner-print");
+    if (btnPrint) {
+      btnPrint.onclick = () => window.print();
+    }
+  });
+}
   </script>
 
   <script>
