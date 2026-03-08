@@ -1497,45 +1497,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
   <script>
   // planner.js
-  const btnGenerate = document.getElementById("planner-generate");
-  if (!btnGenerate) {
+const btnGenerate = document.getElementById("planner-generate");
+
+if (!btnGenerate) {
   console.warn("planner-generate not found");
   return;
-  }
+}
 
-  document.body.insertAdjacentHTML(
-    "beforeend",
-    "<div style='position:fixed;bottom:120px;right:10px;background:#444;color:#fff;padding:6px;border-radius:4px;z-index:99999;'>TOP OF SCRIPT REACHED</div>"
-  );
+document.body.insertAdjacentHTML(
+  "beforeend",
+  "<div style='position:fixed;bottom:120px;right:10px;background:#444;color:#fff;padding:6px;border-radius:4px;z-index:99999;'>TOP OF SCRIPT REACHED</div>"
+);
 
-  btnGenerate.addEventListener("click", async () => {
-    document.body.insertAdjacentHTML(
-      "beforeend",
-      "<div style='position:fixed;bottom:70px;right:10px;background:#c60;color:#fff;padding:6px;border-radius:4px;z-index:99999;'>planner logic start</div>"
-    );
-
-    const modalOverlay = document.getElementById("planner-modal-overlay");
-    const modalContent = document.getElementById("planner-modal-content");
-    const modalClose = document.getElementById("planner-modal-close");
-
-  if (modalClose) {
-    modalClose.addEventListener("click", () => {
-      modalOverlay.style.display = "none";
-    });
-  }
-
-  if (modalOverlay) {
-    modalOverlay.addEventListener("click", (e) => {
-      if (e.target === modalOverlay) {
-        modalOverlay.style.display = "none";
-      }
-    });
-  }
-
-  // ------------------------------------------------------------
-  // LOAD OBJECTS FROM objects.json
-  // ------------------------------------------------------------
-  async function loadObjects() {
+// ------------------------------------------------------------
+// LOAD OBJECTS FROM objects.json
+// ------------------------------------------------------------
+async function loadObjects() {
     try {
       const res = await fetch("objects.json");
       if (!res.ok) return [];
