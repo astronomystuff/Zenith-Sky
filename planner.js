@@ -1387,9 +1387,26 @@ async function downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr) {
     index += rowsPerPage;
   }
 
-  const { jsPDF } = window.jspdf || {};
-  if (!jsPDF) throw new Error('jsPDF not loaded');
+  function loadJsPdf(url = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.3/dist/jspdf.umd.min.js') {
+  return new Promise((resolve, reject) => {
+    if (window.jspdf && window.jspdf.jsPDF) return resolve(window.jspdf.jsPDF);
+    const s = document.createElement('script');
+    s.src = url;
+    s.async = true;
+    s.onload = () => {
+      const ctor = window.jspdf && window.jspdf.jsPDF;
+      if (ctor) resolve(ctor);
+      else reject(new Error('jsPDF loaded but constructor not found'));
+    };
+    s.onerror = () => reject(new Error('Failed to load jsPDF script'));
+    document.head.appendChild(s);
+  });
+}
+
+loadJsPdf().then(jsPDF => {
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
+}).catch(err => console.error('jsPDF load error:', err));
+
 
 
 
