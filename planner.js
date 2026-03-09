@@ -1323,7 +1323,7 @@ canvas.width = canvas.clientWidth;
 canvas.height = canvas.clientHeight;
 
 drawAzimuthalStarMap(canvas, lat, lon, dt);
-
+}
 
 async function downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr) {
   const root = document.getElementById("planner-pdf-root");
