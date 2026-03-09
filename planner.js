@@ -1387,7 +1387,12 @@ async function downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr) {
     index += rowsPerPage;
   }
 
-  const pdf = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.3/jspdf.umd.min.js"></script>
+
+  const { jsPDF } = window.jspdf || {};
+  if (!jsPDF) throw new Error('jsPDF not loaded');
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
+
 
   const pages = root.querySelectorAll(".planner-pdf-page");
 
