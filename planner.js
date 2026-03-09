@@ -6,13 +6,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     
    if (e.target.id === "planner-print") {
+  if (!window.lastPlannerResults) return;
   downloadPlannerPDF(
-    lastResults,   // your filtered results array
-    lastLat,
-    lastLon,
-    lastDt,
-    lastDateStr,
-    lastTimeStr
+    window.lastPlannerResults,
+    window.lastPlannerLat,
+    window.lastPlannerLon,
+    window.lastPlannerDt,
+    window.lastPlannerDateStr,
+    window.lastPlannerTimeStr
   );
 }
 
@@ -48,7 +49,7 @@ async function loadObjects() {
   }
 }
 
-// ------------------------------------------------------------
+  // ------------------------------------------------------------
   // STAR CATALOG + CONSTELLATION LINES
   // ------------------------------------------------------------
   function decodeStarCatalog() {
@@ -679,14 +680,6 @@ async function loadObjects() {
   ];
 
   async function runPlanner() {
-  console.log("runPlanner() called");
-
-  window.lastResults = results;
-  window.lastLat = lat;
-  window.lastLon = lon;
-  window.lastDt = dt;
-  window.lastDateStr = dateStr;
-  window.lastTimeStr = timeStr;
 
   const modalOverlay = document.getElementById("planner-modal-overlay");
   const modalContent = document.getElementById("planner-modal-content");
@@ -708,6 +701,7 @@ async function loadObjects() {
 
   const dt = new Date(`${dateStr}T${timeStr}:00`);
 
+  // Load objects + planets
   const objects = await loadObjects();
   const planets = computeAllPlanets(dt).map(p => ({
     id: p.id,
@@ -718,14 +712,20 @@ async function loadObjects() {
     dec_deg: p.decDeg
   }));
 
+  // Remove any planet duplicates from objects.json
   const objectsNoPlanets = objects.filter(o => (o.type || "").toLowerCase() !== "planet");
 
+  // Merge objects + planets by ID
   const objMap = new Map();
   objectsNoPlanets.forEach(o => objMap.set(o.id.toLowerCase(), { ...o }));
-  planets.forEach(p => objMap.set(p.id.toLowerCase(), { ...objMap.get(p.id.toLowerCase()), ...p }));
+  planets.forEach(p => {
+    const key = p.id.toLowerCase();
+    objMap.set(key, { ...(objMap.get(key) || {}), ...p });
+  });
 
   const allObjects = Array.from(objMap.values());
 
+  // Compute ephemeris + score
   const resultsRaw = allObjects.map(obj => {
     const eph = computeEphemerisForNight(lat, lon, dt, {
       ra: Number(obj.ra_h),
@@ -735,10 +735,20 @@ async function loadObjects() {
     return { ...obj, ...eph, score };
   });
 
+  // Filter + sort
   const results = resultsRaw
     .filter(r => r.altAtObs >= 25 && r.score >= 30 && r.mag <= 10)
     .sort((a, b) => b.score - a.score);
 
+  // Store for PDF generation
+  window.lastPlannerResults = results;
+  window.lastPlannerLat = lat;
+  window.lastPlannerLon = lon;
+  window.lastPlannerDt = dt;
+  window.lastPlannerDateStr = dateStr;
+  window.lastPlannerTimeStr = timeStr;
+
+  // Build modal content
   modalContent.innerHTML = `
     <h2>Results</h2>
     <p>Found ${results.length} objects.</p>
@@ -747,9 +757,10 @@ async function loadObjects() {
 
   modalOverlay.style.display = "flex";
 
-  drawAzimuthalStarMap(lat, lon, dt);
+  // Draw star map using the NEW signature
+  const canvas = document.getElementById("planner-star-map");
+  drawAzimuthalStarMap(canvas, lat, lon, dt);
 }
-
 
 // ------------------------------------------------------------
 // VISIBILITY SCORE
@@ -874,24 +885,27 @@ function computeEphemerisForNight(latDeg, lonDeg, dateLocal, target) {
 // ------------------------------------------------------------
 // STAR MAP
 // ------------------------------------------------------------
-function drawAzimuthalStarMap(latDeg, lonDeg, date) {
+function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date) {
+  if (!canvas) return;
+
   if (latDeg > 89.9) latDeg = 89.9;
   if (latDeg < -89.9) latDeg = -89.9;
 
-  const canvas = el("planner-star-map");
-  if (!canvas) return;
-
   const ctx = canvas.getContext("2d");
-  const size = canvas.clientWidth || 400;
-  canvas.width = size;
-  canvas.height = size;
+
+  // If no explicit size was set (screen mode), use clientWidth
+  if (!canvas.width || !canvas.height) {
+    const size = canvas.clientWidth || 400;
+    canvas.width = size;
+    canvas.height = size;
+  }
 
   const w = canvas.width;
   const h = canvas.height;
   const cx = w / 2;
   const cy = h / 2;
   const padding = 40;
-  const radius = size / 2 - padding;
+  const radius = w / 2 - padding;
 
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, w, h);
@@ -1306,22 +1320,17 @@ async function runPlanner() {
 
     modalOverlay.style.display = "flex";
 
-/* ========================================================= */
-/* PDF GENERATION (Portrait 8.5x11, Multi‑Page)              */
-/* ========================================================= */
-
 async function downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr) {
   const root = document.getElementById("planner-pdf-root");
+  if (!root) return;
   root.innerHTML = "";
 
   const PAGE_WIDTH = 816;
   const PAGE_HEIGHT = 1056;
-  const LEFT_WIDTH = 336;
-  const RIGHT_WIDTH = 480;
-  const ROW_HEIGHT = 22; // table row height
-  const TABLE_TOP_OFFSET = 0;
+  const LEFT_WIDTH = 336;  // 3.5 in
+  const RIGHT_WIDTH = 480; // 5 in
+  const ROW_HEIGHT = 22;
 
-  // Build the first page (with details + map)
   function createPage() {
     const page = document.createElement("div");
     page.className = "planner-pdf-page";
@@ -1337,17 +1346,15 @@ async function downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr) {
     return { page, left, right };
   }
 
-  // Render star map for PDF
   function renderPDFStarMap() {
     const canvas = document.createElement("canvas");
-    canvas.width = LEFT_WIDTH;
-    canvas.height = LEFT_WIDTH;
-    drawAzimuthalStarMapToCanvas(canvas, lat, lon, dt);
+    canvas.width = 672;   // high‑res 3.5 in
+    canvas.height = 672;
+    drawAzimuthalStarMap(canvas, lat, lon, dt);
     canvas.className = "planner-pdf-map";
     return canvas;
   }
 
-  // Build details block
   function buildDetails() {
     const div = document.createElement("div");
     div.innerHTML = `
@@ -1360,7 +1367,6 @@ async function downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr) {
     return div;
   }
 
-  // Build table rows
   function buildTableRows(rows) {
     const table = document.createElement("table");
     table.innerHTML = `
@@ -1394,11 +1400,9 @@ async function downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr) {
     return table;
   }
 
-  // Paginate table rows
   const rowsPerPage = Math.floor((PAGE_HEIGHT - 40) / ROW_HEIGHT);
   let index = 0;
 
-  // First page
   const { page: firstPage, left: firstLeft, right: firstRight } = createPage();
   firstLeft.appendChild(buildDetails());
   firstLeft.appendChild(renderPDFStarMap());
@@ -1412,11 +1416,8 @@ async function downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr) {
   root.appendChild(firstPage);
   index += rowsPerPage;
 
-  // Additional pages
   while (index < results.length) {
     const { page, left, right } = createPage();
-
-    // Left column empty on subsequent pages
     left.innerHTML = "";
 
     const pageRows = results.slice(index, index + rowsPerPage);
@@ -1429,7 +1430,6 @@ async function downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr) {
     index += rowsPerPage;
   }
 
-  // Convert to PDF
   const pdf = new jspdf.jsPDF({
     orientation: "portrait",
     unit: "pt",
@@ -1447,22 +1447,6 @@ async function downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr) {
 
   pdf.save("observation-planner.pdf");
 }
-
-    
-    // draw star map (canvas must exist now)
-    try {
-      drawAzimuthalStarMap(lat, lon, dt);
-    } catch (err) {
-      console.warn("drawAzimuthalStarMap failed", err);
-    }
-
-    const btnPrint = document.getElementById("planner-print");
-  if (btnPrint) {
-  btnPrint.onclick = () => {
-    downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr);
-  };
-}
-
 
   } catch (err) {
     console.error("runPlanner error", err);
