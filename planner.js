@@ -747,16 +747,8 @@ window.lastPlannerLon = lon;
 window.lastPlannerDt = dt;
 window.lastPlannerDateStr = dateStr;
 window.lastPlannerTimeStr = timeStr;
-
-
-  // Build modal content
-  modalContent.innerHTML = `
-    <h2>Results</h2>
-    <p>Found ${results.length} objects.</p>
-    <canvas id="planner-star-map" style="width:100%;height:300px;"></canvas>
-  `;
-
-  modalOverlay.style.display = "flex";
+    
+modalOverlay.style.display = "flex";
 
   // Draw star map using the NEW signature
   const canvas = document.getElementById("planner-star-map");
@@ -889,8 +881,8 @@ function computeEphemerisForNight(latDeg, lonDeg, dateLocal, target) {
 function drawAzimuthalStarMap(canvas, lat, lon, dt) {
   if (!canvas) return;
 
-  if (latDeg > 89.9) latDeg = 89.9;
-  if (latDeg < -89.9) latDeg = -89.9;
+  if (lat > 89.9) lat = 89.9;
+  if (lat < -89.9) lat = -89.9;
 
   const ctx = canvas.getContext("2d");
 
@@ -1275,12 +1267,51 @@ async function runPlanner() {
   window.lastPlannerDateStr = dateStr;
   window.lastPlannerTimeStr = timeStr;
 
-  modalContent.innerHTML = `
-    <h2>Results</h2>
-    <p>Found ${results.length} objects.</p>
-    <canvas id="planner-star-map" style="width:100%;height:300px;"></canvas>
-  `;
+modalContent.innerHTML = `
+<div style="display:flex;flex-direction:row;width:100%;height:100%;gap:20px;">
+  <div style="flex:1;display:flex;flex-direction:column;gap:20px;">
+    <div style="background:#f5f5f5;border:1px solid #ccc;border-radius:12px;padding:12px;height:180px;">
+      <h3 style="margin-top:0;">Observation Details – Zenith Sky</h3>
+      <p>Date: ${dateStr}</p>
+      <p>Time: ${timeStr}</p>
+      <p>Latitude: ${lat}</p>
+      <p>Longitude: ${lon}</p>
+    </div>
 
+    <div style="background:#ffffff;border-radius:12px;padding:10px;flex:1;display:flex;align-items:center;justify-content:center;border:1px solid #ccc;">
+      <canvas id="planner-star-map" style="width:100%;height:100%;border-radius:8px;"></canvas>
+    </div>
+  </div>
+
+  <div style="flex:1;background:#f5f5f5;border:1px solid #ccc;border-radius:12px;padding:12px;overflow:auto;">
+    <h3 style="margin-top:0;">Visible Objects</h3>
+    <table border="1" cellspacing="0" cellpadding="6" style="width:100%;font-size:13px;border-collapse:collapse;">
+      <tr>
+        <th>Object</th>
+        <th>Type</th>
+        <th>Mag</th>
+        <th>RA</th>
+        <th>Dec</th>
+        <th>Transit</th>
+        <th>Alt</th>
+        <th>Score</th>
+      </tr>
+      ${results.map(r => `
+        <tr>
+          <td>${r.type === "Planet" ? r.name : (r.name && r.name !== r.id ? `${r.id} — ${r.name}` : r.id)}</td>
+          <td>${safeText(r.type)}</td>
+          <td>${safeText(r.mag)}</td>
+          <td>${formatRA(r.ra_h)}</td>
+          <td>${formatDec(r.dec_deg)}</td>
+          <td>${r.transit ? r.transit.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',hour12:false}) : "Never"}</td>
+          <td>${r.altAtObs ? r.altAtObs.toFixed(1) + "°" : "N/A"}</td>
+          <td>${r.score ? r.score.toFixed(0) : "—"}</td>
+        </tr>`).join("")}
+    </table>
+  </div>
+</div>
+`;
+  
   modalOverlay.style.display = "flex";
 
   // FIXED: correct variables + new signature
