@@ -1277,6 +1277,73 @@ modalContent.innerHTML = `
   drawAzimuthalStarMap(canvas, lat, lon, dt);
 } 
 
+// Call: await ensurePdfAndCanvas(); then use returned { jsPDF, html2canvas }
+async function ensurePdfAndCanvas() {
+  function loadScriptOnce(url, globalCheck) {
+    return new Promise((resolve, reject) => {
+      // already available?
+      if (globalCheck && globalCheck()) return resolve(globalCheck());
+      // avoid duplicate tags
+      if (document.querySelector('script[data-src="'+url+'"]')) {
+        // wait for it to load by polling
+        const start = Date.now();
+        const poll = setInterval(() => {
+          if (globalCheck && globalCheck()) { clearInterval(poll); resolve(globalCheck()); }
+          if (Date.now() - start > 10000) { clearInterval(poll); reject(new Error('Timed out loading ' + url)); }
+        }, 100);
+        return;
+      }
+      const s = document.createElement('script');
+      s.async = true;
+      s.setAttribute('data-src', url);
+      s.src = url;
+      s.onload = () => {
+        if (globalCheck && globalCheck()) resolve(globalCheck());
+        else reject(new Error('Loaded ' + url + ' but global not found'));
+      };
+      s.onerror = () => reject(new Error('Failed to load ' + url));
+      document.head.appendChild(s);
+    });
+  }
+
+  // Try reliable CDN URLs (order: jsDelivr, unpkg). Adjust versions if needed.
+  const jspdfUrls = [
+    'https://cdn.jsdelivr.net/npm/jspdf@2.5.3/dist/jspdf.umd.min.js',
+    'https://unpkg.com/jspdf@2.5.3/dist/jspdf.umd.min.js'
+  ];
+  const html2canvasUrls = [
+    'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js',
+    'https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js'
+  ];
+
+  // loader with fallback
+  async function tryUrls(urls, globalCheck) {
+    let lastErr = null;
+    for (const u of urls) {
+      try {
+        return await loadScriptOnce(u, globalCheck);
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+    throw lastErr || new Error('No URL succeeded');
+  }
+
+  // globalCheck functions
+  const checkJsPdf = () => {
+    if (window.jspdf && window.jspdf.jsPDF) return window.jspdf.jsPDF;
+    if (window.jsPDF) return window.jsPDF;
+    return null;
+  };
+  const checkHtml2Canvas = () => window.html2canvas || null;
+
+  // load both in sequence (or parallel if you prefer)
+  const jsPDFCtor = await tryUrls(jspdfUrls, checkJsPdf).catch(e => { throw new Error('jsPDF load error: ' + e.message); });
+  const html2canvasCtor = await tryUrls(html2canvasUrls, checkHtml2Canvas).catch(e => { throw new Error('html2canvas load error: ' + e.message); });
+
+  return { jsPDF: jsPDFCtor, html2canvas: html2canvasCtor };
+}
+
 async function downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr) {
   const root = document.getElementById("planner-pdf-root");
   if (!root) return;
