@@ -971,7 +971,7 @@ function drawAzimuthalStarMap(canvas, lat, lon, dt) {
 
   // Planets
   if (typeof computeAllPlanets === "function") {
-    const planets = computeAllPlanets(date);
+    const planets = computeAllPlanets(dt);
     planets.forEach(p => {
       const raRad = deg2rad(p.raHours * 15);
       const decRad = deg2rad(p.decDeg);
