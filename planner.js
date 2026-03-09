@@ -971,6 +971,30 @@ function drawAzimuthalStarMap(canvas, lat, lon, dt, options = {}) {
     projectedStars.push({ id: star.id, x: p.x, y: p.y, mag: star.mag, altDeg });
   });
 
+function clipLineToCircle(x1, y1, x2, y2, cx0, cy0, r0) {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const fx = x1 - cx0;
+  const fy = y1 - cy0;
+  const a = dx*dx + dy*dy;
+  if (a === 0) return null; // degenerate segment
+  const b = 2*(fx*dx + fy*dy);
+  const c = fx*fx + fy*fy - r0*r0;
+  const disc = b*b - 4*a*c;
+  if (disc < 0) return null;
+  const s = Math.sqrt(disc);
+  const t1 = (-b - s) / (2*a);
+  const t2 = (-b + s) / (2*a);
+  const ts = [];
+  if (t1 >= 0 && t1 <= 1) ts.push(t1);
+  if (t2 >= 0 && t2 <= 1) ts.push(t2);
+  if (ts.length === 0) return null;
+  ts.sort((u,v) => u - v);
+  const t = ts[0];
+  return { x: x1 + t*dx, y: y1 + t*dy };
+}
+
+  
   // Draw constellation lines (same clipping as before)
   ctx.strokeStyle = "#666";
   ctx.lineWidth = Math.max(1, 1 * scale);
