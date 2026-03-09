@@ -829,15 +829,15 @@ function refineCrossing(t1, t2, latRad, lonRad, raRad, decRad, targetAltDeg) {
   return new Date((a.getTime() + b.getTime()) / 2);
 }
 
-function computeEphemerisForNight(latDeg, lonDeg, dateLocal, target) {
+function computeEphemerisForNight(lat, lon, dt, target) {
   const start = new Date(dateLocal);
   start.setHours(0, 0, 0, 0);
   const end = new Date(start);
   end.setDate(end.getDate() + 1);
 
   const samples = sampleTimes(start, end, 5);
-  const latRad = deg2rad(latDeg);
-  const lonRad = deg2rad(lonDeg);
+  const latRad = deg2rad(lat);
+  const lonRad = deg2rad(lon);
   const raRad = deg2rad(target.ra * 15);
   const decRad = deg2rad(target.dec);
 
@@ -929,8 +929,8 @@ function drawAzimuthalStarMap(canvas, lat, lon, dt) {
     ctx.fillText(c.label, x, y);
   });
 
-  const latRad = deg2rad(latDeg);
-  const lonRad = deg2rad(lonDeg);
+  const latRad = deg2rad(lat);
+  const lonRad = deg2rad(lon);
   const jd = toJulianDate(date);
   const lst = localSiderealTime(jd, lonRad);
 
