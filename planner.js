@@ -1314,10 +1314,15 @@ modalContent.innerHTML = `
   
   modalOverlay.style.display = "flex";
 
-  // FIXED: correct variables + new signature
-  const canvas = document.getElementById("planner-star-map");
-  drawAzimuthalStarMap(canvas, lat, lon, dt);
-}
+await new Promise(r => requestAnimationFrame(r));
+
+const canvas = document.getElementById("planner-star-map");
+
+// Set internal resolution to match CSS size
+canvas.width = canvas.clientWidth;
+canvas.height = canvas.clientHeight;
+
+drawAzimuthalStarMap(canvas, lat, lon, dt);
 
 
 async function downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr) {
