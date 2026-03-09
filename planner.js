@@ -931,7 +931,7 @@ function drawAzimuthalStarMap(canvas, lat, lon, dt) {
 
   const latRad = deg2rad(lat);
   const lonRad = deg2rad(lon);
-  const jd = toJulianDate(date);
+  const jd = toJulianDate(dt);
   const lst = localSiderealTime(jd, lonRad);
 
   const stars = decodeStarCatalog();
