@@ -1455,7 +1455,3 @@ async function downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr) {
   pdf.save("observation-planner.pdf");
 }
 
-  } catch (err) {
-    console.error("runPlanner error", err);
-  }
-}
