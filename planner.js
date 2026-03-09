@@ -830,7 +830,7 @@ function refineCrossing(t1, t2, latRad, lonRad, raRad, decRad, targetAltDeg) {
 }
 
 function computeEphemerisForNight(lat, lon, dt, target) {
-  const start = new Date(dateLocal);
+  const start = new Date(dt);
   start.setHours(0, 0, 0, 0);
   const end = new Date(start);
   end.setDate(end.getDate() + 1);
@@ -864,7 +864,7 @@ function computeEphemerisForNight(lat, lon, dt, target) {
     prevTime = t;
   }
 
-  const altAtObs = altitudeAtTime(dateLocal, latRad, lonRad, raRad, decRad);
+  const altAtObs = altitudeAtTime(dt, latRad, lonRad, raRad, decRad);
 
   return {
     rise: riseTime,
