@@ -737,16 +737,17 @@ async function loadObjects() {
 
   // Filter + sort
   const results = resultsRaw
-    .filter(r => r.altAtObs >= 25 && r.score >= 30 && r.mag <= 10)
-    .sort((a, b) => b.score - a.score);
+  .filter(r => r.altAtObs >= 25 && r.score >= 30 && r.mag <= 10)
+  .sort((a, b) => b.score - a.score);
 
-  // Store for PDF generation
-  window.lastPlannerResults = results;
-  window.lastPlannerLat = lat;
-  window.lastPlannerLon = lon;
-  window.lastPlannerDt = dt;
-  window.lastPlannerDateStr = dateStr;
-  window.lastPlannerTimeStr = timeStr;
+// NOW store them
+window.lastPlannerResults = results;
+window.lastPlannerLat = lat;
+window.lastPlannerLon = lon;
+window.lastPlannerDt = dt;
+window.lastPlannerDateStr = dateStr;
+window.lastPlannerTimeStr = timeStr;
+
 
   // Build modal content
   modalContent.innerHTML = `
@@ -885,7 +886,7 @@ function computeEphemerisForNight(latDeg, lonDeg, dateLocal, target) {
 // ------------------------------------------------------------
 // STAR MAP
 // ------------------------------------------------------------
-function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date) {
+function drawAzimuthalStarMap(canvas, lat, lon, dt) {
   if (!canvas) return;
 
   if (latDeg > 89.9) latDeg = 89.9;
@@ -1207,79 +1208,85 @@ function formatDec(deg) {
   return `${sign}${d}° ${m.toString().padStart(2, "0")}′`;
 }
 
-// ------------------------------------------------------------
-// RUN PLANNER (extracted from previous inline handler)
-// ------------------------------------------------------------
+// -------------
+// RUN PLANNER 
+// -------------
 async function runPlanner() {
-  try {
-    // small debug marker
-    console.debug("runPlanner invoked");
 
-    const modalOverlay = el("planner-modal-overlay");
-    const modalContent = el("planner-modal-content");
-    const modalClose = el("planner-modal-close");
+  const modalOverlay = document.getElementById("planner-modal-overlay");
+  const modalContent = document.getElementById("planner-modal-content");
 
-    if (!modalOverlay || !modalContent) {
-      console.warn("Planner modal elements missing");
-      return;
-    }
+  if (!modalOverlay || !modalContent) {
+    console.warn("Planner modal elements missing");
+    return;
+  }
 
-    if (modalClose) {
-      modalClose.onclick = () => { modalOverlay.style.display = "none"; };
-    }
+  const dateStr = document.getElementById("planner-date").value;
+  const timeStr = document.getElementById("planner-time").value;
+  const lat = parseFloat(document.getElementById("planner-lat").value);
+  const lon = parseFloat(document.getElementById("planner-lon").value);
 
-    const dateEl = el("planner-date");
-    const timeEl = el("planner-time");
-    const latEl = el("planner-lat");
-    const lonEl = el("planner-lon");
+  if (!dateStr || !timeStr || isNaN(lat) || isNaN(lon)) {
+    alert("Please enter date, time, latitude, and longitude.");
+    return;
+  }
 
-    const dateStr = dateEl ? dateEl.value : "";
-    const timeStr = timeEl ? timeEl.value : "";
-    const lat = latEl ? parseFloat(latEl.value) : NaN;
-    const lon = lonEl ? parseFloat(lonEl.value) : NaN;
+  const dt = new Date(`${dateStr}T${timeStr}:00`);
 
-    if (!dateStr || !timeStr || isNaN(lat) || isNaN(lon)) {
-      alert("Please enter date, time, latitude, and longitude.");
-      return;
-    }
+  const objects = await loadObjects();
+  const planets = computeAllPlanets(dt).map(p => ({
+    id: p.id,
+    name: p.name,
+    type: "Planet",
+    mag: p.mag,
+    ra_h: p.raHours,
+    dec_deg: p.decDeg
+  }));
 
-    const dt = new Date(`${dateStr}T${timeStr}:00`);
-    if (isNaN(dt.getTime())) {
-      alert("Invalid date/time.");
-      return;
-    }
+  const objectsNoPlanets = objects.filter(o => (o.type || "").toLowerCase() !== "planet");
 
-    const objects = await loadObjects();
+  const objMap = new Map();
+  objectsNoPlanets.forEach(o => objMap.set(o.id.toLowerCase(), { ...o }));
+  planets.forEach(p => {
+    const key = p.id.toLowerCase();
+    objMap.set(key, { ...(objMap.get(key) || {}), ...p });
+  });
 
-    const planetObjects = computeAllPlanets(dt).map(p => ({
-      id: p.id,
-      name: p.name,
-      type: "Planet",
-      mag: p.mag,
-      ra_h: p.raHours,
-      dec_deg: p.decDeg
-    }));
+  const allObjects = Array.from(objMap.values());
 
-    const objectsNoPlanets = (Array.isArray(objects) ? objects : []).filter(
-      o => (o.type || "").toLowerCase() !== "planet"
-    );
-
-    const objMap = new Map();
-    objectsNoPlanets.forEach(o => objMap.set((o.id || "").toLowerCase(), { ...o }));
-    planetObjects.forEach(p => objMap.set((p.id || "").toLowerCase(), { ...objMap.get((p.id || "").toLowerCase()), ...p }));
-
-    const allObjects = Array.from(objMap.values());
-
-    const resultsRaw = allObjects.map(obj => {
-      const target = { ra: Number(obj.ra_h), dec: Number(obj.dec_deg) };
-      const eph = computeEphemerisForNight(lat, lon, dt, target);
-      const score = visibilityScore(eph, obj.mag, dt);
-      return { ...obj, ...eph, score };
+  const resultsRaw = allObjects.map(obj => {
+    const eph = computeEphemerisForNight(lat, lon, dt, {
+      ra: Number(obj.ra_h),
+      dec: Number(obj.dec_deg)
     });
+    const score = visibilityScore(eph, obj.mag, dt);
+    return { ...obj, ...eph, score };
+  });
 
-    const results = resultsRaw
-      .filter(r => r.altAtObs >= 25 && r.score >= 30 && (r.mag === undefined || r.mag <= 10))
-      .sort((a, b) => b.score - a.score);
+  const results = resultsRaw
+    .filter(r => r.altAtObs >= 25 && r.score >= 30 && r.mag <= 10)
+    .sort((a, b) => b.score - a.score);
+
+  // FIXED: store AFTER results exist
+  window.lastPlannerResults = results;
+  window.lastPlannerLat = lat;
+  window.lastPlannerLon = lon;
+  window.lastPlannerDt = dt;
+  window.lastPlannerDateStr = dateStr;
+  window.lastPlannerTimeStr = timeStr;
+
+  modalContent.innerHTML = `
+    <h2>Results</h2>
+    <p>Found ${results.length} objects.</p>
+    <canvas id="planner-star-map" style="width:100%;height:300px;"></canvas>
+  `;
+
+  modalOverlay.style.display = "flex";
+
+  // FIXED: correct variables + new signature
+  const canvas = document.getElementById("planner-star-map");
+  drawAzimuthalStarMap(canvas, lat, lon, dt);
+}
 
     // Build modal content safely
     modalContent.innerHTML = `
