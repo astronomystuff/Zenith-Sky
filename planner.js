@@ -1272,16 +1272,58 @@ modalContent.innerHTML = `
 
 modalOverlay.style.display = "flex";
 
-await new Promise(r => requestAnimationFrame(r));
+async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr) {
+  const modalOverlay = document.getElementById("planner-modal-overlay");
+  if (modalOverlay) modalOverlay.style.display = "flex";
 
-const canvas = document.getElementById("planner-star-map");
-if (canvas) {
-  canvas.width = canvas.clientWidth;
-  canvas.height = canvas.clientHeight;
-  drawAzimuthalStarMap(canvas, lat, lon, dt);
+  await new Promise(r => requestAnimationFrame(r));
+
+  const canvas = document.getElementById("planner-star-map");
+  if (canvas) {
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+    drawAzimuthalStarMap(canvas, lat, lon, dt);
+  }
+
+  await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr);
+
+  const root = document.getElementById("planner-pdf-root");
+  if (!root) return;
+
+  const win = window.open("", "_blank");
+  if (!win) return;
+
+  win.document.open();
+  win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Planner PDF</title><style>
+    @page { size: 8.5in 11in; margin: 0; }
+    html, body { width: 8.5in; height: 11in; margin: 0; padding: 0; }
+    .planner-pdf-page { width: 8.5in; height: 11in; page-break-after: always; box-sizing: border-box; display: flex; }
+    .planner-pdf-left { width: 3.5in; padding: 0.25in; box-sizing: border-box; }
+    .planner-pdf-right { width: 5in; padding: 0.25in; box-sizing: border-box; overflow: hidden; }
+    .planner-pdf-map { width: 100%; height: auto; display: block; }
+    .planner-pdf-details h3 { margin: 0 0 8px 0; font-size: 14pt; }
+    .planner-pdf-details p { margin: 2px 0; font-size: 10pt; }
+    .planner-pdf-table { margin-top: 8px; }
+    table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+    th, td { padding: 4px 6px; border-bottom: 1px solid #ddd; text-align: left; }
+  </style></head><body></body></html>`);
+  win.document.close();
+
+  const cloned = root.cloneNode(true);
+  win.document.body.appendChild(cloned);
+
+  const imgs = Array.from(win.document.images || []);
+  await Promise.all(imgs.map(img => {
+    if (img.complete) return Promise.resolve();
+    return new Promise(res => { img.onload = img.onerror = res; });
+  }));
+
+  win.focus();
+  win.print();
+  win.close();
 }
 
-async function downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr) {
+async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr) {
   const root = document.getElementById("planner-pdf-root");
   if (!root) return;
   root.innerHTML = "";
@@ -1361,7 +1403,7 @@ async function downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr) {
   firstLeft.appendChild(buildDetails());
   firstLeft.appendChild(renderPDFStarMap());
 
-  const firstRows = results.slice(0, rowsPerPage);
+  const firstRows = (results && results.length) ? results.slice(0, rowsPerPage) : [];
   const firstTableContainer = document.createElement("div");
   firstTableContainer.className = "planner-pdf-table";
   firstTableContainer.appendChild(buildTableRows(firstRows));
@@ -1370,7 +1412,7 @@ async function downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr) {
   root.appendChild(firstPage);
   index += rowsPerPage;
 
-  while (index < results.length) {
+  while (index < (results ? results.length : 0)) {
     const { page, left, right } = createPage();
     left.innerHTML = "";
     const pageRows = results.slice(index, index + rowsPerPage);
@@ -1393,38 +1435,6 @@ window.addEventListener("DOMContentLoaded", () => {
     const dt = window.currentPlannerDt || new Date();
     const dateStr = window.currentPlannerDateStr || dt.toLocaleDateString();
     const timeStr = window.currentPlannerTimeStr || dt.toLocaleTimeString();
-
-    await downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr);
-
-    const root = document.getElementById("planner-pdf-root");
-    if (!root) return;
-
-    const win = window.open("", "_blank");
-    win.document.write(`
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Planner PDF</title>
-          <style>
-            @page { size: 8.5in 11in; margin: 0; }
-            html, body { width: 8.5in; height: 11in; margin: 0; padding: 0; }
-            .planner-pdf-page { width: 8.5in; height: 11in; page-break-after: always; box-sizing: border-box; display: flex; }
-            .planner-pdf-left { width: 3.5in; padding: 0.25in; box-sizing: border-box; }
-            .planner-pdf-right { width: 5in; padding: 0.25in; box-sizing: border-box; overflow: hidden; }
-            .planner-pdf-map { width: 100%; height: auto; display: block; }
-            .planner-pdf-details h3 { margin: 0 0 8px 0; font-size: 14pt; }
-            .planner-pdf-details p { margin: 2px 0; font-size: 10pt; }
-            .planner-pdf-table { margin-top: 8px; }
-            table { width: 100%; border-collapse: collapse; font-size: 9pt; }
-            th, td { padding: 4px 6px; border-bottom: 1px solid #ddd; text-align: left; }
-          </style>
-        </head>
-        <body>
-          ${root.innerHTML}
-        </body>
-      </html>
-    `);
-    win.document.close();
-    win.onload = () => { win.focus(); win.print(); };
+    await openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr);
   });
 });
