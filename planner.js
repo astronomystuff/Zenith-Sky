@@ -1459,32 +1459,51 @@ window.addEventListener("DOMContentLoaded", () => {
   plannerPrintBtn.addEventListener("click", downloadPlannerPDF);
 });
 
-function downloadPlannerPDF() {
-  const canvas = document.getElementById("planner-star-map");
-  if (!canvas) return;
+  function downloadPlannerPDF() {
+  // Collect all canvases you want to print as pages
+  // If you only have one:
+  const canvases = [document.getElementById("planner-star-map")];
 
-  const dataURL = canvas.toDataURL("image/png");
+  // Convert each canvas to PNG
+  const images = canvases.map(c => c.toDataURL("image/png"));
 
+  // Open a new print window
   const win = window.open("", "_blank");
+
   win.document.write(`
     <html>
       <head>
         <title>Planner PDF</title>
         <style>
+          @page {
+            size: 8.5in 11in;
+            margin: 0;
+          }
           body {
             margin: 0;
             padding: 0;
           }
-          img {
-            width: 100%;
-            height: auto;
-            display: block;
+          .page {
+            width: 8.5in;
+            height: 11in;
             page-break-after: always;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+          }
+          .page img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
           }
         </style>
       </head>
       <body>
-        <img src="${dataURL}">
+        ${images.map(src => `
+          <div class="page">
+            <img src="${src}">
+          </div>
+        `).join("")}
       </body>
     </html>
   `);
@@ -1493,19 +1512,7 @@ function downloadPlannerPDF() {
 
   win.onload = () => {
     win.focus();
-    win.print(); 
+    win.print();  // User chooses "Save as PDF"
   };
-}
-
-  const pages = root.querySelectorAll(".planner-pdf-page");
-
-  for (let i = 0; i < pages.length; i++) {
-    const canvas = await html2canvas(pages[i], { scale: 2 });
-    const img = canvas.toDataURL("image/png");
-    if (i > 0) pdf.addPage();
-    pdf.addImage(img, "PNG", 0, 0, 612, 792);
-  }
-
-  pdf.save("observation-planner.pdf");
 }
 
