@@ -1267,11 +1267,8 @@ modalContent.innerHTML = `
 `;
   
    modalOverlay.style.display = "flex";
-
-  modalOverlay.style.display = "flex";
-
-modalOverlay.style.display = "flex";
-
+}
+  
 async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr) {
   const modalOverlay = document.getElementById("planner-modal-overlay");
   if (modalOverlay) modalOverlay.style.display = "flex";
