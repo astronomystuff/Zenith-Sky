@@ -1454,15 +1454,17 @@ async function downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr) {
     index += rowsPerPage;
   }
 
-  window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", () => {
   const plannerPrintBtn = document.getElementById("planner-print");
   plannerPrintBtn.addEventListener("click", downloadPlannerPDF);
-  });
+});
 
+function downloadPlannerPDF() {
+  const canvas = document.getElementById("planner-star-map");
+  if (!canvas) return;
 
   const dataURL = canvas.toDataURL("image/png");
 
-  // Create a temporary printable page
   const win = window.open("", "_blank");
   win.document.write(`
     <html>
@@ -1489,13 +1491,11 @@ async function downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr) {
 
   win.document.close();
 
-  // Wait for the image to load, then trigger PDF print
   win.onload = () => {
     win.focus();
-    win.print();  
+    win.print(); 
   };
-});
-
+}
 
   const pages = root.querySelectorAll(".planner-pdf-page");
 
