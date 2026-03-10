@@ -1,4 +1,3 @@
-// EVENT DELEGATION (attach once)
 document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("click", (e) => {
     if (e.target.id === "planner-generate") {
@@ -1239,24 +1238,49 @@ async function runPlanner() {
 `;
 
   modalOverlay.style.display = "flex";
+
+  // draw immediately on-screen
+  drawOnScreenMap(lat, lon, dt);
 } // end runPlanner
 
-// Ensure canvas is high-DPI so map is crisp and correctly sized
-function prepareAndDrawOnScreenCanvas(lat, lon, dt) {
+function prepareCanvasForDrawing(canvas, cssWidth, cssHeight, dpr = window.devicePixelRatio || 1) {
+  canvas.style.width = cssWidth + "px";
+  canvas.style.height = cssHeight + "px";
+  canvas.width = Math.round(cssWidth * dpr);
+  canvas.height = Math.round(cssHeight * dpr);
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return ctx;
+}
+
+function drawOnScreenMap(lat, lon, dt) {
   const canvas = document.getElementById("planner-star-map");
   if (!canvas) return;
   const rect = canvas.getBoundingClientRect();
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = Math.round(rect.width * dpr);
-  canvas.height = Math.round(rect.height * dpr);
-  canvas.style.width = `${rect.width}px`;
-  canvas.style.height = `${rect.height}px`;
-  const ctx = canvas.getContext("2d");
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // scale drawing to DPR
+  const cssW = Math.max(200, Math.floor(rect.width));
+  const cssH = Math.max(200, Math.floor(rect.height));
+  prepareCanvasForDrawing(canvas, cssW, cssH, window.devicePixelRatio || 1);
+  // drawAzimuthalStarMap must draw using the canvas passed in and not flip horizontally
   drawAzimuthalStarMap(canvas, lat, lon, dt);
 }
 
-// Build printable DOM inside #planner-pdf-root (converts canvases to images)
+function renderMapImageForPrint(lat, lon, dt) {
+  const inches = 3.5;
+  const dpi = 300;
+  const px = Math.round(inches * dpi);
+  const off = document.createElement("canvas");
+  off.width = px;
+  off.height = px;
+  const ctx = off.getContext("2d");
+  // ensure no horizontal flip; drawAzimuthalStarMap should draw to full canvas size
+  drawAzimuthalStarMap(off, lat, lon, dt);
+  const img = document.createElement("img");
+  img.src = off.toDataURL("image/png");
+  img.className = "planner-pdf-map";
+  img.style.width = "100%";
+  return img;
+}
+
 async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr) {
   const root = document.getElementById("planner-pdf-root");
   if (!root) return;
@@ -1275,24 +1299,6 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr) {
     page.appendChild(left);
     page.appendChild(right);
     return { page, left, right };
-  }
-
-  function renderPDFStarMap() {
-    const c = document.createElement("canvas");
-    const dpr = 2; // produce a higher-res image for print
-    const cssSizeInPx = 3.5 * 96; // 3.5in * 96dpi ≈ 336px CSS width
-    c.width = Math.round(cssSizeInPx * dpr);
-    c.height = Math.round(cssSizeInPx * dpr);
-    c.style.width = `${cssSizeInPx}px`;
-    c.style.height = `${cssSizeInPx}px`;
-    const ctx = c.getContext("2d");
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    drawAzimuthalStarMap(c, lat, lon, dt);
-    const img = document.createElement("img");
-    img.src = c.toDataURL("image/png");
-    img.className = "planner-pdf-map";
-    img.style.width = "100%";
-    return img;
   }
 
   function buildDetails() {
@@ -1342,7 +1348,7 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr) {
 
   const { page: firstPage, left: firstLeft, right: firstRight } = createPage();
   firstLeft.appendChild(buildDetails());
-  firstLeft.appendChild(renderPDFStarMap());
+  firstLeft.appendChild(renderMapImageForPrint(lat, lon, dt));
 
   const firstRows = (results && results.length) ? results.slice(0, rowsPerPage) : [];
   const firstTableContainer = document.createElement("div");
@@ -1366,13 +1372,11 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr) {
   }
 }
 
-// Print wrapper: clones root, ensures images are data URLs, waits for load, then prints
 async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr) {
   const modalOverlay = document.getElementById("planner-modal-overlay");
   if (modalOverlay) modalOverlay.style.display = "flex";
 
-  // ensure on-screen canvas is drawn at high DPI
-  prepareAndDrawOnScreenCanvas(lat, lon, dt);
+  drawOnScreenMap(lat, lon, dt);
 
   await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr);
 
@@ -1395,11 +1399,9 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
   </style></head><body></body></html>`);
   win.document.close();
 
-  // append a cloned node (which already contains <img src="data:..."> from buildPlannerPdfContent)
   const cloned = root.cloneNode(true);
   win.document.body.appendChild(cloned);
 
-  // wait for all images to load
   const imgs = Array.from(win.document.images || []);
   await Promise.all(imgs.map(img => {
     if (img.complete) return Promise.resolve();
@@ -1408,7 +1410,6 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
 
   win.focus();
   win.print();
-  // do not immediately close if user may cancel print; optional: win.close();
 }
 
 window.addEventListener("DOMContentLoaded", () => {
