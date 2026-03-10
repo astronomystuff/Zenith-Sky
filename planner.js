@@ -878,10 +878,12 @@ function computeEphemerisForNight(lat, lon, dt, target) {
 // STAR MAP
 // ------------------------------------------------------------
 function drawAzimuthalStarMap(canvas, lat, lon, dt, stars = null, options = {}) {
-  // options: { background, gridColor, starColor, showGrid, constellations, labelBrightThan }
-  const bg = options.background || "#ffffff";
-  const gridColor = options.gridColor || "rgba(255,255,255,0.06)";
-  const starColor = options.starColor || "#ffffff";
+  const bg = options.background || "#ffffff"; // white background
+  const gridColor = options.gridColor || "rgba(0,0,0,0.12)"; // subtle grid if used
+  const starColor = options.starColor || "#000000"; // black stars
+  const constLineColor = options.constLineColor || "#444444"; // dark gray constellation lines
+  const horizonColor = options.horizonColor || "#000000"; // black outer horizon circle
+  const cardinalColor = options.cardinalColor || "#000000"; // black cardinal labels
   const showGrid = options.showGrid !== false;
   const constellations = options.constellations || (typeof CONST_LINES !== "undefined" ? CONST_LINES : []);
   const labelBrightThan = options.labelBrightThan ?? 2.5;
@@ -889,11 +891,9 @@ function drawAzimuthalStarMap(canvas, lat, lon, dt, stars = null, options = {}) 
 
   if (!canvas) return;
 
-  // clamp latitude
   if (lat > 89.9) lat = 89.9;
   if (lat < -89.9) lat = -89.9;
 
-  // HiDPI sizing: use CSS pixels for layout, buffer scaled by DPR
   const dpr = window.devicePixelRatio || 1;
   const cssW = Math.max(1, canvas.clientWidth || (canvas.width / dpr) || 800);
   const cssH = Math.max(1, canvas.clientHeight || (canvas.height / dpr) || 800);
@@ -904,30 +904,26 @@ function drawAzimuthalStarMap(canvas, lat, lon, dt, stars = null, options = {}) 
     canvas.height = bufH;
   }
   const ctx = canvas.getContext("2d");
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // drawing in CSS pixels
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-  // geometry in CSS pixels
   const w = cssW;
   const h = cssH;
   const cx = w / 2;
   const cy = h / 2;
-  const radius = Math.min(w, h) * 0.48; // leave margin
+  const radius = Math.min(w, h) * 0.48;
 
-  // clear & background
   ctx.clearRect(0, 0, w, h);
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, w, h);
 
-  // outer horizon circle
   ctx.save();
   ctx.beginPath();
   ctx.lineWidth = Math.max(1, radius * 0.006);
-  ctx.strokeStyle = debug ? "rgba(255,0,0,0.9)" : gridColor;
+  ctx.strokeStyle = debug ? "rgba(255,0,0,0.9)" : horizonColor;
   ctx.arc(cx, cy, radius, 0, Math.PI * 2);
   ctx.stroke();
   ctx.restore();
 
-  // altitude rings and labels
   if (showGrid) {
     ctx.save();
     ctx.strokeStyle = gridColor;
@@ -944,9 +940,8 @@ function drawAzimuthalStarMap(canvas, lat, lon, dt, stars = null, options = {}) 
     ctx.restore();
   }
 
-  // cardinal labels: N top, E right, S bottom, W left
   ctx.save();
-  ctx.fillStyle = "rgba(255,255,255,0.9)";
+  ctx.fillStyle = cardinalColor;
   ctx.font = `bold ${Math.max(12, Math.round(radius * 0.06))}px sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -956,13 +951,11 @@ function drawAzimuthalStarMap(canvas, lat, lon, dt, stars = null, options = {}) 
   ctx.fillText("W", cx - radius - Math.max(10, radius * 0.04), cy);
   ctx.restore();
 
-  // --- astronomy helpers ---
   function deg2rad(d) { return d * Math.PI / 180; }
   function rad2deg(r) { return r * 180 / Math.PI; }
   function norm2pi(a) { return (a % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI); }
 
   function toJulianDate(date) {
-    // date is a JS Date (UTC)
     const Y = date.getUTCFullYear();
     const M = date.getUTCMonth() + 1;
     const D = date.getUTCDate() + (date.getUTCHours() + date.getUTCMinutes()/60 + date.getUTCSeconds()/3600) / 24;
@@ -971,47 +964,40 @@ function drawAzimuthalStarMap(canvas, lat, lon, dt, stars = null, options = {}) 
     let y = Y;
     let m = M;
     if (M <= 2) { y = Y - 1; m = M + 12; }
-    const JD = Math.floor(365.25*(y+4716)) + Math.floor(30.6001*(m+1)) + D + B - 1524.5;
-    return JD;
+    return Math.floor(365.25*(y+4716)) + Math.floor(30.6001*(m+1)) + D + B - 1524.5;
   }
 
   function gmstRadFromJD(JD) {
-    // robust GMST: separate JD0 and fraction of day
     const JD0 = Math.floor(JD + 0.5) - 0.5;
-    const H = (JD - JD0) * 24; // UT in hours
+    const H = (JD - JD0) * 24;
     const D = JD - 2451545.0;
     const D0 = JD0 - 2451545.0;
     const T = D / 36525.0;
-    // GMST in hours (approx)
     let gmstHours = 6.697374558 + 0.06570982441908 * D0 + 1.00273790935 * H + 0.000026 * (T * T);
     gmstHours = ((gmstHours % 24) + 24) % 24;
-    return gmstHours * (Math.PI / 12); // hours -> radians (24h -> 2π)
+    return gmstHours * (Math.PI / 12);
   }
 
   const jd = toJulianDate(dt);
   const gmst = gmstRadFromJD(jd);
   const lonRad = deg2rad(lon);
-  const lst = norm2pi(gmst + lonRad); // local sidereal time in radians
-
+  const lst = norm2pi(gmst + lonRad);
   const latRad = deg2rad(lat);
 
   function raDecToAltAz(raHours, decDeg) {
     const raRad = deg2rad(raHours * 15);
     const decRad = deg2rad(decDeg);
-    let ha = norm2pi(lst - raRad); // hour angle
-    // altitude
+    let ha = norm2pi(lst - raRad);
     const sinAlt = Math.sin(latRad) * Math.sin(decRad) + Math.cos(latRad) * Math.cos(decRad) * Math.cos(ha);
     const alt = Math.asin(Math.max(-1, Math.min(1, sinAlt)));
-    // azimuth via atan2 to avoid quadrant issues
     const sinAz = Math.sin(ha) * Math.cos(decRad);
     const cosAz = (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) / (Math.cos(alt) * Math.cos(latRad));
-    let az = Math.atan2(sinAz, cosAz); // -π..π
+    let az = Math.atan2(sinAz, cosAz);
     if (az < 0) az += 2 * Math.PI;
     return { altRad: alt, azRad: az };
   }
 
   function altAzToXY(altRad, azRad) {
-    // equidistant azimuthal: r proportional to zenith distance
     const alt = Math.max(-Math.PI/2, Math.min(Math.PI/2, altRad));
     const r = (Math.PI/2 - alt) / (Math.PI/2) * radius;
     const az = norm2pi(azRad);
@@ -1020,17 +1006,12 @@ function drawAzimuthalStarMap(canvas, lat, lon, dt, stars = null, options = {}) 
     return { x, y, r };
   }
 
-  // --- obtain star list ---
   let catalog = stars;
   if (!catalog) {
-    if (typeof decodeStarCatalog === "function") {
-      catalog = decodeStarCatalog(); // expected array of {id, ra, dec, mag, label, isPlanet?}
-    } else {
-      catalog = []; // nothing available
-    }
+    if (typeof decodeStarCatalog === "function") catalog = decodeStarCatalog();
+    else catalog = [];
   }
 
-  // project catalog to screen coords
   const projected = [];
   for (let i = 0; i < catalog.length; i++) {
     const s = catalog[i];
@@ -1046,9 +1027,7 @@ function drawAzimuthalStarMap(canvas, lat, lon, dt, stars = null, options = {}) 
       const res = raDecToAltAz(s.ra_h, s.dec_deg);
       altRad = res.altRad;
       azRad = res.azRad;
-    } else {
-      continue;
-    }
+    } else continue;
     const xy = altAzToXY(altRad, azRad);
     projected.push({
       id: s.id ?? s.name ?? i,
@@ -1063,7 +1042,6 @@ function drawAzimuthalStarMap(canvas, lat, lon, dt, stars = null, options = {}) 
     });
   }
 
-  // helper: clip line to circle
   function clipLineToCircle(x1, y1, x2, y2, cx0, cy0, r0) {
     const dx = x2 - x1, dy = y2 - y1;
     const fx = x1 - cx0, fy = y1 - cy0;
@@ -1085,13 +1063,11 @@ function drawAzimuthalStarMap(canvas, lat, lon, dt, stars = null, options = {}) 
     return { x: x1 + t*dx, y: y1 + t*dy };
   }
 
-  // draw constellation lines (if provided)
   if (constellations && constellations.length) {
     ctx.save();
-    ctx.strokeStyle = "rgba(180,200,255,0.6)";
+    ctx.strokeStyle = constLineColor;
     ctx.lineWidth = Math.max(0.6, radius * 0.0025);
     for (const link of constellations) {
-      // link may be [id1,id2] or {fromId,toId}
       const idA = Array.isArray(link) ? link[0] : link.fromId ?? link[0];
       const idB = Array.isArray(link) ? link[1] : link.toId ?? link[1];
       const a = projected.find(p => p.id === idA);
@@ -1114,30 +1090,25 @@ function drawAzimuthalStarMap(canvas, lat, lon, dt, stars = null, options = {}) 
     ctx.restore();
   }
 
-  // draw stars and planets on top
   ctx.save();
   for (const p of projected) {
-    if (p.altDeg <= 0) continue; // below horizon
+    if (p.altDeg <= 0) continue;
     const mag = isFinite(p.mag) ? p.mag : 6;
-    // size mapping: brighter => larger
     const size = Math.max(0.6, 4.0 - (mag * 0.5));
-    // glow
-    const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, size * 4);
-    glow.addColorStop(0, "rgba(255,255,255,0.95)");
-    glow.addColorStop(0.2, "rgba(255,255,255,0.6)");
-    glow.addColorStop(1, "rgba(255,255,255,0)");
+    const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, size * 3);
+    glow.addColorStop(0, "rgba(0,0,0,0.95)");
+    glow.addColorStop(0.2, "rgba(0,0,0,0.6)");
+    glow.addColorStop(1, "rgba(0,0,0,0)");
     ctx.fillStyle = glow;
     ctx.beginPath();
-    ctx.arc(p.x, p.y, size * 4, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, size * 3, 0, Math.PI * 2);
     ctx.fill();
-    // core
-    ctx.fillStyle = p.isPlanet ? "rgba(255,220,160,1)" : starColor;
+    ctx.fillStyle = p.isPlanet ? "rgba(0,0,0,1)" : starColor;
     ctx.beginPath();
     ctx.arc(p.x, p.y, Math.max(0.6, size * 0.6), 0, Math.PI * 2);
     ctx.fill();
-    // label bright stars
     if (p.label && mag <= labelBrightThan) {
-      ctx.fillStyle = "rgba(220,220,255,0.95)";
+      ctx.fillStyle = "rgba(0,0,0,0.95)";
       ctx.font = `${Math.max(10, Math.round(radius * 0.03))}px sans-serif`;
       ctx.textAlign = "left";
       ctx.textBaseline = "middle";
@@ -1146,9 +1117,8 @@ function drawAzimuthalStarMap(canvas, lat, lon, dt, stars = null, options = {}) 
   }
   ctx.restore();
 
-  // center marker (zenith)
   ctx.save();
-  ctx.fillStyle = "rgba(255,255,255,0.9)";
+  ctx.fillStyle = "rgba(0,0,0,0.9)";
   ctx.beginPath();
   ctx.arc(cx, cy, Math.max(2, radius * 0.01), 0, Math.PI * 2);
   ctx.fill();
