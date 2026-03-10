@@ -3,7 +3,19 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.target.id === "planner-generate") {
       runPlanner();
     }
-    
+
+
+async function downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr) {
+  if (typeof buildPlannerPdfContent === "function") {
+    await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr);
+    return;
+  }
+  if (typeof openPlannerModalAndPrint === "function") {
+    await openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr);
+    return;
+  }
+  console.warn("downloadPlannerPDF called but no implementation found.");
+}
    if (e.target.id === "planner-print") {
   if (!window.lastPlannerResults) return;
   downloadPlannerPDF(
@@ -433,7 +445,7 @@ async function loadObjects() {
     ["Albireo", "Sadr"],
     ["Sadr", "Delta Cygni"],
 
-    // SCORPIUS — fuller
+    // SCORPIUS
     ["Antares", "Alniyat"],
     ["Alniyat", "Dschubba"],
     ["Dschubba", "Pi Scorpii"],
@@ -476,7 +488,7 @@ async function loadObjects() {
     ["Pi Puppis", "Nu Puppis"],
     ["Nu Puppis", "Canopus"],
 
-    // CENTAURUS — expanded
+    // CENTAURUS
     ["Rigil Kentaurus", "Hadar"],
     ["Hadar", "Epsilon Centauri"],
     ["Epsilon Centauri", "Muhlifain"],
@@ -487,7 +499,7 @@ async function loadObjects() {
     ["Nu Centauri", "Menkent"],
     ["Menkent", "Iota Centauri"],
 
-    // Lupus (fuller)
+    // Lupus
     ["Men", "Zeta Lupi"],
     ["Zeta Lupi", "Eta Lupi"],
     ["Zeta Lupi", "Epsilon Lupi"],
@@ -496,13 +508,13 @@ async function loadObjects() {
     ["Gamma Lupi", "Delta Lupi"],
     ["Delta Lupi", "Beta Lupi"],
 
-    // ARA (fuller)
+    // ARA 
     ["Alpha Arae", "Beta Arae"],
     ["Beta Arae", "Gamma Arae"],
     ["Gamma Arae", "Zeta Arae"],
     ["Zeta Arae", "Alpha Arae"],
 
-    // SAGITTARIUS (expanded)
+    // SAGITTARIUS 
     ["Ascella", "Tau Sagittarii"],
     ["Tau Sagittarii", "Nunki"],
     ["Nunki", "Phi Sagittarii"],
@@ -517,7 +529,7 @@ async function loadObjects() {
     ["Nunki", "Ascella"],
     ["Albaldah", "Xi² Sagittarii"],
 
-    // AQUILA (expanded)
+    // AQUILA
     ["Altair", "Tarazed"],
     ["Delta Aquilae", "Altair"],
     ["Delta Aquilae", "Deneb el Okab"],
@@ -549,7 +561,7 @@ async function loadObjects() {
     ["Mu Serpentis", "Unukalhai"],
     ["Nu Ophiuchi", "Eta Serpentis"],
 
-    // PEGASUS — Great Square
+    // PEGASUS
     ["Markab", "Scheat"],
     ["Scheat", "Alpheratz"],
     ["Scheat", "Matar"],
@@ -559,12 +571,12 @@ async function loadObjects() {
     ["Homam", "Baham"],
     ["Baham", "Enif"],
 
-    // ANDROMEDA — expanded
+    // ANDROMEDA
     ["Mirach", "Almach"],
     ["Mirach", "Delta Andromedae"],
     ["Delta Andromedae", "Alpheratz"],
 
-    // PERSEUS — fuller
+    // PERSEUS
     ["Mirfak", "Algol"],
     ["Algol", "Rho Persei"],
     ["Mirfak", "Delta Persei"],
@@ -610,7 +622,7 @@ async function loadObjects() {
     ["Nekkar", "Seginus"],
     ["Arcturus", "Seginus"],
 
-    // CANIS MAJOR — expanded
+    // CANIS MAJOR
     ["Sirius", "Mirzam"],
     ["Sirius", "Omicron² Canis Majoris"],
     ["Omicron² Canis Majoris", "Wezen"],
@@ -623,7 +635,7 @@ async function loadObjects() {
     // CANIS MINOR
     ["Procyon", "Gomeisa"],
 
-    // AURIGA — pentagon
+    // AURIGA
     ["Capella", "Menkalinan"],
     ["Menkalinan", "Theta Aurigae"],
     ["Theta Aurigae", "Elnath"],
@@ -639,7 +651,7 @@ async function loadObjects() {
     ["Alzirr", "Alhena"],
     ["Propus", "Tejat"],
 
-    // LYRA (expanded)
+    // LYRA
     ["Vega", "Sulaphat"],
     ["Sulaphat", "Sheliak"],
     ["Sheliak", "Vega"],
@@ -878,19 +890,16 @@ function computeEphemerisForNight(lat, lon, dt, target) {
 // STAR MAP
 // ------------------------------------------------------------
 function drawAzimuthalStarMap(canvas, lat, lon, dt, stars = null, options = {}) {
-  const bg = options.background || "#ffffff"; // white background
-  const gridColor = options.gridColor || "rgba(0,0,0,0.12)"; // subtle grid if used
-  const starColor = options.starColor || "#000000"; // black stars
-  const constLineColor = options.constLineColor || "#444444"; // dark gray constellation lines
-  const horizonColor = options.horizonColor || "#000000"; // black outer horizon circle
-  const cardinalColor = options.cardinalColor || "#000000"; // black cardinal labels
-  const showGrid = options.showGrid !== false;
+  const bg = options.background || "#ffffff";
+  const starColor = options.starColor || "#000000";
+  const constLineColor = options.constLineColor || "#444444";
+  const horizonColor = options.horizonColor || "#000000";
+  const cardinalColor = options.cardinalColor || "#000000";
   const constellations = options.constellations || (typeof CONST_LINES !== "undefined" ? CONST_LINES : []);
   const labelBrightThan = options.labelBrightThan ?? 2.5;
   const debug = !!options.debug;
 
   if (!canvas) return;
-
   if (lat > 89.9) lat = 89.9;
   if (lat < -89.9) lat = -89.9;
 
@@ -906,40 +915,24 @@ function drawAzimuthalStarMap(canvas, lat, lon, dt, stars = null, options = {}) 
   const ctx = canvas.getContext("2d");
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-  const w = cssW;
-  const h = cssH;
-  const cx = w / 2;
-  const cy = h / 2;
+  const w = cssW, h = cssH;
+  const cx = w / 2, cy = h / 2;
   const radius = Math.min(w, h) * 0.48;
 
   ctx.clearRect(0, 0, w, h);
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, w, h);
 
+  // horizon circle (black)
   ctx.save();
   ctx.beginPath();
   ctx.lineWidth = Math.max(1, radius * 0.006);
-  ctx.strokeStyle = debug ? "rgba(255,0,0,0.9)" : horizonColor;
+  ctx.strokeStyle = horizonColor;
   ctx.arc(cx, cy, radius, 0, Math.PI * 2);
   ctx.stroke();
   ctx.restore();
 
-  if (showGrid) {
-    ctx.save();
-    ctx.strokeStyle = gridColor;
-    ctx.lineWidth = Math.max(0.5, radius * 0.002);
-    ctx.font = `${Math.max(10, Math.round(radius * 0.04))}px sans-serif`;
-    ctx.fillStyle = gridColor;
-    for (let alt = 60; alt > 0; alt -= 30) {
-      const r = (90 - alt) / 90 * radius;
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.fillText(`${alt}°`, cx + 6, cy - r + 12);
-    }
-    ctx.restore();
-  }
-
+  // cardinal labels (black)
   ctx.save();
   ctx.fillStyle = cardinalColor;
   ctx.font = `bold ${Math.max(12, Math.round(radius * 0.06))}px sans-serif`;
@@ -951,9 +944,10 @@ function drawAzimuthalStarMap(canvas, lat, lon, dt, stars = null, options = {}) 
   ctx.fillText("W", cx - radius - Math.max(10, radius * 0.04), cy);
   ctx.restore();
 
-  function deg2rad(d) { return d * Math.PI / 180; }
-  function rad2deg(r) { return r * 180 / Math.PI; }
-  function norm2pi(a) { return (a % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI); }
+  // helpers
+  const deg2rad = d => d * Math.PI / 180;
+  const rad2deg = r => r * 180 / Math.PI;
+  const norm2pi = a => (a % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
 
   function toJulianDate(date) {
     const Y = date.getUTCFullYear();
@@ -961,8 +955,7 @@ function drawAzimuthalStarMap(canvas, lat, lon, dt, stars = null, options = {}) 
     const D = date.getUTCDate() + (date.getUTCHours() + date.getUTCMinutes()/60 + date.getUTCSeconds()/3600) / 24;
     let A = Math.floor(Y/100);
     let B = 2 - A + Math.floor(A/4);
-    let y = Y;
-    let m = M;
+    let y = Y, m = M;
     if (M <= 2) { y = Y - 1; m = M + 12; }
     return Math.floor(365.25*(y+4716)) + Math.floor(30.6001*(m+1)) + D + B - 1524.5;
   }
@@ -1006,12 +999,14 @@ function drawAzimuthalStarMap(canvas, lat, lon, dt, stars = null, options = {}) 
     return { x, y, r };
   }
 
+  // get catalog
   let catalog = stars;
   if (!catalog) {
     if (typeof decodeStarCatalog === "function") catalog = decodeStarCatalog();
     else catalog = [];
   }
 
+  // project
   const projected = [];
   for (let i = 0; i < catalog.length; i++) {
     const s = catalog[i];
@@ -1021,48 +1016,23 @@ function drawAzimuthalStarMap(canvas, lat, lon, dt, stars = null, options = {}) 
       azRad = deg2rad(s.azimuth_deg);
     } else if (s.dec != null && s.ra != null) {
       const res = raDecToAltAz(s.ra, s.dec);
-      altRad = res.altRad;
-      azRad = res.azRad;
+      altRad = res.altRad; azRad = res.azRad;
     } else if (s.dec_deg != null && s.ra_h != null) {
       const res = raDecToAltAz(s.ra_h, s.dec_deg);
-      altRad = res.altRad;
-      azRad = res.azRad;
+      altRad = res.altRad; azRad = res.azRad;
     } else continue;
     const xy = altAzToXY(altRad, azRad);
     projected.push({
       id: s.id ?? s.name ?? i,
-      x: xy.x,
-      y: xy.y,
-      r: xy.r,
-      altDeg: rad2deg(altRad),
-      azDeg: rad2deg(azRad),
+      x: xy.x, y: xy.y, r: xy.r,
+      altDeg: rad2deg(altRad), azDeg: rad2deg(azRad),
       mag: (s.mag != null ? s.mag : (s.mag_v != null ? s.mag_v : 6)),
       label: s.label ?? s.name ?? null,
       isPlanet: !!s.isPlanet
     });
   }
 
-  function clipLineToCircle(x1, y1, x2, y2, cx0, cy0, r0) {
-    const dx = x2 - x1, dy = y2 - y1;
-    const fx = x1 - cx0, fy = y1 - cy0;
-    const a = dx*dx + dy*dy;
-    if (a === 0) return null;
-    const b = 2*(fx*dx + fy*dy);
-    const c = fx*fx + fy*fy - r0*r0;
-    const disc = b*b - 4*a*c;
-    if (disc < 0) return null;
-    const s = Math.sqrt(disc);
-    const t1 = (-b - s) / (2*a);
-    const t2 = (-b + s) / (2*a);
-    const ts = [];
-    if (t1 >= 0 && t1 <= 1) ts.push(t1);
-    if (t2 >= 0 && t2 <= 1) ts.push(t2);
-    if (ts.length === 0) return null;
-    ts.sort((u,v) => u - v);
-    const t = ts[0];
-    return { x: x1 + t*dx, y: y1 + t*dy };
-  }
-
+  // constellation lines (dark gray)
   if (constellations && constellations.length) {
     ctx.save();
     ctx.strokeStyle = constLineColor;
@@ -1090,25 +1060,18 @@ function drawAzimuthalStarMap(canvas, lat, lon, dt, stars = null, options = {}) 
     ctx.restore();
   }
 
+  // draw stars as plain black dots (no glow)
   ctx.save();
   for (const p of projected) {
     if (p.altDeg <= 0) continue;
     const mag = isFinite(p.mag) ? p.mag : 6;
     const size = Math.max(0.6, 4.0 - (mag * 0.5));
-    const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, size * 3);
-    glow.addColorStop(0, "rgba(0,0,0,0.95)");
-    glow.addColorStop(0.2, "rgba(0,0,0,0.6)");
-    glow.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = glow;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, size * 3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = p.isPlanet ? "rgba(0,0,0,1)" : starColor;
+    ctx.fillStyle = p.isPlanet ? "#000000" : starColor;
     ctx.beginPath();
     ctx.arc(p.x, p.y, Math.max(0.6, size * 0.6), 0, Math.PI * 2);
     ctx.fill();
     if (p.label && mag <= labelBrightThan) {
-      ctx.fillStyle = "rgba(0,0,0,0.95)";
+      ctx.fillStyle = "#000000";
       ctx.font = `${Math.max(10, Math.round(radius * 0.03))}px sans-serif`;
       ctx.textAlign = "left";
       ctx.textBaseline = "middle";
@@ -1117,12 +1080,35 @@ function drawAzimuthalStarMap(canvas, lat, lon, dt, stars = null, options = {}) 
   }
   ctx.restore();
 
+  // center marker
   ctx.save();
-  ctx.fillStyle = "rgba(0,0,0,0.9)";
+  ctx.fillStyle = "#000000";
   ctx.beginPath();
   ctx.arc(cx, cy, Math.max(2, radius * 0.01), 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
+
+  // helper: clip line to circle (same as earlier)
+  function clipLineToCircle(x1, y1, x2, y2, cx0, cy0, r0) {
+    const dx = x2 - x1, dy = y2 - y1;
+    const fx = x1 - cx0, fy = y1 - cy0;
+    const a = dx*dx + dy*dy;
+    if (a === 0) return null;
+    const b = 2*(fx*dx + fy*dy);
+    const c = fx*fx + fy*fy - r0*r0;
+    const disc = b*b - 4*a*c;
+    if (disc < 0) return null;
+    const s = Math.sqrt(disc);
+    const t1 = (-b - s) / (2*a);
+    const t2 = (-b + s) / (2*a);
+    const ts = [];
+    if (t1 >= 0 && t1 <= 1) ts.push(t1);
+    if (t2 >= 0 && t2 <= 1) ts.push(t2);
+    if (ts.length === 0) return null;
+    ts.sort((u,v) => u - v);
+    const t = ts[0];
+    return { x: x1 + t*dx, y: y1 + t*dy };
+  }
 }
 
 // ------------------------------------------------------------
