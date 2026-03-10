@@ -1454,27 +1454,45 @@ async function downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr) {
     index += rowsPerPage;
   }
 
-  function loadJsPdf(url = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.3/dist/jspdf.umd.min.js') {
-  return new Promise((resolve, reject) => {
-    if (window.jspdf && window.jspdf.jsPDF) return resolve(window.jspdf.jsPDF);
-    const s = document.createElement('script');
-    s.src = url;
-    s.async = true;
-    s.onload = () => {
-      const ctor = window.jspdf && window.jspdf.jsPDF;
-      if (ctor) resolve(ctor);
-      else reject(new Error('jsPDF loaded but constructor not found'));
-    };
-    s.onerror = () => reject(new Error('Failed to load jsPDF script'));
-    document.head.appendChild(s);
-  });
-}
+  downloadPlannerPDF.addEventListener("click", () => {
+  const canvas = document.getElementById("planner-star-map");
+  if (!canvas) return;
 
-loadJsPdf().then(jsPDF => {
-  const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
-}).catch(err => console.error('jsPDF load error:', err));
+  const dataURL = canvas.toDataURL("image/png");
 
+  // Create a temporary printable page
+  const win = window.open("", "_blank");
+  win.document.write(`
+    <html>
+      <head>
+        <title>Planner PDF</title>
+        <style>
+          body {
+            margin: 0;
+            padding: 0;
+          }
+          img {
+            width: 100%;
+            height: auto;
+            display: block;
+            page-break-after: always;
+          }
+        </style>
+      </head>
+      <body>
+        <img src="${dataURL}">
+      </body>
+    </html>
+  `);
 
+  win.document.close();
+
+  // Wait for the image to load, then trigger PDF print
+  win.onload = () => {
+    win.focus();
+    win.print();  
+  };
+});
 
 
   const pages = root.querySelectorAll(".planner-pdf-page");
