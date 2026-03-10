@@ -1270,6 +1270,8 @@ modalContent.innerHTML = `
 
   modalOverlay.style.display = "flex";
 
+modalOverlay.style.display = "flex";
+
 await new Promise(r => requestAnimationFrame(r));
 
 const canvas = document.getElementById("planner-star-map");
