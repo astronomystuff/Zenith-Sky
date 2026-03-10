@@ -1268,80 +1268,15 @@ modalContent.innerHTML = `
   
    modalOverlay.style.display = "flex";
 
-  await new Promise(r => requestAnimationFrame(r));
+  modalOverlay.style.display = "flex";
 
-  const canvas = document.getElementById("planner-star-map");
+await new Promise(r => requestAnimationFrame(r));
+
+const canvas = document.getElementById("planner-star-map");
+if (canvas) {
   canvas.width = canvas.clientWidth;
   canvas.height = canvas.clientHeight;
-
   drawAzimuthalStarMap(canvas, lat, lon, dt);
-} 
-
-// Call: await ensurePdfAndCanvas(); then use returned { jsPDF, html2canvas }
-async function ensurePdfAndCanvas() {
-  function loadScriptOnce(url, globalCheck) {
-    return new Promise((resolve, reject) => {
-      // already available?
-      if (globalCheck && globalCheck()) return resolve(globalCheck());
-      // avoid duplicate tags
-      if (document.querySelector('script[data-src="'+url+'"]')) {
-        // wait for it to load by polling
-        const start = Date.now();
-        const poll = setInterval(() => {
-          if (globalCheck && globalCheck()) { clearInterval(poll); resolve(globalCheck()); }
-          if (Date.now() - start > 10000) { clearInterval(poll); reject(new Error('Timed out loading ' + url)); }
-        }, 100);
-        return;
-      }
-      const s = document.createElement('script');
-      s.async = true;
-      s.setAttribute('data-src', url);
-      s.src = url;
-      s.onload = () => {
-        if (globalCheck && globalCheck()) resolve(globalCheck());
-        else reject(new Error('Loaded ' + url + ' but global not found'));
-      };
-      s.onerror = () => reject(new Error('Failed to load ' + url));
-      document.head.appendChild(s);
-    });
-  }
-
-  // Try reliable CDN URLs (order: jsDelivr, unpkg). Adjust versions if needed.
-  const jspdfUrls = [
-    'https://cdn.jsdelivr.net/npm/jspdf@2.5.3/dist/jspdf.umd.min.js',
-    'https://unpkg.com/jspdf@2.5.3/dist/jspdf.umd.min.js'
-  ];
-  const html2canvasUrls = [
-    'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js',
-    'https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js'
-  ];
-
-  // loader with fallback
-  async function tryUrls(urls, globalCheck) {
-    let lastErr = null;
-    for (const u of urls) {
-      try {
-        return await loadScriptOnce(u, globalCheck);
-      } catch (err) {
-        lastErr = err;
-      }
-    }
-    throw lastErr || new Error('No URL succeeded');
-  }
-
-  // globalCheck functions
-  const checkJsPdf = () => {
-    if (window.jspdf && window.jspdf.jsPDF) return window.jspdf.jsPDF;
-    if (window.jsPDF) return window.jsPDF;
-    return null;
-  };
-  const checkHtml2Canvas = () => window.html2canvas || null;
-
-  // load both in sequence (or parallel if you prefer)
-  const jsPDFCtor = await tryUrls(jspdfUrls, checkJsPdf).catch(e => { throw new Error('jsPDF load error: ' + e.message); });
-  const html2canvasCtor = await tryUrls(html2canvasUrls, checkHtml2Canvas).catch(e => { throw new Error('html2canvas load error: ' + e.message); });
-
-  return { jsPDF: jsPDFCtor, html2canvas: html2canvasCtor };
 }
 
 async function downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr) {
@@ -1349,63 +1284,57 @@ async function downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr) {
   if (!root) return;
   root.innerHTML = "";
 
-  const PAGE_WIDTH = 816;
   const PAGE_HEIGHT = 1056;
-  const LEFT_WIDTH = 336;  // 3.5 in
-  const RIGHT_WIDTH = 480; // 5 in
   const ROW_HEIGHT = 22;
 
   function createPage() {
     const page = document.createElement("div");
     page.className = "planner-pdf-page";
-
     const left = document.createElement("div");
     left.className = "planner-pdf-left";
-
     const right = document.createElement("div");
     right.className = "planner-pdf-right";
-
     page.appendChild(left);
     page.appendChild(right);
     return { page, left, right };
   }
 
   function renderPDFStarMap() {
-    const canvas = document.createElement("canvas");
-    canvas.width = 672;   // high‑res 3.5 in
-    canvas.height = 672;
-    drawAzimuthalStarMap(canvas, lat, lon, dt);
-    canvas.className = "planner-pdf-map";
-    return canvas;
+    const c = document.createElement("canvas");
+    c.width = 672;
+    c.height = 672;
+    drawAzimuthalStarMap(c, lat, lon, dt);
+    const img = document.createElement("img");
+    img.src = c.toDataURL("image/png");
+    img.className = "planner-pdf-map";
+    return img;
   }
 
   function buildDetails() {
-    const div = document.createElement("div");
-    div.innerHTML = `
+    const d = document.createElement("div");
+    d.className = "planner-pdf-details";
+    d.innerHTML = `
       <h3>Observation Details – Zenith Sky</h3>
       <p>Date: ${dateStr}</p>
       <p>Time: ${timeStr}</p>
       <p>Latitude: ${lat}</p>
       <p>Longitude: ${lon}</p>
     `;
-    return div;
+    return d;
   }
 
   function buildTableRows(rows) {
     const table = document.createElement("table");
+    table.className = "planner-pdf-table-inner";
     table.innerHTML = `
-      <tr>
-        <th>Object</th>
-        <th>Type</th>
-        <th>Mag</th>
-        <th>RA</th>
-        <th>Dec</th>
-        <th>Transit</th>
-        <th>Alt</th>
-        <th>Score</th>
-      </tr>
+      <thead>
+        <tr>
+          <th>Object</th><th>Type</th><th>Mag</th><th>RA</th><th>Dec</th><th>Transit</th><th>Alt</th><th>Score</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
     `;
-
+    const tbody = table.querySelector("tbody");
     rows.forEach(r => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
@@ -1418,13 +1347,12 @@ async function downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr) {
         <td>${r.altAtObs.toFixed(1)}°</td>
         <td>${r.score.toFixed(0)}</td>
       `;
-      table.appendChild(tr);
+      tbody.appendChild(tr);
     });
-
     return table;
   }
 
-  const rowsPerPage = Math.floor((PAGE_HEIGHT - 40) / ROW_HEIGHT);
+  const rowsPerPage = Math.max(1, Math.floor((PAGE_HEIGHT - 160) / ROW_HEIGHT));
   let index = 0;
 
   const { page: firstPage, left: firstLeft, right: firstRight } = createPage();
@@ -1443,76 +1371,58 @@ async function downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr) {
   while (index < results.length) {
     const { page, left, right } = createPage();
     left.innerHTML = "";
-
     const pageRows = results.slice(index, index + rowsPerPage);
     const tableContainer = document.createElement("div");
     tableContainer.className = "planner-pdf-table";
     tableContainer.appendChild(buildTableRows(pageRows));
     right.appendChild(tableContainer);
-
     root.appendChild(page);
     index += rowsPerPage;
   }
+}
 
-// Attach the button listener
 window.addEventListener("DOMContentLoaded", () => {
   const plannerPrintBtn = document.getElementById("planner-print");
-  plannerPrintBtn.addEventListener("click", downloadPlannerPDF);
+  if (!plannerPrintBtn) return;
+  plannerPrintBtn.addEventListener("click", async () => {
+    const results = window.currentPlannerResults || [];
+    const lat = window.currentPlannerLat || 0;
+    const lon = window.currentPlannerLon || 0;
+    const dt = window.currentPlannerDt || new Date();
+    const dateStr = window.currentPlannerDateStr || dt.toLocaleDateString();
+    const timeStr = window.currentPlannerTimeStr || dt.toLocaleTimeString();
+
+    await downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr);
+
+    const root = document.getElementById("planner-pdf-root");
+    if (!root) return;
+
+    const win = window.open("", "_blank");
+    win.document.write(`
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Planner PDF</title>
+          <style>
+            @page { size: 8.5in 11in; margin: 0; }
+            html, body { width: 8.5in; height: 11in; margin: 0; padding: 0; }
+            .planner-pdf-page { width: 8.5in; height: 11in; page-break-after: always; box-sizing: border-box; display: flex; }
+            .planner-pdf-left { width: 3.5in; padding: 0.25in; box-sizing: border-box; }
+            .planner-pdf-right { width: 5in; padding: 0.25in; box-sizing: border-box; overflow: hidden; }
+            .planner-pdf-map { width: 100%; height: auto; display: block; }
+            .planner-pdf-details h3 { margin: 0 0 8px 0; font-size: 14pt; }
+            .planner-pdf-details p { margin: 2px 0; font-size: 10pt; }
+            .planner-pdf-table { margin-top: 8px; }
+            table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+            th, td { padding: 4px 6px; border-bottom: 1px solid #ddd; text-align: left; }
+          </style>
+        </head>
+        <body>
+          ${root.innerHTML}
+        </body>
+      </html>
+    `);
+    win.document.close();
+    win.onload = () => { win.focus(); win.print(); };
+  });
 });
-
-// PDF generator function
-function downloadPlannerPDF() {
-  // Collect canvases you want to print (one per page)
-  const canvases = [document.getElementById("planner-star-map")];
-
-  // Convert canvases to PNGs
-  const images = canvases.map(c => c.toDataURL("image/png"));
-
-  // Open print window
-  const win = window.open("", "_blank");
-
-  win.document.write(`
-    <html>
-      <head>
-        <title>Planner PDF</title>
-        <style>
-          @page {
-            size: 8.5in 11in;
-            margin: 0;
-          }
-          body {
-            margin: 0;
-            padding: 0;
-          }
-          .page {
-            width: 8.5in;
-            height: 11in;
-            page-break-after: always;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-          }
-          .page img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-          }
-        </style>
-      </head>
-      <body>
-        ${images.map(src => `
-          <div class="page">
-            <img src="${src}">
-          </div>
-        `).join("")}
-      </body>
-    </html>
-  `);
-
-  win.document.close();
-
-  win.onload = () => {
-    win.focus();
-    win.print();  // user chooses “Save as PDF”
-  };
-}
