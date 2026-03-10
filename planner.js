@@ -1154,14 +1154,10 @@ function formatDec(deg) {
   return `${sign}${d}° ${m.toString().padStart(2, "0")}′`;
 }
 
-// -------------
-// RUN PLANNER 
-// -------------
+// RUN PLANNER
 async function runPlanner() {
-
   const modalOverlay = document.getElementById("planner-modal-overlay");
   const modalContent = document.getElementById("planner-modal-content");
-
   if (!modalOverlay || !modalContent) {
     console.warn("Planner modal elements missing");
     return;
@@ -1171,40 +1167,24 @@ async function runPlanner() {
   const timeStr = document.getElementById("planner-time").value;
   const lat = parseFloat(document.getElementById("planner-lat").value);
   const lon = parseFloat(document.getElementById("planner-lon").value);
-
   if (!dateStr || !timeStr || isNaN(lat) || isNaN(lon)) {
     alert("Please enter date, time, latitude, and longitude.");
     return;
   }
 
   const dt = new Date(`${dateStr}T${timeStr}:00`);
-
   const objects = await loadObjects();
   const planets = computeAllPlanets(dt).map(p => ({
-    id: p.id,
-    name: p.name,
-    type: "Planet",
-    mag: p.mag,
-    ra_h: p.raHours,
-    dec_deg: p.decDeg
+    id: p.id, name: p.name, type: "Planet", mag: p.mag, ra_h: p.raHours, dec_deg: p.decDeg
   }));
-
   const objectsNoPlanets = objects.filter(o => (o.type || "").toLowerCase() !== "planet");
-
   const objMap = new Map();
   objectsNoPlanets.forEach(o => objMap.set(o.id.toLowerCase(), { ...o }));
-  planets.forEach(p => {
-    const key = p.id.toLowerCase();
-    objMap.set(key, { ...(objMap.get(key) || {}), ...p });
-  });
-
+  planets.forEach(p => objMap.set(p.id.toLowerCase(), { ...(objMap.get(p.id.toLowerCase()) || {}), ...p }));
   const allObjects = Array.from(objMap.values());
 
   const resultsRaw = allObjects.map(obj => {
-    const eph = computeEphemerisForNight(lat, lon, dt, {
-      ra: Number(obj.ra_h),
-      dec: Number(obj.dec_deg)
-    });
+    const eph = computeEphemerisForNight(lat, lon, dt, { ra: Number(obj.ra_h), dec: Number(obj.dec_deg) });
     const score = visibilityScore(eph, obj.mag, dt);
     return { ...obj, ...eph, score };
   });
@@ -1213,7 +1193,6 @@ async function runPlanner() {
     .filter(r => r.altAtObs >= 25 && r.score >= 30 && r.mag <= 10)
     .sort((a, b) => b.score - a.score);
 
-  // FIXED: store AFTER results exist
   window.lastPlannerResults = results;
   window.lastPlannerLat = lat;
   window.lastPlannerLon = lon;
@@ -1221,7 +1200,7 @@ async function runPlanner() {
   window.lastPlannerDateStr = dateStr;
   window.lastPlannerTimeStr = timeStr;
 
-modalContent.innerHTML = `
+  modalContent.innerHTML = `
 <div style="display:flex;flex-direction:row;width:100%;height:100%;gap:20px;">
   <div style="flex:1;display:flex;flex-direction:column;gap:20px;">
     <div style="background:#f5f5f5;border:1px solid #ccc;border-radius:12px;padding:12px;height:180px;">
@@ -1241,14 +1220,7 @@ modalContent.innerHTML = `
     <h3 style="margin-top:0;">Visible Objects</h3>
     <table border="1" cellspacing="0" cellpadding="6" style="width:100%;font-size:13px;border-collapse:collapse;">
       <tr>
-        <th>Object</th>
-        <th>Type</th>
-        <th>Mag</th>
-        <th>RA</th>
-        <th>Dec</th>
-        <th>Transit</th>
-        <th>Alt</th>
-        <th>Score</th>
+        <th>Object</th><th>Type</th><th>Mag</th><th>RA</th><th>Dec</th><th>Transit</th><th>Alt</th><th>Score</th>
       </tr>
       ${results.map(r => `
         <tr>
@@ -1265,61 +1237,26 @@ modalContent.innerHTML = `
   </div>
 </div>
 `;
-  
-   modalOverlay.style.display = "flex";
-}
-  
-async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr) {
-  const modalOverlay = document.getElementById("planner-modal-overlay");
-  if (modalOverlay) modalOverlay.style.display = "flex";
 
-  await new Promise(r => requestAnimationFrame(r));
+  modalOverlay.style.display = "flex";
+} // end runPlanner
 
+// Ensure canvas is high-DPI so map is crisp and correctly sized
+function prepareAndDrawOnScreenCanvas(lat, lon, dt) {
   const canvas = document.getElementById("planner-star-map");
-  if (canvas) {
-    canvas.width = canvas.clientWidth;
-    canvas.height = canvas.clientHeight;
-    drawAzimuthalStarMap(canvas, lat, lon, dt);
-  }
-
-  await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr);
-
-  const root = document.getElementById("planner-pdf-root");
-  if (!root) return;
-
-  const win = window.open("", "_blank");
-  if (!win) return;
-
-  win.document.open();
-  win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Planner PDF</title><style>
-    @page { size: 8.5in 11in; margin: 0; }
-    html, body { width: 8.5in; height: 11in; margin: 0; padding: 0; }
-    .planner-pdf-page { width: 8.5in; height: 11in; page-break-after: always; box-sizing: border-box; display: flex; }
-    .planner-pdf-left { width: 3.5in; padding: 0.25in; box-sizing: border-box; }
-    .planner-pdf-right { width: 5in; padding: 0.25in; box-sizing: border-box; overflow: hidden; }
-    .planner-pdf-map { width: 100%; height: auto; display: block; }
-    .planner-pdf-details h3 { margin: 0 0 8px 0; font-size: 14pt; }
-    .planner-pdf-details p { margin: 2px 0; font-size: 10pt; }
-    .planner-pdf-table { margin-top: 8px; }
-    table { width: 100%; border-collapse: collapse; font-size: 9pt; }
-    th, td { padding: 4px 6px; border-bottom: 1px solid #ddd; text-align: left; }
-  </style></head><body></body></html>`);
-  win.document.close();
-
-  const cloned = root.cloneNode(true);
-  win.document.body.appendChild(cloned);
-
-  const imgs = Array.from(win.document.images || []);
-  await Promise.all(imgs.map(img => {
-    if (img.complete) return Promise.resolve();
-    return new Promise(res => { img.onload = img.onerror = res; });
-  }));
-
-  win.focus();
-  win.print();
-  win.close();
+  if (!canvas) return;
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.round(rect.width * dpr);
+  canvas.height = Math.round(rect.height * dpr);
+  canvas.style.width = `${rect.width}px`;
+  canvas.style.height = `${rect.height}px`;
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // scale drawing to DPR
+  drawAzimuthalStarMap(canvas, lat, lon, dt);
 }
 
+// Build printable DOM inside #planner-pdf-root (converts canvases to images)
 async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr) {
   const root = document.getElementById("planner-pdf-root");
   if (!root) return;
@@ -1342,12 +1279,19 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr) {
 
   function renderPDFStarMap() {
     const c = document.createElement("canvas");
-    c.width = 672;
-    c.height = 672;
+    const dpr = 2; // produce a higher-res image for print
+    const cssSizeInPx = 3.5 * 96; // 3.5in * 96dpi ≈ 336px CSS width
+    c.width = Math.round(cssSizeInPx * dpr);
+    c.height = Math.round(cssSizeInPx * dpr);
+    c.style.width = `${cssSizeInPx}px`;
+    c.style.height = `${cssSizeInPx}px`;
+    const ctx = c.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     drawAzimuthalStarMap(c, lat, lon, dt);
     const img = document.createElement("img");
     img.src = c.toDataURL("image/png");
     img.className = "planner-pdf-map";
+    img.style.width = "100%";
     return img;
   }
 
@@ -1385,8 +1329,8 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr) {
         <td>${formatRA(r.ra_h)}</td>
         <td>${formatDec(r.dec_deg)}</td>
         <td>${r.transit ? r.transit.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",hour12:false}) : "—"}</td>
-        <td>${r.altAtObs.toFixed(1)}°</td>
-        <td>${r.score.toFixed(0)}</td>
+        <td>${r.altAtObs ? r.altAtObs.toFixed(1) + "°" : "—"}</td>
+        <td>${r.score ? r.score.toFixed(0) : "—"}</td>
       `;
       tbody.appendChild(tr);
     });
@@ -1422,16 +1366,61 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr) {
   }
 }
 
+// Print wrapper: clones root, ensures images are data URLs, waits for load, then prints
+async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr) {
+  const modalOverlay = document.getElementById("planner-modal-overlay");
+  if (modalOverlay) modalOverlay.style.display = "flex";
+
+  // ensure on-screen canvas is drawn at high DPI
+  prepareAndDrawOnScreenCanvas(lat, lon, dt);
+
+  await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr);
+
+  const root = document.getElementById("planner-pdf-root");
+  if (!root) return;
+
+  const win = window.open("", "_blank");
+  if (!win) return;
+
+  win.document.open();
+  win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Planner PDF</title><style>
+    @page { size: 8.5in 11in; margin: 0; }
+    html, body { width: 8.5in; height: 11in; margin: 0; padding: 0; }
+    .planner-pdf-page { width: 8.5in; height: 11in; page-break-after: always; box-sizing: border-box; display: flex; }
+    .planner-pdf-left { width: 3.5in; padding: 0.25in; box-sizing: border-box; }
+    .planner-pdf-right { width: 5in; padding: 0.25in; box-sizing: border-box; overflow: hidden; }
+    img { max-width:100%; height:auto; display:block; }
+    table { width:100%; border-collapse:collapse; font-size:9pt; }
+    th, td { padding:4px 6px; border-bottom:1px solid #ddd; text-align:left; }
+  </style></head><body></body></html>`);
+  win.document.close();
+
+  // append a cloned node (which already contains <img src="data:..."> from buildPlannerPdfContent)
+  const cloned = root.cloneNode(true);
+  win.document.body.appendChild(cloned);
+
+  // wait for all images to load
+  const imgs = Array.from(win.document.images || []);
+  await Promise.all(imgs.map(img => {
+    if (img.complete) return Promise.resolve();
+    return new Promise(res => { img.onload = img.onerror = res; });
+  }));
+
+  win.focus();
+  win.print();
+  // do not immediately close if user may cancel print; optional: win.close();
+}
+
 window.addEventListener("DOMContentLoaded", () => {
   const plannerPrintBtn = document.getElementById("planner-print");
   if (!plannerPrintBtn) return;
   plannerPrintBtn.addEventListener("click", async () => {
-    const results = window.currentPlannerResults || [];
-    const lat = window.currentPlannerLat || 0;
-    const lon = window.currentPlannerLon || 0;
-    const dt = window.currentPlannerDt || new Date();
-    const dateStr = window.currentPlannerDateStr || dt.toLocaleDateString();
-    const timeStr = window.currentPlannerTimeStr || dt.toLocaleTimeString();
+    const results = window.lastPlannerResults || [];
+    const lat = window.lastPlannerLat || 0;
+    const lon = window.lastPlannerLon || 0;
+    const dt = window.lastPlannerDt || new Date();
+    const dateStr = window.lastPlannerDateStr || dt.toLocaleDateString();
+    const timeStr = window.lastPlannerTimeStr || dt.toLocaleTimeString();
     await openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr);
   });
 });
