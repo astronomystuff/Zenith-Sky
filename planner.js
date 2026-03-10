@@ -1454,9 +1454,11 @@ async function downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr) {
     index += rowsPerPage;
   }
 
-  downloadPlannerPDF.addEventListener("click", () => {
-  const canvas = document.getElementById("planner-star-map");
-  if (!canvas) return;
+  window.addEventListener("DOMContentLoaded", () => {
+  const plannerPrintBtn = document.getElementById("planner-print");
+  plannerPrintBtn.addEventListener("click", downloadPlannerPDF);
+  });
+
 
   const dataURL = canvas.toDataURL("image/png");
 
