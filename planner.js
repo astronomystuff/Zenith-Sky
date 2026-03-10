@@ -1454,20 +1454,21 @@ async function downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr) {
     index += rowsPerPage;
   }
 
+// Attach the button listener
 window.addEventListener("DOMContentLoaded", () => {
   const plannerPrintBtn = document.getElementById("planner-print");
   plannerPrintBtn.addEventListener("click", downloadPlannerPDF);
 });
 
-  function downloadPlannerPDF() {
-  // Collect all canvases you want to print as pages
-  // If you only have one:
+// PDF generator function
+function downloadPlannerPDF() {
+  // Collect canvases you want to print (one per page)
   const canvases = [document.getElementById("planner-star-map")];
 
-  // Convert each canvas to PNG
+  // Convert canvases to PNGs
   const images = canvases.map(c => c.toDataURL("image/png"));
 
-  // Open a new print window
+  // Open print window
   const win = window.open("", "_blank");
 
   win.document.write(`
@@ -1512,7 +1513,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
   win.onload = () => {
     win.focus();
-    win.print();  // User chooses "Save as PDF"
+    win.print();  // user chooses “Save as PDF”
   };
 }
-
