@@ -889,226 +889,227 @@ function computeEphemerisForNight(lat, lon, dt, target) {
 // ------------------------------------------------------------
 // STAR MAP
 // ------------------------------------------------------------
-function drawAzimuthalStarMap(canvas, lat, lon, dt, stars = null, options = {}) {
-  const bg = options.background || "#ffffff";
-  const starColor = options.starColor || "#000000";
-  const constLineColor = options.constLineColor || "#444444";
-  const horizonColor = options.horizonColor || "#000000";
-  const cardinalColor = options.cardinalColor || "#000000";
-  const constellations = options.constellations || (typeof CONST_LINES !== "undefined" ? CONST_LINES : []);
-  const labelBrightThan = options.labelBrightThan ?? 2.5;
-  const debug = !!options.debug;
-
+function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date) {
   if (!canvas) return;
-  if (lat > 89.9) lat = 89.9;
-  if (lat < -89.9) lat = -89.9;
 
+  // Clamp latitude
+  if (latDeg > 89.9) latDeg = 89.9;
+  if (latDeg < -89.9) latDeg = -89.9;
+
+  // HiDPI handling
   const dpr = window.devicePixelRatio || 1;
-  const cssW = Math.max(1, canvas.clientWidth || (canvas.width / dpr) || 800);
-  const cssH = Math.max(1, canvas.clientHeight || (canvas.height / dpr) || 800);
-  const bufW = Math.round(cssW * dpr);
-  const bufH = Math.round(cssH * dpr);
-  if (canvas.width !== bufW || canvas.height !== bufH) {
-    canvas.width = bufW;
-    canvas.height = bufH;
-  }
+  const cssSize = canvas.clientWidth || 400;
+  canvas.width = Math.round(cssSize * dpr);
+  canvas.height = Math.round(cssSize * dpr);
+
   const ctx = canvas.getContext("2d");
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-  const w = cssW, h = cssH;
-  const cx = w / 2, cy = h / 2;
-  const radius = Math.min(w, h) * 0.48;
+  const size = cssSize;
+  const w = size;
+  const h = size;
+  const cx = w / 2;
+  const cy = h / 2;
+  const padding = 40;
+  const radius = size / 2 - padding;
 
-  ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = bg;
+  // Background
+  ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, w, h);
 
-  // horizon circle (black)
-  ctx.save();
+  // Horizon circle
+  ctx.strokeStyle = "#000000";
+  ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.lineWidth = Math.max(1, radius * 0.006);
-  ctx.strokeStyle = horizonColor;
   ctx.arc(cx, cy, radius, 0, Math.PI * 2);
   ctx.stroke();
-  ctx.restore();
 
-  // cardinal labels (black)
-  ctx.save();
-  ctx.fillStyle = cardinalColor;
-  ctx.font = `bold ${Math.max(12, Math.round(radius * 0.06))}px sans-serif`;
+  // Cardinal directions (your original mirrored orientation)
+  const cardinals = [
+    { label: "N", azDeg: 0 },
+    { label: "E", azDeg: 90 },
+    { label: "S", azDeg: 180 },
+    { label: "W", azDeg: 270 },
+  ];
+
+  ctx.fillStyle = "#000000";
+  ctx.font = `${Math.round(radius * 0.05)}px sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText("N", cx, cy - radius - Math.max(10, radius * 0.04));
-  ctx.fillText("S", cx, cy + radius + Math.max(10, radius * 0.04));
-  ctx.fillText("E", cx + radius + Math.max(10, radius * 0.04), cy);
-  ctx.fillText("W", cx - radius - Math.max(10, radius * 0.04), cy);
-  ctx.restore();
 
-  // helpers
-  const deg2rad = d => d * Math.PI / 180;
-  const rad2deg = r => r * 180 / Math.PI;
-  const norm2pi = a => (a % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+  cardinals.forEach((c) => {
+    const azRad = deg2rad(c.azDeg);
+    const r = radius + 18;
+    // ORIGINAL MIRRORED XY
+    const x = cx + -r * Math.sin(azRad);
+    const y = cy + -r * Math.cos(azRad);
+    ctx.fillText(c.label, x, y);
+  });
 
-  function toJulianDate(date) {
-    const Y = date.getUTCFullYear();
-    const M = date.getUTCMonth() + 1;
-    const D = date.getUTCDate() + (date.getUTCHours() + date.getUTCMinutes()/60 + date.getUTCSeconds()/3600) / 24;
-    let A = Math.floor(Y/100);
-    let B = 2 - A + Math.floor(A/4);
-    let y = Y, m = M;
-    if (M <= 2) { y = Y - 1; m = M + 12; }
-    return Math.floor(365.25*(y+4716)) + Math.floor(30.6001*(m+1)) + D + B - 1524.5;
-  }
+  // Astronomy math
+  const latRad = deg2rad(latDeg);
+  const lonRad = deg2rad(lonDeg);
+  const jd = toJulianDate(date);
+  const lst = localSiderealTime(jd, lonRad);
 
-  function gmstRadFromJD(JD) {
-    const JD0 = Math.floor(JD + 0.5) - 0.5;
-    const H = (JD - JD0) * 24;
-    const D = JD - 2451545.0;
-    const D0 = JD0 - 2451545.0;
-    const T = D / 36525.0;
-    let gmstHours = 6.697374558 + 0.06570982441908 * D0 + 1.00273790935 * H + 0.000026 * (T * T);
-    gmstHours = ((gmstHours % 24) + 24) % 24;
-    return gmstHours * (Math.PI / 12);
-  }
+  const stars = decodeStarCatalog();
+  const projectedStars = [];
 
-  const jd = toJulianDate(dt);
-  const gmst = gmstRadFromJD(jd);
-  const lonRad = deg2rad(lon);
-  const lst = norm2pi(gmst + lonRad);
-  const latRad = deg2rad(lat);
+  // --- Project stars (original math) ---
+  stars.forEach((star) => {
+    const raRad = deg2rad(star.ra * 15);
+    const decRad = deg2rad(star.dec);
+    const ha = normalizeAngle(lst - raRad);
 
-  function raDecToAltAz(raHours, decDeg) {
-    const raRad = deg2rad(raHours * 15);
-    const decRad = deg2rad(decDeg);
-    let ha = norm2pi(lst - raRad);
-    const sinAlt = Math.sin(latRad) * Math.sin(decRad) + Math.cos(latRad) * Math.cos(decRad) * Math.cos(ha);
-    const alt = Math.asin(Math.max(-1, Math.min(1, sinAlt)));
-    const sinAz = Math.sin(ha) * Math.cos(decRad);
-    const cosAz = (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) / (Math.cos(alt) * Math.cos(latRad));
-    let az = Math.atan2(sinAz, cosAz);
-    if (az < 0) az += 2 * Math.PI;
-    return { altRad: alt, azRad: az };
-  }
+    const sinAlt =
+      Math.sin(latRad) * Math.sin(decRad) +
+      Math.cos(latRad) * Math.cos(decRad) * Math.cos(ha);
+    const alt = Math.asin(sinAlt);
+    const altDeg = rad2deg(alt);
 
-  function altAzToXY(altRad, azRad) {
-    const alt = Math.max(-Math.PI/2, Math.min(Math.PI/2, altRad));
-    const r = (Math.PI/2 - alt) / (Math.PI/2) * radius;
-    const az = norm2pi(azRad);
-    const x = cx + r * Math.sin(az);
-    const y = cy - r * Math.cos(az);
-    return { x, y, r };
-  }
+    const cosAz =
+      (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
+      (Math.cos(alt) * Math.cos(latRad));
 
-  // get catalog
-  let catalog = stars;
-  if (!catalog) {
-    if (typeof decodeStarCatalog === "function") catalog = decodeStarCatalog();
-    else catalog = [];
-  }
+    let az = Math.acos(Math.max(-1, Math.min(1, cosAz)));
+    if (Math.sin(ha) > 0) az = 2 * Math.PI - az;
 
-  // project
-  const projected = [];
-  for (let i = 0; i < catalog.length; i++) {
-    const s = catalog[i];
-    let altRad = null, azRad = null;
-    if (s.altitude_deg != null && s.azimuth_deg != null) {
-      altRad = deg2rad(s.altitude_deg);
-      azRad = deg2rad(s.azimuth_deg);
-    } else if (s.dec != null && s.ra != null) {
-      const res = raDecToAltAz(s.ra, s.dec);
-      altRad = res.altRad; azRad = res.azRad;
-    } else if (s.dec_deg != null && s.ra_h != null) {
-      const res = raDecToAltAz(s.ra_h, s.dec_deg);
-      altRad = res.altRad; azRad = res.azRad;
-    } else continue;
-    const xy = altAzToXY(altRad, azRad);
-    projected.push({
-      id: s.id ?? s.name ?? i,
-      x: xy.x, y: xy.y, r: xy.r,
-      altDeg: rad2deg(altRad), azDeg: rad2deg(azRad),
-      mag: (s.mag != null ? s.mag : (s.mag_v != null ? s.mag_v : 6)),
-      label: s.label ?? s.name ?? null,
-      isPlanet: !!s.isPlanet
+    // ORIGINAL EQUidistant projection + MIRRORED XY
+    const r = radius * (90 - altDeg) / 90;
+    const x = cx + -r * Math.sin(az);
+    const y = cy + -r * Math.cos(az);
+
+    projectedStars.push({
+      id: star.id,
+      x,
+      y,
+      mag: star.mag,
+      altDeg,
     });
-  }
+  });
 
-  // constellation lines (dark gray)
-  if (constellations && constellations.length) {
-    ctx.save();
-    ctx.strokeStyle = constLineColor;
-    ctx.lineWidth = Math.max(0.6, radius * 0.0025);
-    for (const link of constellations) {
-      const idA = Array.isArray(link) ? link[0] : link.fromId ?? link[0];
-      const idB = Array.isArray(link) ? link[1] : link.toId ?? link[1];
-      const a = projected.find(p => p.id === idA);
-      const b = projected.find(p => p.id === idB);
-      if (!a || !b) continue;
-      const da = Math.hypot(a.x - cx, a.y - cy);
-      const db = Math.hypot(b.x - cx, b.y - cy);
-      const aInside = da <= radius;
-      const bInside = db <= radius;
-      if (aInside && bInside) {
-        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
-      } else if (aInside && !bInside) {
-        const p = clipLineToCircle(a.x, a.y, b.x, b.y, cx, cy, radius);
-        if (p) { ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(p.x, p.y); ctx.stroke(); }
-      } else if (!aInside && bInside) {
-        const p = clipLineToCircle(b.x, b.y, a.x, a.y, cx, cy, radius);
-        if (p) { ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(p.x, p.y); ctx.stroke(); }
-      }
-    }
-    ctx.restore();
-  }
+  // --- Planets (same projection) ---
+  const planets = computeAllPlanets(date);
+  planets.forEach((p) => {
+    const raRad = deg2rad(p.raHours * 15);
+    const decRad = deg2rad(p.decDeg);
+    const ha = normalizeAngle(lst - raRad);
 
-  // draw stars as plain black dots (no glow)
-  ctx.save();
-  for (const p of projected) {
-    if (p.altDeg <= 0) continue;
-    const mag = isFinite(p.mag) ? p.mag : 6;
-    const size = Math.max(0.6, 4.0 - (mag * 0.5));
-    ctx.fillStyle = p.isPlanet ? "#000000" : starColor;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, Math.max(0.6, size * 0.6), 0, Math.PI * 2);
-    ctx.fill();
-    if (p.label && mag <= labelBrightThan) {
-      ctx.fillStyle = "#000000";
-      ctx.font = `${Math.max(10, Math.round(radius * 0.03))}px sans-serif`;
-      ctx.textAlign = "left";
-      ctx.textBaseline = "middle";
-      ctx.fillText(p.label, p.x + size * 1.2, p.y);
-    }
-  }
-  ctx.restore();
+    const sinAlt =
+      Math.sin(latRad) * Math.sin(decRad) +
+      Math.cos(latRad) * Math.cos(decRad) * Math.cos(ha);
+    const alt = Math.asin(sinAlt);
+    const altDeg = rad2deg(alt);
 
-  // center marker
-  ctx.save();
-  ctx.fillStyle = "#000000";
-  ctx.beginPath();
-  ctx.arc(cx, cy, Math.max(2, radius * 0.01), 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
+    const cosAz =
+      (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
+      (Math.cos(alt) * Math.cos(latRad));
+    let az = Math.acos(Math.max(-1, Math.min(1, cosAz)));
+    if (Math.sin(ha) > 0) az = 2 * Math.PI - az;
 
-  // helper: clip line to circle (same as earlier)
-  function clipLineToCircle(x1, y1, x2, y2, cx0, cy0, r0) {
-    const dx = x2 - x1, dy = y2 - y1;
-    const fx = x1 - cx0, fy = y1 - cy0;
-    const a = dx*dx + dy*dy;
-    if (a === 0) return null;
-    const b = 2*(fx*dx + fy*dy);
-    const c = fx*fx + fy*fy - r0*r0;
-    const disc = b*b - 4*a*c;
+    const r = radius * (90 - altDeg) / 90;
+    const x = cx + -r * Math.sin(az);
+    const y = cy + -r * Math.cos(az);
+
+    projectedStars.push({
+      id: p.id,
+      x,
+      y,
+      mag: p.mag,
+      altDeg,
+      isPlanet: true,
+    });
+  });
+
+  // --- Constellation lines ---
+  ctx.strokeStyle = "#888888";
+  ctx.lineWidth = 1;
+
+  function clipLineToCircle(x1, y1, x2, y2, cx, cy, r) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const fx = x1 - cx;
+    const fy = y1 - cy;
+
+    const a = dx * dx + dy * dy;
+    const b = 2 * (fx * dx + fy * dy);
+    const c = fx * fx + fy * fy - r * r;
+
+    const disc = b * b - 4 * a * c;
     if (disc < 0) return null;
+
     const s = Math.sqrt(disc);
-    const t1 = (-b - s) / (2*a);
-    const t2 = (-b + s) / (2*a);
-    const ts = [];
-    if (t1 >= 0 && t1 <= 1) ts.push(t1);
-    if (t2 >= 0 && t2 <= 1) ts.push(t2);
-    if (ts.length === 0) return null;
-    ts.sort((u,v) => u - v);
-    const t = ts[0];
-    return { x: x1 + t*dx, y: y1 + t*dy };
+    const t1 = (-b - s) / (2 * a);
+    const t2 = (-b + s) / (2 * a);
+
+    let t = null;
+    if (t1 >= 0 && t1 <= 1) t = t1;
+    else if (t2 >= 0 && t2 <= 1) t = t2;
+    else return null;
+
+    return { x: x1 + t * dx, y: y1 + t * dy };
   }
+
+  CONST_LINES.forEach((pair) => {
+    const a = projectedStars.find((s) => s.id === pair[0]);
+    const b = projectedStars.find((s) => s.id === pair[1]);
+    if (!a || !b) return;
+
+    const da = Math.hypot(a.x - cx, a.y - cy);
+    const db = Math.hypot(b.x - cx, b.y - cy);
+    const aInside = da <= radius;
+    const bInside = db <= radius;
+
+    if (aInside && bInside) {
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+      return;
+    }
+
+    if (aInside && !bInside) {
+      const p = clipLineToCircle(a.x, a.y, b.x, b.y, cx, cy, radius);
+      if (p) {
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+      }
+      return;
+    }
+
+    if (!aInside && bInside) {
+      const p = clipLineToCircle(b.x, b.y, a.x, a.y, cx, cy, radius);
+      if (p) {
+        ctx.beginPath();
+        ctx.moveTo(b.x, b.y);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+      }
+      return;
+    }
+  });
+
+  // --- Stars ---
+  projectedStars.forEach((s) => {
+    if (s.altDeg <= 0) return;
+
+    if (s.isPlanet) {
+      ctx.fillStyle = "#000000";
+      ctx.font = Math.max(12, 20 - s.mag * 1.2) + "px serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("✦", s.x, s.y);
+      return;
+    }
+
+    const size = Math.max(0.6, 3.5 - s.mag * 0.5);
+    ctx.fillStyle = "#000000";
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, size, 0, Math.PI * 2);
+    ctx.fill();
+  });
 }
 
 // ------------------------------------------------------------
