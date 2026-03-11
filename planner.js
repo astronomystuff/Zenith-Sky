@@ -1314,185 +1314,69 @@ async function runPlanner() {
   drawOnScreenMap(lat, lon, dt);
 } // end runPlanner
 
-function prepareCanvasForDrawing(canvas, cssWidth, cssHeight, dpr = window.devicePixelRatio || 1) {
+//
+// 1. Modern DPR‑correct canvas prep
+//
+function prepareCanvasForDrawing(canvas, cssWidth, cssHeight) {
+  const dpr = window.devicePixelRatio || 1;
+
+  // CSS size
   canvas.style.width = cssWidth + "px";
   canvas.style.height = cssHeight + "px";
+
+  // Buffer size
   canvas.width = Math.round(cssWidth * dpr);
   canvas.height = Math.round(cssHeight * dpr);
+
   const ctx = canvas.getContext("2d");
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // draw in CSS pixels
+
   return ctx;
 }
 
+//
+// 2. On‑screen map drawing (responsive)
+//
 function drawOnScreenMap(lat, lon, dt) {
   const canvas = document.getElementById("planner-star-map");
   if (!canvas) return;
+
   const rect = canvas.getBoundingClientRect();
   const cssW = Math.max(200, Math.floor(rect.width));
   const cssH = Math.max(200, Math.floor(rect.height));
-  prepareCanvasForDrawing(canvas, cssW, cssH, window.devicePixelRatio || 1);
-  // drawAzimuthalStarMap must draw using the canvas passed in and not flip horizontally
+
+  prepareCanvasForDrawing(canvas, cssW, cssH);
+
+  // Uses your restored perfect projection + NWSE clockwise orientation
   drawAzimuthalStarMap(canvas, lat, lon, dt);
 }
 
+//
+// 3. Print‑map renderer (3.5 × 3.5 inches @ 300 DPI)
+//
 function renderMapImageForPrint(lat, lon, dt) {
   const inches = 3.5;
   const dpi = 300;
-  const px = Math.round(inches * dpi);
+  const px = Math.round(inches * dpi);   // 1050 px
+
+  // High‑resolution offscreen canvas
   const off = document.createElement("canvas");
   off.width = px;
   off.height = px;
-  const ctx = off.getContext("2d");
-  // ensure no horizontal flip; drawAzimuthalStarMap should draw to full canvas size
+
+  // Draw using your restored projection
   drawAzimuthalStarMap(off, lat, lon, dt);
+
+  // Convert to image for PDF (never put <canvas> in print window)
   const img = document.createElement("img");
   img.src = off.toDataURL("image/png");
   img.className = "planner-pdf-map";
+
+  // In the PDF layout, the left column is 3.5 inches wide,
+  // so this image should scale to 100% of that column.
   img.style.width = "100%";
+  img.style.height = "auto";
+  img.style.display = "block";
+
   return img;
 }
-
-async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr) {
-  const root = document.getElementById("planner-pdf-root");
-  if (!root) return;
-  root.innerHTML = "";
-
-  const PAGE_HEIGHT = 1056;
-  const ROW_HEIGHT = 22;
-
-  function createPage() {
-    const page = document.createElement("div");
-    page.className = "planner-pdf-page";
-    const left = document.createElement("div");
-    left.className = "planner-pdf-left";
-    const right = document.createElement("div");
-    right.className = "planner-pdf-right";
-    page.appendChild(left);
-    page.appendChild(right);
-    return { page, left, right };
-  }
-
-  function buildDetails() {
-    const d = document.createElement("div");
-    d.className = "planner-pdf-details";
-    d.innerHTML = `
-      <h3>Observation Details – Zenith Sky</h3>
-      <p>Date: ${dateStr}</p>
-      <p>Time: ${timeStr}</p>
-      <p>Latitude: ${lat}</p>
-      <p>Longitude: ${lon}</p>
-    `;
-    return d;
-  }
-
-  function buildTableRows(rows) {
-    const table = document.createElement("table");
-    table.className = "planner-pdf-table-inner";
-    table.innerHTML = `
-      <thead>
-        <tr>
-          <th>Object</th><th>Type</th><th>Mag</th><th>RA</th><th>Dec</th><th>Transit</th><th>Alt</th><th>Score</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    `;
-    const tbody = table.querySelector("tbody");
-    rows.forEach(r => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${r.name || r.id}</td>
-        <td>${r.type || ""}</td>
-        <td>${r.mag}</td>
-        <td>${formatRA(r.ra_h)}</td>
-        <td>${formatDec(r.dec_deg)}</td>
-        <td>${r.transit ? r.transit.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",hour12:false}) : "—"}</td>
-        <td>${r.altAtObs ? r.altAtObs.toFixed(1) + "°" : "—"}</td>
-        <td>${r.score ? r.score.toFixed(0) : "—"}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-    return table;
-  }
-
-  const rowsPerPage = Math.max(1, Math.floor((PAGE_HEIGHT - 160) / ROW_HEIGHT));
-  let index = 0;
-
-  const { page: firstPage, left: firstLeft, right: firstRight } = createPage();
-  firstLeft.appendChild(buildDetails());
-  firstLeft.appendChild(renderMapImageForPrint(lat, lon, dt));
-
-  const firstRows = (results && results.length) ? results.slice(0, rowsPerPage) : [];
-  const firstTableContainer = document.createElement("div");
-  firstTableContainer.className = "planner-pdf-table";
-  firstTableContainer.appendChild(buildTableRows(firstRows));
-  firstRight.appendChild(firstTableContainer);
-
-  root.appendChild(firstPage);
-  index += rowsPerPage;
-
-  while (index < (results ? results.length : 0)) {
-    const { page, left, right } = createPage();
-    left.innerHTML = "";
-    const pageRows = results.slice(index, index + rowsPerPage);
-    const tableContainer = document.createElement("div");
-    tableContainer.className = "planner-pdf-table";
-    tableContainer.appendChild(buildTableRows(pageRows));
-    right.appendChild(tableContainer);
-    root.appendChild(page);
-    index += rowsPerPage;
-  }
-}
-
-async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr) {
-  const modalOverlay = document.getElementById("planner-modal-overlay");
-  if (modalOverlay) modalOverlay.style.display = "flex";
-
-  drawOnScreenMap(lat, lon, dt);
-
-  await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr);
-
-  const root = document.getElementById("planner-pdf-root");
-  if (!root) return;
-
-  const win = window.open("", "_blank");
-  if (!win) return;
-
-  win.document.open();
-  win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Planner PDF</title><style>
-    @page { size: 8.5in 11in; margin: 0; }
-    html, body { width: 8.5in; height: 11in; margin: 0; padding: 0; }
-    .planner-pdf-page { width: 8.5in; height: 11in; page-break-after: always; box-sizing: border-box; display: flex; }
-    .planner-pdf-left { width: 3.5in; padding: 0.25in; box-sizing: border-box; }
-    .planner-pdf-right { width: 5in; padding: 0.25in; box-sizing: border-box; overflow: hidden; }
-    img { max-width:100%; height:auto; display:block; }
-    table { width:100%; border-collapse:collapse; font-size:9pt; }
-    th, td { padding:4px 6px; border-bottom:1px solid #ddd; text-align:left; }
-  </style></head><body></body></html>`);
-  win.document.close();
-
-  const cloned = root.cloneNode(true);
-  win.document.body.appendChild(cloned);
-
-  const imgs = Array.from(win.document.images || []);
-  await Promise.all(imgs.map(img => {
-    if (img.complete) return Promise.resolve();
-    return new Promise(res => { img.onload = img.onerror = res; });
-  }));
-
-  win.focus();
-  win.print();
-}
-
-window.addEventListener("DOMContentLoaded", () => {
-  const plannerPrintBtn = document.getElementById("planner-print");
-  if (!plannerPrintBtn) return;
-  plannerPrintBtn.addEventListener("click", async () => {
-    const results = window.lastPlannerResults || [];
-    const lat = window.lastPlannerLat || 0;
-    const lon = window.lastPlannerLon || 0;
-    const dt = window.lastPlannerDt || new Date();
-    const dateStr = window.lastPlannerDateStr || dt.toLocaleDateString();
-    const timeStr = window.lastPlannerTimeStr || dt.toLocaleTimeString();
-    await openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr);
-  });
-});
