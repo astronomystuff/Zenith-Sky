@@ -421,74 +421,69 @@ button:active,
   }
 }
 
-/* ========================= */
-/* PDF PAGE LAYOUT (8.5x11)  */
-/* ========================= */
+@page { size: 8.5in 11in; margin: 0; }
 
-#planner-pdf-root {
-  position: absolute;
-  top: -9999px;
-  left: -9999px;
-  width: 0;
-  height: 0;
-  overflow: hidden;
+html, body {
+  width: 8.5in;
+  height: 11in;
+  margin: 0;
+  padding: 0;
 }
 
-/* A single PDF page */
 .planner-pdf-page {
-  width: 816px;     /* 8.5 in @ 96dpi */
-  height: 1056px;   /* 11 in @ 96dpi */
-  background: white;
+  width: 8.5in;
+  min-height: 11in;
+  page-break-after: always;
   box-sizing: border-box;
-  padding: 20px;
   display: flex;
   flex-direction: row;
-  gap: 0;
 }
 
-/* Left column: 3.5 in */
 .planner-pdf-left {
-  width: 336px;     /* 3.5 in */
-  height: 100%;
+  width: 3.5in;
+  padding: 0.25in;
   box-sizing: border-box;
-  padding-right: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
 }
 
-/* Right column: 5 in */
 .planner-pdf-right {
-  width: 480px;     /* 5 in */
-  height: 100%;
-  overflow: hidden;
+  width: 5in;
+  padding: 0.25in;
   box-sizing: border-box;
+
+  /* REMOVE SCROLLING */
+  overflow: visible !important;
 }
 
-/* Star map inside left column */
-.planner-pdf-map {
-  width: 100%;
-  height: 336px; /* square map, 3.5 in tall */
-  border: 1px solid #ccc;
-  border-radius: 8px;
-}
-
-/* Table container */
 .planner-pdf-table {
   width: 100%;
-  height: calc(100% - 0px);
-  overflow: hidden;
+  box-sizing: border-box;
+
+  /* REMOVE HEIGHT LIMITS */
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
 }
 
-.planner-pdf-table table {
+table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 9pt;
+
+  /* LET TABLE GROW NATURALLY */
+  page-break-inside: auto;
 }
 
-.planner-pdf-table th,
-.planner-pdf-table td {
-  border: 1px solid #ccc;
-  padding: 4px;
+thead {
+  display: table-header-group;
 }
 
+tbody tr {
+  page-break-inside: avoid;
+  page-break-after: auto;
+}
+
+th, td {
+  padding: 4px 6px;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+}
