@@ -4,30 +4,6 @@ document.addEventListener("DOMContentLoaded", () => {
       runPlanner();
     }
 
-
-async function downloadPlannerPDF(results, lat, lon, dt, dateStr, timeStr) {
-  if (typeof buildPlannerPdfContent === "function") {
-    await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr);
-    return;
-  }
-  if (typeof openPlannerModalAndPrint === "function") {
-    await openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr);
-    return;
-  }
-  console.warn("downloadPlannerPDF called but no implementation found.");
-}
-   if (e.target.id === "planner-print") {
-  if (!window.lastPlannerResults) return;
-  downloadPlannerPDF(
-    window.lastPlannerResults,
-    window.lastPlannerLat,
-    window.lastPlannerLon,
-    window.lastPlannerDt,
-    window.lastPlannerDateStr,
-    window.lastPlannerTimeStr
-  );
-}
-
     if (e.target.id === "planner-modal-close") {
       const modalOverlay = document.getElementById("planner-modal-overlay");
       if (modalOverlay) modalOverlay.style.display = "none";
