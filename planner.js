@@ -1236,7 +1236,7 @@ async function runPlanner() {
   });
 
   const results = resultsRaw
-    .filter(r => r.altAtObs >= 25 && r.score >= 30 && r.mag <= 10)
+    .filter(r => r.altAtObs >= 25 && r.score >= 30 && r.mag <= 9.5)
     .sort((a, b) => b.score - a.score);
 
   window.lastPlannerResults = results;
@@ -1490,16 +1490,6 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
 
   const cloned = root.cloneNode(true);
   win.document.body.appendChild(cloned);
-
-  const imgs = Array.from(win.document.images || []);
-  await Promise.all(imgs.map(img => {
-    if (img.complete) return Promise.resolve();
-    return new Promise(res => { img.onload = img.onerror = res; });
-  }));
-
-  win.focus();
-  win.print();
-}
 
   const imgs = Array.from(win.document.images || []);
   await Promise.all(imgs.map(img => {
