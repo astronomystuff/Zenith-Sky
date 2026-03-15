@@ -1491,7 +1491,7 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
   const cloned = root.cloneNode(true);
   win.document.body.appendChild(cloned);
 
-  const imgs = Array.from(win.document.images || []);
+    const imgs = Array.from(win.document.images || []);
   await Promise.all(imgs.map(img => {
     if (img.complete) return Promise.resolve();
     return new Promise(res => { img.onload = img.onerror = res; });
@@ -1501,6 +1501,7 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
   win.print();
 }
 
+// ATTACH PRINT BUTTON HANDLER
 window.addEventListener("DOMContentLoaded", () => {
   const plannerPrintBtn = document.getElementById("planner-print");
   if (!plannerPrintBtn) {
