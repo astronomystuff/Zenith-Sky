@@ -1356,3 +1356,22 @@ function renderMapImageForPrint(lat, lon, dt) {
 
   return img;
 }
+
+window.addEventListener("DOMContentLoaded", () => {
+  const plannerPrintBtn = document.getElementById("planner-print");
+  if (!plannerPrintBtn) {
+    console.warn("planner-print button not found");
+    return;
+  }
+
+  plannerPrintBtn.addEventListener("click", async () => {
+    const results = window.lastPlannerResults || [];
+    const lat = window.lastPlannerLat || 0;
+    const lon = window.lastPlannerLon || 0;
+    const dt = window.lastPlannerDt || new Date();
+    const dateStr = window.lastPlannerDateStr || dt.toLocaleDateString();
+    const timeStr = window.lastPlannerTimeStr || dt.toLocaleTimeString();
+
+    await openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr);
+  });
+});
