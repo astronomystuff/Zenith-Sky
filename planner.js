@@ -1357,14 +1357,111 @@ function renderMapImageForPrint(lat, lon, dt) {
   return img;
 }
 
+async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr) {
+  const root = document.getElementById("planner-pdf-root");
+  if (!root) return;
+  root.innerHTML = "";
+
+  const PAGE_HEIGHT = 1056;
+  const ROW_HEIGHT = 22;
+
+  function createPage() {
+    const page = document.createElement("div");
+    page.className = "planner-pdf-page";
+
+    const left = document.createElement("div");
+    left.className = "planner-pdf-left";
+
+    const right = document.createElement("div");
+    right.className = "planner-pdf-right";
+
+    page.appendChild(left);
+    page.appendChild(right);
+    return { page, left, right };
+  }
+
+  function buildDetails() {
+    const d = document.createElement("div");
+    d.className = "planner-pdf-details";
+    d.innerHTML = `
+      <h3>Observation Details – Zenith Sky</h3>
+      <p>Date: ${dateStr}</p>
+      <p>Time: ${timeStr}</p>
+      <p>Latitude: ${lat}</p>
+      <p>Longitude: ${lon}</p>
+    `;
+    return d;
+  }
+
+  function buildTableRows(rows) {
+    const table = document.createElement("table");
+    table.className = "planner-pdf-table-inner";
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th>Object</th><th>Type</th><th>Mag</th><th>RA</th><th>Dec</th>
+          <th>Transit</th><th>Alt</th><th>Score</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    `;
+    const tbody = table.querySelector("tbody");
+
+    rows.forEach(r => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${r.name || r.id}</td>
+        <td>${r.type || ""}</td>
+        <td>${r.mag}</td>
+        <td>${formatRA(r.ra_h)}</td>
+        <td>${formatDec(r.dec_deg)}</td>
+        <td>${r.transit ? r.transit.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",hour12:false}) : "—"}</td>
+        <td>${r.altAtObs ? r.altAtObs.toFixed(1) + "°" : "—"}</td>
+        <td>${r.score ? r.score.toFixed(0) : "—"}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    return table;
+  }
+
+  const rowsPerPage = Math.max(1, Math.floor((PAGE_HEIGHT - 160) / ROW_HEIGHT));
+  let index = 0;
+
+  const { page: firstPage, left: firstLeft, right: firstRight } = createPage();
+  firstLeft.appendChild(buildDetails());
+  firstLeft.appendChild(renderMapImageForPrint(lat, lon, dt));
+
+  const firstRows = results.slice(0, rowsPerPage);
+  const firstTableContainer = document.createElement("div");
+  firstTableContainer.className = "planner-pdf-table";
+  firstTableContainer.appendChild(buildTableRows(firstRows));
+  firstRight.appendChild(firstTableContainer);
+
+  root.appendChild(firstPage);
+  index += rowsPerPage;
+
+  while (index < results.length) {
+    const { page, left, right } = createPage();
+    left.innerHTML = "";
+
+    const pageRows = results.slice(index, index + rowsPerPage);
+    const tableContainer = document.createElement("div");
+    tableContainer.className = "planner-pdf-table";
+    tableContainer.appendChild(buildTableRows(pageRows));
+    right.appendChild(tableContainer);
+
+    root.appendChild(page);
+    index += rowsPerPage;
+  }
+}
+
 async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr) {
   const modalOverlay = document.getElementById("planner-modal-overlay");
   if (modalOverlay) modalOverlay.style.display = "flex";
 
-  // draw on-screen map
   drawOnScreenMap(lat, lon, dt);
 
-  // build PDF DOM
   await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr);
 
   const root = document.getElementById("planner-pdf-root");
@@ -1393,6 +1490,16 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
 
   const cloned = root.cloneNode(true);
   win.document.body.appendChild(cloned);
+
+  const imgs = Array.from(win.document.images || []);
+  await Promise.all(imgs.map(img => {
+    if (img.complete) return Promise.resolve();
+    return new Promise(res => { img.onload = img.onerror = res; });
+  }));
+
+  win.focus();
+  win.print();
+}
 
   const imgs = Array.from(win.document.images || []);
   await Promise.all(imgs.map(img => {
