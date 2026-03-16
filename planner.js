@@ -1097,7 +1097,7 @@ projectedStars.forEach((s) => {
   ctx.arc(s.x, s.y, size, 0, Math.PI * 2);
   ctx.fill();
 });
-
+}
 
 // ------------------------------------------------------------
 // PLANETARY EPHEMERIS (Meeus-style)
