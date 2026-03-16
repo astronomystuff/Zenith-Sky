@@ -989,52 +989,6 @@ function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date) {
     });
   });
 
-// --- MOON ---
-if (s.isMoon) {
-  const moonR = 10 * scale;
-
-  ctx.fillStyle = "#000000";
-  ctx.beginPath();
-  ctx.arc(s.x, s.y, moonR, 0, Math.PI * 2);
-  ctx.fill();
-
-  const sun = computeSun(date); 
-  const sunRA = deg2rad(sun.raHours * 15);
-  const sunDec = deg2rad(sun.decDeg);
-
-  const moonRA = deg2rad(s.raHours * 15);
-  const moonDec = deg2rad(s.decDeg);
-
-  const angleToSun = Math.atan2(
-    Math.cos(moonDec) * Math.sin(sunRA - moonRA),
-    Math.sin(sunDec) * Math.cos(moonDec) -
-    Math.cos(sunDec) * Math.sin(moonDec) * Math.cos(sunRA - moonRA)
-  );
-
-  const k = s.illumination;      // 0=new, 1=full
-  const phase = 2 * k - 1;       // -1=new → +1=full
-
-  ctx.save();
-  ctx.translate(s.x, s.y);
-  ctx.rotate(angleToSun);        // orient crescent toward Sun
-  ctx.translate(-s.x, -s.y);
-
-  ctx.fillStyle = "#ffffff";
-  ctx.beginPath();
-
-  if (phase >= 0) {
-    ctx.ellipse(s.x, s.y, moonR * phase, moonR, 0, 0, Math.PI * 2);
-  } else {
-    ctx.ellipse(s.x, s.y, moonR * -phase, moonR, 0, Math.PI, Math.PI * 3);
-  }
-
-  ctx.fill();
-  ctx.restore();
-  return;
-}
-
-
-  
   // --- Constellation lines ---
   ctx.strokeStyle = "#888888";
   ctx.lineWidth = 1;
@@ -1112,29 +1066,50 @@ projectedStars.forEach((s) => {
   if (s.altDeg <= 0) return;
 
   // --- MOON ---
-  if (s.isMoon) {
-    const moonR = 10 * scale;
+if (s.isMoon) {
+  const moonR = 10 * scale;
 
-    ctx.fillStyle = "#000000";
-    ctx.beginPath();
-    ctx.arc(s.x, s.y, moonR, 0, Math.PI * 2);
-    ctx.fill();
+  // Draw full dark disk
+  ctx.fillStyle = "#000000";
+  ctx.beginPath();
+  ctx.arc(s.x, s.y, moonR, 0, Math.PI * 2);
+  ctx.fill();
 
-    const k = s.illumination;
-    const phase = 2 * k - 1;
+  const sun = computeSun(date); 
+  const sunRA = deg2rad(sun.raHours * 15);
+  const sunDec = deg2rad(sun.decDeg);
 
-    ctx.fillStyle = "#ffffff";
-    ctx.beginPath();
+  const moonRA = deg2rad(s.raHours * 15);
+  const moonDec = deg2rad(s.decDeg);
 
-    if (phase >= 0) {
-      ctx.ellipse(s.x, s.y, moonR * phase, moonR, 0, 0, Math.PI * 2);
-    } else {
-      ctx.ellipse(s.x, s.y, moonR * -phase, moonR, 0, Math.PI, Math.PI * 3);
-    }
+  const angleToSun = Math.atan2(
+    Math.cos(moonDec) * Math.sin(sunRA - moonRA),
+    Math.sin(sunDec) * Math.cos(moonDec) -
+    Math.cos(sunDec) * Math.sin(moonDec) * Math.cos(sunRA - moonRA)
+  );
 
-    ctx.fill();
-    return;
+  const k = s.illumination;      // 0=new, 1=full
+  const phase = 2 * k - 1;       // -1=new → +1=full
+
+  ctx.save();
+  ctx.translate(s.x, s.y);
+  ctx.rotate(angleToSun);        // orient crescent toward Sun
+  ctx.translate(-s.x, -s.y);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+
+  if (phase >= 0) {
+    ctx.ellipse(s.x, s.y, moonR * phase, moonR, 0, 0, Math.PI * 2);
+  } else {
+    ctx.ellipse(s.x, s.y, moonR * -phase, moonR, 0, Math.PI, Math.PI * 3);
   }
+
+  ctx.fill();
+  ctx.restore();
+  return;
+}
+
   
   // PLANETS
   if (s.isPlanet) {
