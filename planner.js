@@ -1392,17 +1392,20 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr) {
   }
 
   function buildDetails() {
-    const d = document.createElement("div");
-    d.className = "planner-pdf-details";
-    d.innerHTML = `
-      <h3>Observation Details – Zenith Sky</h3>
-      <p>Date: ${dateStr}</p>
-      <p>Time: ${timeStr}</p>
-      <p>Latitude: ${lat}</p>
-      <p>Longitude: ${lon}</p>
-    `;
-    return d;
-  }
+  const d = document.createElement("div");
+  d.className = "planner-pdf-details";
+  d.innerHTML = `
+    <h3 style="font-size:12pt; margin:0 0 4px 0; line-height:1.1;">
+      Observation Details – Zenith Sky
+    </h3>
+    <p>Date: ${dateStr}</p>
+    <p>Time: ${timeStr}</p>
+    <p>Latitude: ${lat}</p>
+    <p>Longitude: ${lon}</p>
+  `;
+  return d;
+}
+
 
   function buildTableRows(rows) {
     const table = document.createElement("table");
