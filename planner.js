@@ -1456,20 +1456,20 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr) {
   }
 }
 
+// ===============================
+// openPlannerModalAndPrint
+// ===============================
 async function openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, timeStr) {
   const modalOverlay = document.getElementById("planner-modal-overlay");
   if (modalOverlay) modalOverlay.style.display = "flex";
 
-  // Draw live map in modal
   drawOnScreenMap(lat, lon, dt);
 
-  // Build hidden PDF DOM
   await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr);
 
   const root = document.getElementById("planner-pdf-root");
   if (!root) return;
 
-  // Write PDF skeleton
   win.document.open();
   win.document.write(`<!doctype html>
 <html>
@@ -1494,20 +1494,14 @@ async function openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, tim
 </html>`);
   win.document.close();
 
-   // Wait for popup to finish loading
   win.onload = async () => {
-    // Create clean container
     const container = win.document.createElement("div");
     container.id = "planner-pdf-print-root";
     win.document.body.appendChild(container);
 
-    // Clone ONLY the pages (not the offscreen wrapper)
     const pages = root.querySelectorAll(".planner-pdf-page");
-    pages.forEach(page => {
-      container.appendChild(page.cloneNode(true));
-    });
+    pages.forEach(page => container.appendChild(page.cloneNode(true)));
 
-    // Wait for images
     const imgs = Array.from(win.document.images || []);
     await Promise.all(imgs.map(img => {
       if (img.complete) return Promise.resolve();
@@ -1517,10 +1511,12 @@ async function openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, tim
     win.focus();
     win.print();
   };
-}   // ← THIS closes openPlannerModalAndPrint PROPERLY
+}
 
 
+// ===============================
 // ATTACH PRINT BUTTON HANDLER
+// ===============================
 window.addEventListener("DOMContentLoaded", () => {
   const plannerPrintBtn = document.getElementById("planner-print");
   if (!plannerPrintBtn) {
@@ -1546,4 +1542,3 @@ window.addEventListener("DOMContentLoaded", () => {
     await openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, timeStr);
   });
 });
-
