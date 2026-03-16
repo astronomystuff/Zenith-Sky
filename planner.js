@@ -699,10 +699,8 @@ async function loadObjects() {
     dec_deg: p.decDeg
   }));
 
-  // Remove any planet duplicates from objects.json
   const objectsNoPlanets = objects.filter(o => (o.type || "").toLowerCase() !== "planet");
 
-  // Merge objects + planets by ID
   const objMap = new Map();
   objectsNoPlanets.forEach(o => objMap.set(o.id.toLowerCase(), { ...o }));
   planets.forEach(p => {
@@ -722,12 +720,10 @@ async function loadObjects() {
     return { ...obj, ...eph, score };
   });
 
-  // Filter + sort
   const results = resultsRaw
   .filter(r => r.altAtObs >= 25 && r.score >= 30 && r.mag <= 10)
   .sort((a, b) => b.score - a.score);
 
-// NOW store them
 window.lastPlannerResults = results;
 window.lastPlannerLat = lat;
 window.lastPlannerLon = lon;
@@ -737,7 +733,6 @@ window.lastPlannerTimeStr = timeStr;
     
 modalOverlay.style.display = "flex";
 
-  // Draw star map using the NEW signature
   const canvas = document.getElementById("planner-star-map");
   drawAzimuthalStarMap(canvas, lat, lon, dt);
 }
@@ -868,11 +863,10 @@ function computeEphemerisForNight(lat, lon, dt, target) {
 function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date) {
   if (!canvas) return;
 
-  // Clamp latitude
+  // Clamp latitude at poles
   if (latDeg > 89.9) latDeg = 89.9;
   if (latDeg < -89.9) latDeg = -89.9;
 
-  // HiDPI handling
   const dpr = window.devicePixelRatio || 1;
   const cssSize = canvas.clientWidth || 400;
   canvas.width = Math.round(cssSize * dpr);
@@ -900,7 +894,7 @@ function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date) {
   ctx.arc(cx, cy, radius, 0, Math.PI * 2);
   ctx.stroke();
 
-  // Cardinal directions (your original mirrored orientation)
+  // Cardinal directions
   const cardinals = [
     { label: "N", azDeg: 0 },
     { label: "E", azDeg: 90 },
@@ -916,13 +910,11 @@ function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date) {
   cardinals.forEach((c) => {
     const azRad = deg2rad(c.azDeg);
     const r = radius + 18;
-    // ORIGINAL MIRRORED XY
     const x = cx + -r * Math.sin(azRad);
     const y = cy + -r * Math.cos(azRad);
     ctx.fillText(c.label, x, y);
   });
 
-  // Astronomy math
   const latRad = deg2rad(latDeg);
   const lonRad = deg2rad(lonDeg);
   const jd = toJulianDate(date);
@@ -931,7 +923,7 @@ function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date) {
   const stars = decodeStarCatalog();
   const projectedStars = [];
 
-  // --- Project stars (original math) ---
+  // --- Project stars ---
   stars.forEach((star) => {
     const raRad = deg2rad(star.ra * 15);
     const decRad = deg2rad(star.dec);
@@ -950,7 +942,7 @@ function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date) {
     let az = Math.acos(Math.max(-1, Math.min(1, cosAz)));
     if (Math.sin(ha) > 0) az = 2 * Math.PI - az;
 
-    // ORIGINAL EQUidistant projection + MIRRORED XY
+    // Projection
     const r = radius * (90 - altDeg) / 90;
     const x = cx + -r * Math.sin(az);
     const y = cy + -r * Math.cos(az);
@@ -964,7 +956,7 @@ function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date) {
     });
   });
 
-  // --- Planets (same projection) ---
+  // --- Planets ---
   const planets = computeAllPlanets(date);
   planets.forEach((p) => {
     const raRad = deg2rad(p.raHours * 15);
@@ -997,40 +989,50 @@ function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date) {
     });
   });
 
-// --- Moon (same projection as planets) ---
-const moon = computeMoon(date);  // We'll define this next
+// --- MOON ---
+if (s.isMoon) {
+  const moonR = 10 * scale;
 
-{
-  const raRad = deg2rad(moon.raHours * 15);
-  const decRad = deg2rad(moon.decDeg);
-  const ha = normalizeAngle(lst - raRad);
+  ctx.fillStyle = "#000000";
+  ctx.beginPath();
+  ctx.arc(s.x, s.y, moonR, 0, Math.PI * 2);
+  ctx.fill();
 
-  const sinAlt =
-    Math.sin(latRad) * Math.sin(decRad) +
-    Math.cos(latRad) * Math.cos(decRad) * Math.cos(ha);
-  const alt = Math.asin(sinAlt);
-  const altDeg = rad2deg(alt);
+  const sun = computeSun(date); 
+  const sunRA = deg2rad(sun.raHours * 15);
+  const sunDec = deg2rad(sun.decDeg);
 
-  const cosAz =
-    (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
-    (Math.cos(alt) * Math.cos(latRad));
-  let az = Math.acos(Math.max(-1, Math.min(1, cosAz)));
-  if (Math.sin(ha) > 0) az = 2 * Math.PI - az;
+  const moonRA = deg2rad(s.raHours * 15);
+  const moonDec = deg2rad(s.decDeg);
 
-  const r = radius * (90 - altDeg) / 90;
-  const x = cx + -r * Math.sin(az);
-  const y = cy + -r * Math.cos(az);
+  const angleToSun = Math.atan2(
+    Math.cos(moonDec) * Math.sin(sunRA - moonRA),
+    Math.sin(sunDec) * Math.cos(moonDec) -
+    Math.cos(sunDec) * Math.sin(moonDec) * Math.cos(sunRA - moonRA)
+  );
 
-  projectedStars.push({
-    id: "Moon",
-    x,
-    y,
-    mag: -12.5,          // treat as bright object
-    altDeg,
-    isMoon: true,
-    illumination: moon.illumination
-  });
+  const k = s.illumination;      // 0=new, 1=full
+  const phase = 2 * k - 1;       // -1=new → +1=full
+
+  ctx.save();
+  ctx.translate(s.x, s.y);
+  ctx.rotate(angleToSun);        // orient crescent toward Sun
+  ctx.translate(-s.x, -s.y);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+
+  if (phase >= 0) {
+    ctx.ellipse(s.x, s.y, moonR * phase, moonR, 0, 0, Math.PI * 2);
+  } else {
+    ctx.ellipse(s.x, s.y, moonR * -phase, moonR, 0, Math.PI, Math.PI * 3);
+  }
+
+  ctx.fill();
+  ctx.restore();
+  return;
 }
+
 
   
   // --- Constellation lines ---
@@ -1090,7 +1092,7 @@ const moon = computeMoon(date);  // We'll define this next
       }
       return;
     }
-
+    
     if (!aInside && bInside) {
       const p = clipLineToCircle(b.x, b.y, a.x, a.y, cx, cy, radius);
       if (p) {
@@ -1102,48 +1104,42 @@ const moon = computeMoon(date);  // We'll define this next
       return;
     }
   });
-
-  // MOON: realistic phase shading
-if (s.isMoon) {
-  const moonR = 10 * scale;   // base radius
-
-  // Draw full disk
-  ctx.fillStyle = "#000000";
-  ctx.beginPath();
-  ctx.arc(s.x, s.y, moonR, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Phase shading: illuminated fraction
-  const k = s.illumination;  // 0 = new, 1 = full
-  const phase = 2 * k - 1;   // -1 new → +1 full
-
-  ctx.fillStyle = "#ffffff";
-  ctx.beginPath();
-
-  if (phase >= 0) {
-    // Waxing / Full / Waning Gibbous
-    ctx.ellipse(s.x, s.y, moonR * phase, moonR, 0, 0, Math.PI * 2);
-  } else {
-    // Crescent phases
-    ctx.ellipse(s.x, s.y, moonR * -phase, moonR, 0, Math.PI, Math.PI * 3);
-  }
-
-  ctx.fill();
-  return;
-}
-
   
-// --- Stars & Planets (scaled for any canvas size) ---
+// --- Stars & Planets ---
 const scale = canvas.width / 1050; // 1050px = 3.5 inches @ 300 DPI
 
 projectedStars.forEach((s) => {
   if (s.altDeg <= 0) return;
 
-  // PLANETS: ✦ symbol (smaller, more elegant)
+  // --- MOON ---
+  if (s.isMoon) {
+    const moonR = 10 * scale;
+
+    ctx.fillStyle = "#000000";
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, moonR, 0, Math.PI * 2);
+    ctx.fill();
+
+    const k = s.illumination;
+    const phase = 2 * k - 1;
+
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+
+    if (phase >= 0) {
+      ctx.ellipse(s.x, s.y, moonR * phase, moonR, 0, 0, Math.PI * 2);
+    } else {
+      ctx.ellipse(s.x, s.y, moonR * -phase, moonR, 0, Math.PI, Math.PI * 3);
+    }
+
+    ctx.fill();
+    return;
+  }
+  
+  // PLANETS
   if (s.isPlanet) {
     ctx.fillStyle = "#000000";
 
-    // Much smaller, flatter scaling curve
     const planetPx = (12 - s.mag * 0.8) * scale;
     const finalSize = Math.max(8 * scale, planetPx);
 
@@ -1154,7 +1150,7 @@ projectedStars.forEach((s) => {
     return;
   }
 
-  // STARS: circular dots (slightly smaller)
+  // STARS
   const starPx = (2.2 - s.mag * 0.25) * scale;
   const size = Math.max(0.4 * scale, starPx);
 
@@ -1281,7 +1277,6 @@ function computeMoon(date) {
     + 0.277 * Math.sin(M1 - F)
     + 0.173 * Math.sin(2*D - F);
 
-  // Convert to RA/Dec
   const eps = deg2rad(23.4393);
   const lonRad = deg2rad(lon);
   const latRad = deg2rad(lat);
@@ -1294,10 +1289,9 @@ function computeMoon(date) {
   const ra = Math.atan2(y, x);
 
   // Illumination fraction
-  const phaseAngle = 180 - lon + 2*0; // simplified Sun-Moon elongation
+  const phaseAngle = 180 - lon + 2*0;
   const illumination = (1 + Math.cos(deg2rad(phaseAngle))) / 2;
 
-  // Phase name
   const pct = illumination;
   let phaseName = "New Moon";
   if (pct > 0.03 && pct <= 0.25) phaseName = "Waxing Crescent";
@@ -1332,6 +1326,33 @@ function formatDec(deg) {
   const d = Math.floor(abs);
   const m = Math.floor((abs - d) * 60);
   return `${sign}${d}° ${m.toString().padStart(2, "0")}′`;
+}
+
+function computeRiseSet(latDeg, decDeg, raHours, date) {
+  const latRad = deg2rad(latDeg);
+  const decRad = deg2rad(decDeg);
+
+  const cosH = (Math.cos(deg2rad(90.833)) - Math.sin(latRad)*Math.sin(decRad)) /
+               (Math.cos(latRad)*Math.cos(decRad));
+
+  if (cosH < -1) return { rise: "Always Up", set: "Always Up" };
+  if (cosH > 1)  return { rise: "Never Rises", set: "Never Rises" };
+
+  const H = rad2deg(Math.acos(cosH)) / 15;
+
+  const lst0 = localSiderealTime(toJulianDate(date), 0);
+  const gmst = lst0 / 15;
+
+  const riseLST = raHours - H;
+  const setLST  = raHours + H;
+
+  const rise = new Date(date.getTime() + (riseLST - gmst) * 3600000);
+  const set  = new Date(date.getTime() + (setLST - gmst) * 3600000);
+
+  return {
+    rise: rise.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"}),
+    set:  set.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"})
+  };
 }
 
 // RUN PLANNER
@@ -1420,21 +1441,15 @@ async function runPlanner() {
 
   modalOverlay.style.display = "flex";
 
-  // draw immediately on-screen
   drawOnScreenMap(lat, lon, dt);
-} // end runPlanner
+}
 
-//
-// 1. Modern DPR‑correct canvas prep
-//
 function prepareCanvasForDrawing(canvas, cssWidth, cssHeight) {
   const dpr = window.devicePixelRatio || 1;
 
-  // CSS size
   canvas.style.width = cssWidth + "px";
   canvas.style.height = cssHeight + "px";
 
-  // Buffer size
   canvas.width = Math.round(cssWidth * dpr);
   canvas.height = Math.round(cssHeight * dpr);
 
@@ -1444,9 +1459,6 @@ function prepareCanvasForDrawing(canvas, cssWidth, cssHeight) {
   return ctx;
 }
 
-//
-// 2. On‑screen map drawing (responsive)
-//
 function drawOnScreenMap(lat, lon, dt) {
   const canvas = document.getElementById("planner-star-map");
   if (!canvas) return;
@@ -1457,33 +1469,24 @@ function drawOnScreenMap(lat, lon, dt) {
 
   prepareCanvasForDrawing(canvas, cssW, cssH);
 
-  // Uses your restored perfect projection + NWSE clockwise orientation
   drawAzimuthalStarMap(canvas, lat, lon, dt);
 }
 
-//
-// 3. Print‑map renderer (3.5 × 3.5 inches @ 300 DPI)
-//
 function renderMapImageForPrint(lat, lon, dt) {
   const inches = 3.5;
   const dpi = 300;
   const px = Math.round(inches * dpi);   // 1050 px
 
-  // High‑resolution offscreen canvas
   const off = document.createElement("canvas");
   off.width = px;
   off.height = px;
 
-  // Draw using your restored projection
   drawAzimuthalStarMap(off, lat, lon, dt);
 
-  // Convert to image for PDF (never put <canvas> in print window)
   const img = document.createElement("img");
   img.src = off.toDataURL("image/png");
   img.className = "planner-pdf-map";
 
-  // In the PDF layout, the left column is 3.5 inches wide,
-  // so this image should scale to 100% of that column.
   img.style.width = "100%";
   img.style.height = "auto";
   img.style.display = "block";
@@ -1514,25 +1517,31 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr) {
     return { page, left, right };
   }
 
-  function buildDetails() {
+ function buildDetails(moon, moonRS) {
   const d = document.createElement("div");
   d.className = "planner-pdf-details";
+
   d.innerHTML = `
     <h3 style="font-size:12pt; margin:0 0 4px 0; line-height:1.1;">
       Observation Details – Zenith Sky
     </h3>
+
     <p>Date: ${dateStr}</p>
     <p>Time: ${timeStr}</p>
     <p>Latitude: ${lat}</p>
     <p>Longitude: ${lon}</p>
-    <p>Moon Phase: ${moon.phaseName} (${Math.round(moon.illumination*100)}%)</p>
-    <p>Moon Altitude: ${moon.altDeg.toFixed(1)}°</p>
-    <p>Moon RA: ${formatRA(moon.raHours)}</p>
-    <p>Moon Dec: ${formatDec(moon.decDeg)}</p>
+
+    <h4 style="margin:8px 0 2px 0;">Moon</h4>
+    <p>Phase: ${moon.phaseName} (${Math.round(moon.illumination * 100)}%)</p>
+    <p>Altitude: ${moon.altDeg.toFixed(1)}°</p>
+    <p>RA: ${formatRA(moon.raHours)}</p>
+    <p>Dec: ${formatDec(moon.decDeg)}</p>
+    <p>Rise: ${moonRS.rise}</p>
+    <p>Set: ${moonRS.set}</p>
   `;
+
   return d;
 }
-
 
   function buildTableRows(rows) {
     const table = document.createElement("table");
@@ -1610,10 +1619,8 @@ async function openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, tim
 
   win.onload = async () => {
 
-    // Clear tab
     win.document.body.innerHTML = "";
 
-    // Inject CSS (critical)
     const style = win.document.createElement("style");
     style.textContent = `
       @page { size: 8.5in 11in; margin: 0; }
@@ -1672,16 +1679,13 @@ async function openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, tim
     `;
     win.document.head.appendChild(style);
 
-    // Create container
     const container = win.document.createElement("div");
     container.id = "planner-pdf-print-root";
     win.document.body.appendChild(container);
 
-    // Clone pages
     const pages = root.querySelectorAll(".planner-pdf-page");
     pages.forEach(page => container.appendChild(page.cloneNode(true)));
 
-    // Wait for images
     const imgs = Array.from(win.document.images || []);
     await Promise.all(imgs.map(img => {
       if (img.complete) return Promise.resolve();
@@ -1702,18 +1706,15 @@ window.addEventListener("DOMContentLoaded", () => {
 
   plannerPrintBtn.addEventListener("click", async () => {
 
-    // SAFARI FIX: open popup FIRST
     const win = window.open("planner-print.html", "_blank");
     if (!win) {
       alert("Popup blocked — please allow popups for this site.");
       return;
     }
 
-    // NOW show the modal
     const modalOverlay = document.getElementById("planner-modal-overlay");
     if (modalOverlay) modalOverlay.style.display = "flex";
 
-    // Now run the planner
     const results = window.lastPlannerResults || [];
     const lat = window.lastPlannerLat || 0;
     const lon = window.lastPlannerLon || 0;
