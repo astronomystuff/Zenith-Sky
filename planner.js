@@ -1460,18 +1460,20 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
   const modalOverlay = document.getElementById("planner-modal-overlay");
   if (modalOverlay) modalOverlay.style.display = "flex";
 
-  // draw live map in the modal
+  // Draw live map in modal
   drawOnScreenMap(lat, lon, dt);
 
-  // build hidden PDF DOM in #planner-pdf-root
+  // Build hidden PDF DOM
   await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr);
 
   const root = document.getElementById("planner-pdf-root");
   if (!root) return;
 
+  // Open print window
   const win = window.open("", "_blank");
   if (!win) return;
 
+  // Write PDF skeleton
   win.document.open();
   win.document.write(`<!doctype html>
 <html>
@@ -1496,28 +1498,31 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
 </html>`);
   win.document.close();
 
+  // Wait for popup to finish loading
   win.onload = async () => {
-    // fresh container in the print window
+    // Create clean container
     const container = win.document.createElement("div");
     container.id = "planner-pdf-print-root";
     win.document.body.appendChild(container);
 
-    // clone ONLY the pages, not the offscreen wrapper
+    // Clone ONLY the pages (not the offscreen wrapper)
     const pages = root.querySelectorAll(".planner-pdf-page");
     pages.forEach(page => {
       container.appendChild(page.cloneNode(true));
     });
 
+    // Wait for images
     const imgs = Array.from(win.document.images || []);
     await Promise.all(imgs.map(img => {
       if (img.complete) return Promise.resolve();
       return new Promise(res => { img.onload = img.onerror = res; });
-    });
+    }));
 
     win.focus();
     win.print();
   };
 }
+
 
 // ATTACH PRINT BUTTON HANDLER
 window.addEventListener("DOMContentLoaded", () => {
