@@ -1460,9 +1460,7 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr) {
 // openPlannerModalAndPrint
 // ===============================
 async function openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, timeStr) {
-  const modalOverlay = document.getElementById("planner-modal-overlay");
-  if (modalOverlay) modalOverlay.style.display = "flex";
-
+  
   drawOnScreenMap(lat, lon, dt);
 
   await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr);
@@ -1519,19 +1517,22 @@ async function openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, tim
 // ===============================
 window.addEventListener("DOMContentLoaded", () => {
   const plannerPrintBtn = document.getElementById("planner-print");
-  if (!plannerPrintBtn) {
-    console.warn("planner-print button not found");
-    return;
-  }
+  if (!plannerPrintBtn) return;
 
   plannerPrintBtn.addEventListener("click", async () => {
-    // OPEN POPUP FIRST — synchronously
-    const win = window.open("", "_blank");
+
+    // SAFARI FIX: open popup FIRST
+    const win = window.open("about:blank", "_blank");
     if (!win) {
       alert("Popup blocked — please allow popups for this site.");
       return;
     }
 
+    // NOW show the modal (Safari allows this)
+    const modalOverlay = document.getElementById("planner-modal-overlay");
+    if (modalOverlay) modalOverlay.style.display = "flex";
+
+    // Now run the planner
     const results = window.lastPlannerResults || [];
     const lat = window.lastPlannerLat || 0;
     const lon = window.lastPlannerLon || 0;
