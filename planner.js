@@ -1554,7 +1554,10 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr) {
   let index = 0;
 
   const { page: firstPage, left: firstLeft, right: firstRight } = createPage();
-  firstLeft.appendChild(buildDetails());
+  const moon = computeMoon(dt);
+  const moonRS = computeRiseSet(lat, moon.decDeg, moon.raHours, dt);
+firstLeft.appendChild(buildDetails(moon, moonRS));
+
   firstLeft.appendChild(renderMapImageForPrint(lat, lon, dt));
 
   const firstRows = results.slice(0, rowsPerPage);
