@@ -1460,46 +1460,34 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr) {
 // openPlannerModalAndPrint
 // ===============================
 async function openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, timeStr) {
-  
+
+  // Draw the on-screen map (modal)
   drawOnScreenMap(lat, lon, dt);
 
+  // Build the hidden PDF DOM
   await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr);
 
   const root = document.getElementById("planner-pdf-root");
   if (!root) return;
 
-  win.document.open();
-  win.document.write(`<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Planner PDF</title>
-  <style>
-    @page { size: 8.5in 11in; margin: 0; }
-    html, body { width: 8.5in; height: 11in; margin: 0; padding: 0; }
-    .planner-pdf-page { width: 8.5in; min-height: 11in; page-break-after: always; box-sizing: border-box; display: flex; }
-    .planner-pdf-left { width: 3.5in; padding: 0.25in; box-sizing: border-box; }
-    .planner-pdf-right { width: 5in; padding: 0.25in; box-sizing: border-box; overflow: visible !important; }
-    .planner-pdf-table { width: 100%; height: auto !important; max-height: none !important; overflow: visible !important; }
-    table { width:100%; border-collapse:collapse; font-size:9pt; page-break-inside:auto; }
-    thead { display: table-header-group; }
-    tbody tr { page-break-inside: avoid; }
-    th, td { padding:4px 6px; border-bottom:1px solid #ddd; text-align:left; }
-    img { max-width:100%; height:auto; display:block; }
-  </style>
-</head>
-<body></body>
-</html>`);
-  win.document.close();
-
+  // SAFARI-SAFE: wait for the new tab to fully load
   win.onload = async () => {
+
+    // Clear whatever Safari put in the new tab
+    win.document.body.innerHTML = "";
+
+    // Create container for PDF pages
     const container = win.document.createElement("div");
     container.id = "planner-pdf-print-root";
     win.document.body.appendChild(container);
 
+    // Clone ONLY the PDF pages
     const pages = root.querySelectorAll(".planner-pdf-page");
-    pages.forEach(page => container.appendChild(page.cloneNode(true)));
+    pages.forEach(page => {
+      container.appendChild(page.cloneNode(true));
+    });
 
+    // Wait for images to load
     const imgs = Array.from(win.document.images || []);
     await Promise.all(imgs.map(img => {
       if (img.complete) return Promise.resolve();
@@ -1511,7 +1499,6 @@ async function openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, tim
   };
 }
 
-
 // ===============================
 // ATTACH PRINT BUTTON HANDLER
 // ===============================
@@ -1522,7 +1509,7 @@ window.addEventListener("DOMContentLoaded", () => {
   plannerPrintBtn.addEventListener("click", async () => {
 
     // SAFARI FIX: open popup FIRST
-    const win = window.open("about:blank", "_blank");
+    const win = window.open("planner-print.html", "_blank");
     if (!win) {
       alert("Popup blocked — please allow popups for this site.");
       return;
