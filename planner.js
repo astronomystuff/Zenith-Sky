@@ -1517,7 +1517,8 @@ async function openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, tim
     win.focus();
     win.print();
   };
-
+  }
+  
 plannerPrintBtn.addEventListener("click", async () => {
   // OPEN POPUP FIRST — synchronously
   const win = window.open("", "_blank");
