@@ -462,5 +462,10 @@ style.textContent = `
     height: auto;
     display: block;
   }
+
+.planner-pdf-details h3 {
+  font-size: 13pt;
+  margin: 0 0 6px 0;
+}
 `;
 win.document.head.appendChild(style);
