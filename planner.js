@@ -1494,7 +1494,7 @@ async function openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, tim
 </html>`);
   win.document.close();
 
-  // Wait for popup to finish loading
+   // Wait for popup to finish loading
   win.onload = async () => {
     // Create clean container
     const container = win.document.createElement("div");
@@ -1517,24 +1517,33 @@ async function openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, tim
     win.focus();
     win.print();
   };
-  }
-  
-plannerPrintBtn.addEventListener("click", async () => {
-  // OPEN POPUP FIRST — synchronously
-  const win = window.open("", "_blank");
-  if (!win) {
-    alert("Popup blocked — please allow popups for this site.");
+}   // ← THIS closes openPlannerModalAndPrint PROPERLY
+
+
+// ATTACH PRINT BUTTON HANDLER
+window.addEventListener("DOMContentLoaded", () => {
+  const plannerPrintBtn = document.getElementById("planner-print");
+  if (!plannerPrintBtn) {
+    console.warn("planner-print button not found");
     return;
   }
 
-  // Now run the planner
-  const results = window.lastPlannerResults || [];
-  const lat = window.lastPlannerLat || 0;
-  const lon = window.lastPlannerLon || 0;
-  const dt = window.lastPlannerDt || new Date();
-  const dateStr = window.lastPlannerDateStr || dt.toLocaleDateString();
-  const timeStr = window.lastPlannerTimeStr || dt.toLocaleTimeString();
+  plannerPrintBtn.addEventListener("click", async () => {
+    // OPEN POPUP FIRST — synchronously
+    const win = window.open("", "_blank");
+    if (!win) {
+      alert("Popup blocked — please allow popups for this site.");
+      return;
+    }
 
-  // Pass the popup window into the function
-  await openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, timeStr);
+    const results = window.lastPlannerResults || [];
+    const lat = window.lastPlannerLat || 0;
+    const lon = window.lastPlannerLon || 0;
+    const dt = window.lastPlannerDt || new Date();
+    const dateStr = window.lastPlannerDateStr || dt.toLocaleDateString();
+    const timeStr = window.lastPlannerTimeStr || dt.toLocaleTimeString();
+
+    await openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, timeStr);
+  });
 });
+
