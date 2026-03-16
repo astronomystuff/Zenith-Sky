@@ -1067,13 +1067,16 @@ function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date) {
     }
   });
 
+const scale = canvas.width / 1050;
+
   // --- Stars ---
   projectedStars.forEach((s) => {
     if (s.altDeg <= 0) return;
 
     if (s.isPlanet) {
       ctx.fillStyle = "#000000";
-      ctx.font = Math.max(12, 20 - s.mag * 1.2) + "px serif";
+      const planetPx = (20 - s.mag * 1.2) * scale;
+      ctx.font = Math.max(10 * scale, planetPx) + "px serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText("✦", s.x, s.y);
