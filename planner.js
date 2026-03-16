@@ -1067,29 +1067,37 @@ function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date) {
     }
   });
 
-const scale = canvas.width / 1050;
+// --- Stars & Planets (scaled for any canvas size) ---
+const scale = canvas.width / 1050; // 1050px = 3.5 inches @ 300 DPI
 
-  // --- Stars ---
-  projectedStars.forEach((s) => {
-    if (s.altDeg <= 0) return;
+projectedStars.forEach((s) => {
+  if (s.altDeg <= 0) return;
 
-    if (s.isPlanet) {
-      ctx.fillStyle = "#000000";
-      const planetPx = (20 - s.mag * 1.2) * scale;
-      ctx.font = Math.max(10 * scale, planetPx) + "px serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText("✦", s.x, s.y);
-      return;
-    }
-
-    const size = Math.max(0.6, 3.5 - s.mag * 0.5);
+  // PLANETS: ✦ symbol (smaller, more elegant)
+  if (s.isPlanet) {
     ctx.fillStyle = "#000000";
-    ctx.beginPath();
-    ctx.arc(s.x, s.y, size, 0, Math.PI * 2);
-    ctx.fill();
-  });
-}
+
+    // Much smaller, flatter scaling curve
+    const planetPx = (12 - s.mag * 0.8) * scale;
+    const finalSize = Math.max(8 * scale, planetPx);
+
+    ctx.font = finalSize + "px serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("✦", s.x, s.y);
+    return;
+  }
+
+  // STARS: circular dots (slightly smaller)
+  const starPx = (2.2 - s.mag * 0.25) * scale;
+  const size = Math.max(0.4 * scale, starPx);
+
+  ctx.fillStyle = "#000000";
+  ctx.beginPath();
+  ctx.arc(s.x, s.y, size, 0, Math.PI * 2);
+  ctx.fill();
+});
+
 
 // ------------------------------------------------------------
 // PLANETARY EPHEMERIS (Meeus-style)
