@@ -407,83 +407,60 @@ button:active,
   margin: 0 auto;
 }
 
-@media (max-width: 768px) {
-  #result-modal {
-    border-radius: 24px 24px 0 0;
+const style = win.document.createElement("style");
+style.textContent = `
+  @page { size: 8.5in 11in; margin: 0; }
+  html, body { width: 8.5in; height: 11in; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+  .planner-pdf-page {
+    width: 8.5in;
+    min-height: 11in;
+    page-break-after: always;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
   }
 
-  #result-modal-content {
-    flex-direction: column;
+  .planner-pdf-left {
+    width: 3.5in;
+    padding: 0.25in;
+    box-sizing: border-box;
   }
 
-  #result-image-container {
-    min-height: 40vh;
+  .planner-pdf-right {
+    width: 5in;
+    padding: 0.25in;
+    box-sizing: border-box;
+    overflow: visible !important;
   }
-}
 
-@page { size: 8.5in 11in; margin: 0; }
+  .planner-pdf-table {
+    width: 100%;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
 
-html, body {
-  width: 8.5in;
-  height: 11in;
-  margin: 0;
-  padding: 0;
-}
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+    page-break-inside: auto;
+  }
 
-.planner-pdf-page {
-  width: 8.5in;
-  min-height: 11in;
-  page-break-after: always;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: row;
-}
+  thead { display: table-header-group; }
+  tbody tr { page-break-inside: avoid; }
 
-.planner-pdf-left {
-  width: 3.5in;
-  padding: 0.25in;
-  box-sizing: border-box;
-}
+  th, td {
+    padding: 4px 6px;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
+  }
 
-.planner-pdf-right {
-  width: 5in;
-  padding: 0.25in;
-  box-sizing: border-box;
-
-  /* REMOVE SCROLLING */
-  overflow: visible !important;
-}
-
-.planner-pdf-table {
-  width: 100%;
-  box-sizing: border-box;
-
-  /* REMOVE HEIGHT LIMITS */
-  height: auto !important;
-  max-height: none !important;
-  overflow: visible !important;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 9pt;
-
-  /* LET TABLE GROW NATURALLY */
-  page-break-inside: auto;
-}
-
-thead {
-  display: table-header-group;
-}
-
-tbody tr {
-  page-break-inside: avoid;
-  page-break-after: auto;
-}
-
-th, td {
-  padding: 4px 6px;
-  border-bottom: 1px solid #ddd;
-  text-align: left;
-}
+  img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+`;
+win.document.head.appendChild(style);
