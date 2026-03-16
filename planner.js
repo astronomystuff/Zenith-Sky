@@ -1528,7 +1528,7 @@ window.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // NOW show the modal (Safari allows this)
+    // NOW show the modal
     const modalOverlay = document.getElementById("planner-modal-overlay");
     if (modalOverlay) modalOverlay.style.display = "flex";
 
@@ -1543,3 +1543,4 @@ window.addEventListener("DOMContentLoaded", () => {
     await openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, timeStr);
   });
 });
+
