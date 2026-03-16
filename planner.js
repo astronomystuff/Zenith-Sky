@@ -1460,8 +1460,10 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
   const modalOverlay = document.getElementById("planner-modal-overlay");
   if (modalOverlay) modalOverlay.style.display = "flex";
 
+  // draw live map in the modal
   drawOnScreenMap(lat, lon, dt);
 
+  // build hidden PDF DOM in #planner-pdf-root
   await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr);
 
   const root = document.getElementById("planner-pdf-root");
@@ -1471,7 +1473,11 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
   if (!win) return;
 
   win.document.open();
-  win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Planner PDF</title>
+  win.document.write(`<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Planner PDF</title>
   <style>
     @page { size: 8.5in 11in; margin: 0; }
     html, body { width: 8.5in; height: 11in; margin: 0; padding: 0; }
@@ -1485,33 +1491,33 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
     th, td { padding:4px 6px; border-bottom:1px solid #ddd; text-align:left; }
     img { max-width:100%; height:auto; display:block; }
   </style>
-  </head><body></body></html>`);
+</head>
+<body></body>
+</html>`);
   win.document.close();
 
   win.onload = async () => {
-    // Create a clean container in the print window
+    // fresh container in the print window
     const container = win.document.createElement("div");
     container.id = "planner-pdf-print-root";
     win.document.body.appendChild(container);
 
-    // Clone ONLY the pages, not the offscreen wrapper
+    // clone ONLY the pages, not the offscreen wrapper
     const pages = root.querySelectorAll(".planner-pdf-page");
     pages.forEach(page => {
       container.appendChild(page.cloneNode(true));
     });
 
-    // Wait for images
     const imgs = Array.from(win.document.images || []);
     await Promise.all(imgs.map(img => {
       if (img.complete) return Promise.resolve();
       return new Promise(res => { img.onload = img.onerror = res; });
-    }));
+    });
 
     win.focus();
     win.print();
   };
 }
-
 
 // ATTACH PRINT BUTTON HANDLER
 window.addEventListener("DOMContentLoaded", () => {
