@@ -1461,33 +1461,86 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr) {
 // ===============================
 async function openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, timeStr) {
 
-  // Draw the on-screen map (modal)
   drawOnScreenMap(lat, lon, dt);
-
-  // Build the hidden PDF DOM
   await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr);
 
   const root = document.getElementById("planner-pdf-root");
   if (!root) return;
 
-  // SAFARI-SAFE: wait for the new tab to fully load
   win.onload = async () => {
 
-    // Clear whatever Safari put in the new tab
+    // Clear tab
     win.document.body.innerHTML = "";
 
-    // Create container for PDF pages
+    // Inject CSS (critical)
+    const style = win.document.createElement("style");
+    style.textContent = `
+      @page { size: 8.5in 11in; margin: 0; }
+      html, body { width: 8.5in; height: 11in; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+      .planner-pdf-page {
+        width: 8.5in;
+        min-height: 11in;
+        page-break-after: always;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: row;
+      }
+
+      .planner-pdf-left {
+        width: 3.5in;
+        padding: 0.25in;
+        box-sizing: border-box;
+      }
+
+      .planner-pdf-right {
+        width: 5in;
+        padding: 0.25in;
+        box-sizing: border-box;
+        overflow: visible !important;
+      }
+
+      .planner-pdf-table {
+        width: 100%;
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 9pt;
+        page-break-inside: auto;
+      }
+
+      thead { display: table-header-group; }
+      tbody tr { page-break-inside: avoid; }
+
+      th, td {
+        padding: 4px 6px;
+        border-bottom: 1px solid #ddd;
+        text-align: left;
+      }
+
+      img {
+        max-width: 100%;
+        height: auto;
+        display: block;
+      }
+    `;
+    win.document.head.appendChild(style);
+
+    // Create container
     const container = win.document.createElement("div");
     container.id = "planner-pdf-print-root";
     win.document.body.appendChild(container);
 
-    // Clone ONLY the PDF pages
+    // Clone pages
     const pages = root.querySelectorAll(".planner-pdf-page");
-    pages.forEach(page => {
-      container.appendChild(page.cloneNode(true));
-    });
+    pages.forEach(page => container.appendChild(page.cloneNode(true)));
 
-    // Wait for images to load
+    // Wait for images
     const imgs = Array.from(win.document.images || []);
     await Promise.all(imgs.map(img => {
       if (img.complete) return Promise.resolve();
