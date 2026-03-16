@@ -1488,18 +1488,30 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
   </head><body></body></html>`);
   win.document.close();
 
-  const cloned = root.cloneNode(true);
-  win.document.body.appendChild(cloned);
+  win.onload = async () => {
+    // Create a clean container in the print window
+    const container = win.document.createElement("div");
+    container.id = "planner-pdf-print-root";
+    win.document.body.appendChild(container);
 
+    // Clone ONLY the pages, not the offscreen wrapper
+    const pages = root.querySelectorAll(".planner-pdf-page");
+    pages.forEach(page => {
+      container.appendChild(page.cloneNode(true));
+    });
+
+    // Wait for images
     const imgs = Array.from(win.document.images || []);
-  await Promise.all(imgs.map(img => {
-    if (img.complete) return Promise.resolve();
-    return new Promise(res => { img.onload = img.onerror = res; });
-  }));
+    await Promise.all(imgs.map(img => {
+      if (img.complete) return Promise.resolve();
+      return new Promise(res => { img.onload = img.onerror = res; });
+    }));
 
-  win.focus();
-  win.print();
+    win.focus();
+    win.print();
+  };
 }
+
 
 // ATTACH PRINT BUTTON HANDLER
 window.addEventListener("DOMContentLoaded", () => {
