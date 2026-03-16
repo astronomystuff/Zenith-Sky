@@ -997,6 +997,42 @@ function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date) {
     });
   });
 
+// --- Moon (same projection as planets) ---
+const moon = computeMoon(date);  // We'll define this next
+
+{
+  const raRad = deg2rad(moon.raHours * 15);
+  const decRad = deg2rad(moon.decDeg);
+  const ha = normalizeAngle(lst - raRad);
+
+  const sinAlt =
+    Math.sin(latRad) * Math.sin(decRad) +
+    Math.cos(latRad) * Math.cos(decRad) * Math.cos(ha);
+  const alt = Math.asin(sinAlt);
+  const altDeg = rad2deg(alt);
+
+  const cosAz =
+    (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
+    (Math.cos(alt) * Math.cos(latRad));
+  let az = Math.acos(Math.max(-1, Math.min(1, cosAz)));
+  if (Math.sin(ha) > 0) az = 2 * Math.PI - az;
+
+  const r = radius * (90 - altDeg) / 90;
+  const x = cx + -r * Math.sin(az);
+  const y = cy + -r * Math.cos(az);
+
+  projectedStars.push({
+    id: "Moon",
+    x,
+    y,
+    mag: -12.5,          // treat as bright object
+    altDeg,
+    isMoon: true,
+    illumination: moon.illumination
+  });
+}
+
+  
   // --- Constellation lines ---
   ctx.strokeStyle = "#888888";
   ctx.lineWidth = 1;
@@ -1067,6 +1103,36 @@ function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date) {
     }
   });
 
+  // MOON: realistic phase shading
+if (s.isMoon) {
+  const moonR = 10 * scale;   // base radius
+
+  // Draw full disk
+  ctx.fillStyle = "#000000";
+  ctx.beginPath();
+  ctx.arc(s.x, s.y, moonR, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Phase shading: illuminated fraction
+  const k = s.illumination;  // 0 = new, 1 = full
+  const phase = 2 * k - 1;   // -1 new → +1 full
+
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+
+  if (phase >= 0) {
+    // Waxing / Full / Waning Gibbous
+    ctx.ellipse(s.x, s.y, moonR * phase, moonR, 0, 0, Math.PI * 2);
+  } else {
+    // Crescent phases
+    ctx.ellipse(s.x, s.y, moonR * -phase, moonR, 0, Math.PI, Math.PI * 3);
+  }
+
+  ctx.fill();
+  return;
+}
+
+  
 // --- Stars & Planets (scaled for any canvas size) ---
 const scale = canvas.width / 1050; // 1050px = 3.5 inches @ 300 DPI
 
@@ -1191,6 +1257,63 @@ function computeAllPlanets(date) {
   const ids = ["Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"];
   return ids.map(id => computePlanetEphemeris(id, date));
 }
+
+function computeMoon(date) {
+  const jd = toJulianDate(date);
+  const T = (jd - 2451545.0) / 36525;
+
+  // Mean elongation, Sun anomaly, Moon anomaly, Moon latitude argument
+  const D = deg2rad(297.8501921 + 445267.1114034*T);
+  const M = deg2rad(357.5291092 + 35999.0502909*T);
+  const M1 = deg2rad(134.9633964 + 477198.8675055*T);
+  const F = deg2rad(93.2720950 + 483202.0175233*T);
+
+  // Ecliptic longitude & latitude (approx)
+  const lon = 218.316 + 13.176396*T*36525
+    + 6.289 * Math.sin(M1)
+    + 1.274 * Math.sin(2*D - M1)
+    + 0.658 * Math.sin(2*D)
+    + 0.214 * Math.sin(2*M1)
+    + 0.110 * Math.sin(D);
+
+  const lat = 5.128 * Math.sin(F)
+    + 0.280 * Math.sin(M1 + F)
+    + 0.277 * Math.sin(M1 - F)
+    + 0.173 * Math.sin(2*D - F);
+
+  // Convert to RA/Dec
+  const eps = deg2rad(23.4393);
+  const lonRad = deg2rad(lon);
+  const latRad = deg2rad(lat);
+
+  const sinDec = Math.sin(latRad)*Math.cos(eps) + Math.cos(latRad)*Math.sin(eps)*Math.sin(lonRad);
+  const dec = Math.asin(sinDec);
+
+  const y = Math.sin(lonRad)*Math.cos(eps) - Math.tan(latRad)*Math.sin(eps);
+  const x = Math.cos(lonRad);
+  const ra = Math.atan2(y, x);
+
+  // Illumination fraction
+  const phaseAngle = 180 - lon + 2*0; // simplified Sun-Moon elongation
+  const illumination = (1 + Math.cos(deg2rad(phaseAngle))) / 2;
+
+  // Phase name
+  const pct = illumination;
+  let phaseName = "New Moon";
+  if (pct > 0.03 && pct <= 0.25) phaseName = "Waxing Crescent";
+  else if (pct > 0.25 && pct <= 0.48) phaseName = "First Quarter";
+  else if (pct > 0.48 && pct <= 0.97) phaseName = "Waxing Gibbous";
+  else if (pct > 0.97) phaseName = "Full Moon";
+  else if (pct < 0.03) phaseName = "New Moon";
+
+  return {
+    raHours: rad2deg(ra) / 15,
+    decDeg: rad2deg(dec),
+    illumination,
+    phaseName
+  };
+}
+
 
 // ------------------------------------------------------------
 // Formatting helpers
@@ -1402,6 +1525,10 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr) {
     <p>Time: ${timeStr}</p>
     <p>Latitude: ${lat}</p>
     <p>Longitude: ${lon}</p>
+    <p>Moon Phase: ${moon.phaseName} (${Math.round(moon.illumination*100)}%)</p>
+    <p>Moon Altitude: ${moon.altDeg.toFixed(1)}°</p>
+    <p>Moon RA: ${formatRA(moon.raHours)}</p>
+    <p>Moon Dec: ${formatDec(moon.decDeg)}</p>
   `;
   return d;
 }
