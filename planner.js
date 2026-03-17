@@ -1233,73 +1233,76 @@ function computeMoon(dt) {
   const jd = toJulianDate(dt);
   const T = (jd - 2451545.0) / 36525;
 
-  // Mean elongation, Sun anomaly, Moon anomaly, Moon latitude argument
-  const D = deg2rad(297.8501921 + 445267.1114034*T);
-  const M = deg2rad(357.5291092 + 35999.0502909*T);
+  // Mean elements
+  const L1 = deg2rad(218.3164477 + 481267.88123421*T);
+  const M  = deg2rad(357.5291092 + 35999.0502909*T);
   const M1 = deg2rad(134.9633964 + 477198.8675055*T);
-  const F = deg2rad(93.2720950 + 483202.0175233*T);
+  const D  = deg2rad(297.8501921 + 445267.1114034*T);
+  const F  = deg2rad(93.2720950 + 483202.0175233*T);
 
-  // Ecliptic longitude & latitude (approx)
-  const lon = 218.316 + 13.176396*T*36525
-    + 6.289 * Math.sin(M1)
-    + 1.274 * Math.sin(2*D - M1)
-    + 0.658 * Math.sin(2*D)
-    + 0.214 * Math.sin(2*M1)
-    + 0.110 * Math.sin(D);
+  // Ecliptic longitude & latitude (Meeus low precision)
+  const lon = L1
+    + deg2rad(6.289 * Math.sin(M1))
+    + deg2rad(1.274 * Math.sin(2*D - M1))
+    + deg2rad(0.658 * Math.sin(2*D))
+    + deg2rad(0.214 * Math.sin(2*M1))
+    + deg2rad(0.110 * Math.sin(D));
 
-  const lat = 5.128 * Math.sin(F)
-    + 0.280 * Math.sin(M1 + F)
-    + 0.277 * Math.sin(M1 - F)
-    + 0.173 * Math.sin(2*D - F);
+  const lat = deg2rad(5.128 * Math.sin(F))
+    + deg2rad(0.280 * Math.sin(M1 + F))
+    + deg2rad(0.277 * Math.sin(M1 - F))
+    + deg2rad(0.173 * Math.sin(2*D - F));
 
-  const eps = deg2rad(23.4393);
-  const lonRad = deg2rad(lon);
-  const latRad = deg2rad(lat);
+  // Obliquity of the ecliptic
+  const eps = deg2rad(23.439291 - 0.0130042*T);
 
-  const sinDec = Math.sin(latRad)*Math.cos(eps) + Math.cos(latRad)*Math.sin(eps)*Math.sin(lonRad);
+  // Convert to RA/Dec
+  const sinDec = Math.sin(lat)*Math.cos(eps) + Math.cos(lat)*Math.sin(eps)*Math.sin(lon);
   const dec = Math.asin(sinDec);
 
-  const y = Math.sin(lonRad)*Math.cos(eps) - Math.tan(latRad)*Math.sin(eps);
-  const x = Math.cos(lonRad);
+  const y = Math.sin(lon)*Math.cos(eps) - Math.tan(lat)*Math.sin(eps);
+  const x = Math.cos(lon);
   const ra = Math.atan2(y, x);
 
+  const raHours = rad2deg(ra) / 15;
+  const decDeg = rad2deg(dec);
+
+  // Compute altitude for observer
+  const latRadObs = deg2rad(window.lastPlannerLat || 0);
+  const lonRadObs = deg2rad(window.lastPlannerLon || 0);
+
+  const lst = localSiderealTime(jd, lonRadObs);
+  const ha = normalizeAngle(lst - deg2rad(raHours * 15));
+
+  const sinAlt =
+    Math.sin(latRadObs) * Math.sin(deg2rad(decDeg)) +
+    Math.cos(latRadObs) * Math.cos(deg2rad(decDeg)) * Math.cos(ha);
+
+  const altDeg = rad2deg(Math.asin(sinAlt));
+
   // Illumination fraction
-  const phaseAngle = 180 - lon + 2*0;
-  const illumination = (1 + Math.cos(deg2rad(phaseAngle))) / 2;
+  const elong = rad2deg(Math.acos(
+    Math.sin(dec)*Math.sin(deg2rad(0)) +
+    Math.cos(dec)*Math.cos(deg2rad(0))*Math.cos(ra - deg2rad(0))
+  ));
 
-  const pct = illumination;
+  const illumination = (1 + Math.cos(deg2rad(elong))) / 2;
+
+  // Phase name
   let phaseName = "New Moon";
-  if (pct > 0.03 && pct <= 0.25) phaseName = "Waxing Crescent";
-  else if (pct > 0.25 && pct <= 0.48) phaseName = "First Quarter";
-  else if (pct > 0.48 && pct <= 0.97) phaseName = "Waxing Gibbous";
-  else if (pct > 0.97) phaseName = "Full Moon";
-  else if (pct < 0.03) phaseName = "New Moon";
+  if (illumination > 0.03 && illumination <= 0.25) phaseName = "Waxing Crescent";
+  else if (illumination > 0.25 && illumination <= 0.48) phaseName = "First Quarter";
+  else if (illumination > 0.48 && illumination <= 0.97) phaseName = "Waxing Gibbous";
+  else if (illumination > 0.97) phaseName = "Full Moon";
 
-  // Convert RA/Dec to altitude for the observer
-const raHours = rad2deg(ra) / 15;
-const decDeg = rad2deg(dec);
-
-const latRadObs = deg2rad(window.lastPlannerLat || 0);
-const lonRadObs = deg2rad(window.lastPlannerLon || 0);
-
-const lst = localSiderealTime(jd, lonRadObs);
-const ha = normalizeAngle(lst - deg2rad(raHours * 15));
-
-const sinAlt =
-  Math.sin(latRadObs) * Math.sin(deg2rad(decDeg)) +
-  Math.cos(latRadObs) * Math.cos(deg2rad(decDeg)) * Math.cos(ha);
-
-const altDeg = rad2deg(Math.asin(sinAlt));
-
-return {
-  raHours,
-  decDeg,
-  altDeg,
-  illumination,
-  phaseName
-};
+  return {
+    raHours,
+    decDeg,
+    altDeg,
+    illumination,
+    phaseName
+  };
 }
-
 
 // ------------------------------------------------------------
 // Formatting helpers
