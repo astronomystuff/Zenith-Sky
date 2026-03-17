@@ -1230,7 +1230,7 @@ function computeAllPlanets(date) {
 }
 
 function computeMoon(dt) {
-  const jd = toJulianDate(date);
+  const jd = toJulianDate(dt);
   const T = (jd - 2451545.0) / 36525;
 
   // Mean elongation, Sun anomaly, Moon anomaly, Moon latitude argument
