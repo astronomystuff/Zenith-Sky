@@ -1229,7 +1229,7 @@ function computeAllPlanets(date) {
   return ids.map(id => computePlanetEphemeris(id, date));
 }
 
-function computeMoon(date) {
+function computeMoon(dt) {
   const jd = toJulianDate(date);
   const T = (jd - 2451545.0) / 36525;
 
@@ -1275,12 +1275,29 @@ function computeMoon(date) {
   else if (pct > 0.97) phaseName = "Full Moon";
   else if (pct < 0.03) phaseName = "New Moon";
 
-  return {
-    raHours: rad2deg(ra) / 15,
-    decDeg: rad2deg(dec),
-    illumination,
-    phaseName
-  };
+  // Convert RA/Dec to altitude for the observer
+const raHours = rad2deg(ra) / 15;
+const decDeg = rad2deg(dec);
+
+const latRadObs = deg2rad(window.lastPlannerLat || 0);
+const lonRadObs = deg2rad(window.lastPlannerLon || 0);
+
+const lst = localSiderealTime(jd, lonRadObs);
+const ha = normalizeAngle(lst - deg2rad(raHours * 15));
+
+const sinAlt =
+  Math.sin(latRadObs) * Math.sin(deg2rad(decDeg)) +
+  Math.cos(latRadObs) * Math.cos(deg2rad(decDeg)) * Math.cos(ha);
+
+const altDeg = rad2deg(Math.asin(sinAlt));
+
+return {
+  raHours,
+  decDeg,
+  altDeg,
+  illumination,
+  phaseName
+};
 }
 
 
