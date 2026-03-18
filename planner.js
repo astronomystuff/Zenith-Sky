@@ -1630,18 +1630,6 @@ const sinAlt =
   Math.sin(latRad) * Math.sin(decRad) +
   Math.cos(latRad) * Math.cos(decRad) * Math.cos(ha);
 moon.altDeg = rad2deg(Math.asin(sinAlt));
-  const moonRS = computeRiseSet(lat, moon.decDeg, moon.raHours, dt);
-const latRad = deg2rad(lat);
-const lonRad = deg2rad(lon);
-const jd = toJulianDate(dt);
-const lst = localSiderealTime(jd, lonRad);
-const raRad = deg2rad(moon.raHours * 15);
-const decRad = deg2rad(moon.decDeg);
-const ha = normalizeAngle(lst - raRad);
-const sinAlt =
-  Math.sin(latRad) * Math.sin(decRad) +
-  Math.cos(latRad) * Math.cos(decRad) * Math.cos(ha);
-moon.altDeg = rad2deg(Math.asin(sinAlt));
 const moonRS = computeRiseSet(lat, moon.decDeg, moon.raHours, dt);
 
 firstLeft.appendChild(buildDetails(moon, moonRS));
