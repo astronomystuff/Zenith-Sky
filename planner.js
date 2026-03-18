@@ -1631,7 +1631,6 @@ const sinAlt =
   Math.cos(latRad) * Math.cos(decRad) * Math.cos(ha);
 moon.altDeg = rad2deg(Math.asin(sinAlt));
   const moonRS = computeRiseSet(lat, moon.decDeg, moon.raHours, dt);
-  const moon = computeMoon(dt);
 const latRad = deg2rad(lat);
 const lonRad = deg2rad(lon);
 const jd = toJulianDate(dt);
