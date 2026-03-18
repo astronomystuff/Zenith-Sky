@@ -1140,14 +1140,14 @@ if (s.isMoon) {
 // PLANETARY EPHEMERIS (Meeus-style)
 // ------------------------------------------------------------
 const planetElements = {
-  Mercury: { a: 0.387098, e: 0.205635, i: 7.005, L: 252.250, w: 77.457, o: 48.330 },
-  Venus:   { a: 0.723330, e: 0.006773, i: 3.394, L: 181.979, w: 131.602, o: 76.680 },
-  Earth:   { a: 1.000000, e: 0.016709, i: 0.000, L: 100.464, w: 102.937, o: 0.000 },
-  Mars:    { a: 1.523679, e: 0.093400, i: 1.850, L: -4.553,  w: -23.943, o: 49.558 },
-  Jupiter: { a: 5.20260,  e: 0.048498, i: 1.303, L: 34.396,  w: 14.728,  o: 100.473 },
-  Saturn:  { a: 9.55491,  e: 0.055508, i: 2.489, L: 49.954,  w: 92.598,  o: 113.662 },
-  Uranus:  { a: 19.2184,  e: 0.046295, i: 0.773, L: 313.238, w: 170.954, o: 74.016 },
-  Neptune: { a: 30.1104,  e: 0.008988, i: 1.770, L: -55.120, w: 44.964,  o: 131.784 }
+  Mercury: { a: 0.387098, e: 0.205635, i: 7.005, L: 252.250, Ldot: 149472.674, w: 77.457,  o: 48.330 },
+  Venus:   { a: 0.723330, e: 0.006773, i: 3.394, L: 181.979, Ldot: 58517.815,  w: 131.602, o: 76.680 },
+  Earth:   { a: 1.000000, e: 0.016709, i: 0.000, L: 100.464, Ldot: 35999.373, w: 102.937, o: 0.000 },
+  Mars:    { a: 1.523679, e: 0.093400, i: 1.850, L: -4.553,  Ldot: 19140.303, w: -23.943, o: 49.558 },
+  Jupiter: { a: 5.20260,  e: 0.048498, i: 1.303, L: 34.396,  Ldot: 3034.906,  w: 14.728,  o: 100.473 },
+  Saturn:  { a: 9.55491,  e: 0.055508, i: 2.489, L: 49.954,  Ldot: 1222.114,  w: 92.598,  o: 113.662 },
+  Uranus:  { a: 19.2184,  e: 0.046295, i: 0.773, L: 313.238, Ldot: 428.379,   w: 170.954, o: 74.016 },
+  Neptune: { a: 30.1104,  e: 0.008988, i: 1.770, L: -55.120, Ldot: 218.461,   w: 44.964,  o: 131.784 }
 };
 
 function d2r(d) { return d * Math.PI / 180; }
@@ -1165,18 +1165,19 @@ function heliocentricPosition(planet, jd) {
   const a = el.a;
   const e = el.e;
   const i = d2r(el.i);
-  const L = d2r(el.L + 36000.770 * T);
+  const L = d2r(el.L + el.Ldot * T);
   const w = d2r(el.w);
-  const o = d2r(el.o);
+  const O = d2r(el.o);
   const M = L - w;
   const E = solveKepler(M, e);
   const xv = a * (Math.cos(E) - e);
   const yv = a * Math.sqrt(1 - e * e) * Math.sin(E);
   const v = Math.atan2(yv, xv);
   const r = Math.sqrt(xv * xv + yv * yv);
-  const xh = r * (Math.cos(o) * Math.cos(v + w - o) - Math.sin(o) * Math.sin(v + w - o) * Math.cos(i));
-  const yh = r * (Math.sin(o) * Math.cos(v + w - o) + Math.cos(o) * Math.sin(v + w - o) * Math.cos(i));
-  const zh = r * (Math.sin(v + w - o) * Math.sin(i));
+  const u = v + w;
+  const xh = r * (Math.cos(O) * Math.cos(u) - Math.sin(O) * Math.sin(u) * Math.cos(i));
+  const yh = r * (Math.sin(O) * Math.cos(u) + Math.cos(O) * Math.sin(u) * Math.cos(i));
+  const zh = r * (Math.sin(u) * Math.sin(i));
   return { xh, yh, zh, r };
 }
 
@@ -1233,14 +1234,12 @@ function computeMoon(dt) {
   const jd = toJulianDate(dt);
   const T = (jd - 2451545.0) / 36525;
 
-  // Mean elements
   const L1 = deg2rad(218.3164477 + 481267.88123421*T);
   const M  = deg2rad(357.5291092 + 35999.0502909*T);
   const M1 = deg2rad(134.9633964 + 477198.8675055*T);
   const D  = deg2rad(297.8501921 + 445267.1114034*T);
   const F  = deg2rad(93.2720950 + 483202.0175233*T);
 
-  // Ecliptic longitude & latitude (Meeus low precision)
   const lon = L1
     + deg2rad(6.289 * Math.sin(M1))
     + deg2rad(1.274 * Math.sin(2*D - M1))
@@ -1253,42 +1252,17 @@ function computeMoon(dt) {
     + deg2rad(0.277 * Math.sin(M1 - F))
     + deg2rad(0.173 * Math.sin(2*D - F));
 
-  // Obliquity of the ecliptic
   const eps = deg2rad(23.439291 - 0.0130042*T);
-
-  // Convert to RA/Dec
   const sinDec = Math.sin(lat)*Math.cos(eps) + Math.cos(lat)*Math.sin(eps)*Math.sin(lon);
   const dec = Math.asin(sinDec);
-
   const y = Math.sin(lon)*Math.cos(eps) - Math.tan(lat)*Math.sin(eps);
   const x = Math.cos(lon);
-  const ra = Math.atan2(y, x);
-
+  let ra = Math.atan2(y, x);
+  if (ra < 0) ra += 2 * Math.PI;
   const raHours = rad2deg(ra) / 15;
   const decDeg = rad2deg(dec);
-
-  // Compute altitude for observer
-  const latRadObs = deg2rad(window.lastPlannerLat || 0);
-  const lonRadObs = deg2rad(window.lastPlannerLon || 0);
-
-  const lst = localSiderealTime(jd, lonRadObs);
-  const ha = normalizeAngle(lst - deg2rad(raHours * 15));
-
-  const sinAlt =
-    Math.sin(latRadObs) * Math.sin(deg2rad(decDeg)) +
-    Math.cos(latRadObs) * Math.cos(deg2rad(decDeg)) * Math.cos(ha);
-
-  const altDeg = rad2deg(Math.asin(sinAlt));
-
-  // Illumination fraction
-  const elong = rad2deg(Math.acos(
-    Math.sin(dec)*Math.sin(deg2rad(0)) +
-    Math.cos(dec)*Math.cos(deg2rad(0))*Math.cos(ra - deg2rad(0))
-  ));
-
-  const illumination = (1 + Math.cos(deg2rad(elong))) / 2;
-
-  // Phase name
+  const phaseAngle = 180 - rad2deg(D) - 6.289*Math.sin(M1) + 2.1*Math.sin(M) - 1.274*Math.sin(2*D - M1);
+  const illumination = (1 + Math.cos(deg2rad(phaseAngle))) / 2;
   let phaseName = "New Moon";
   if (illumination > 0.03 && illumination <= 0.25) phaseName = "Waxing Crescent";
   else if (illumination > 0.25 && illumination <= 0.48) phaseName = "First Quarter";
@@ -1298,7 +1272,6 @@ function computeMoon(dt) {
   return {
     raHours,
     decDeg,
-    altDeg,
     illumination,
     phaseName
   };
