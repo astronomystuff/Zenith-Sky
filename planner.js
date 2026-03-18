@@ -1618,7 +1618,6 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr) {
 
   const { page: firstPage, left: firstLeft, right: firstRight } = createPage();
   const moon = computeMoon(dt);
-  const moon = computeMoon(dt);
 
 const latRad = deg2rad(lat);
 const lonRad = deg2rad(lon);
