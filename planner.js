@@ -10,9 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  console.log("planner.js loaded — delegation attached");
 });
-
 
 function deg2rad(d) { return d * Math.PI / 180; }
 function rad2deg(r) { return r * 180 / Math.PI; }
