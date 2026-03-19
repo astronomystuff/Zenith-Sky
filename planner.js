@@ -1022,6 +1022,41 @@ function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date) {
     });
   });
 
+  // --- MOON ---
+const moon = computeMoon(date);
+{
+  const raRad = deg2rad(moon.raHours * 15);
+  const decRad = deg2rad(moon.decDeg);
+  const ha = normalizeAngle(lst - raRad);
+
+  const sinAlt =
+    Math.sin(latRad) * Math.sin(decRad) +
+    Math.cos(latRad) * Math.cos(decRad) * Math.cos(ha);
+  const alt = Math.asin(sinAlt);
+  const altDeg = rad2deg(alt);
+
+  const cosAz =
+    (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
+    (Math.cos(alt) * Math.cos(latRad));
+  let az = Math.acos(Math.max(-1, Math.min(1, cosAz)));
+  if (Math.sin(ha) > 0) az = 2 * Math.PI - az;
+
+  const r = radius * (90 - altDeg) / 90;
+  const x = cx + -r * Math.sin(az);
+  const y = cy + -r * Math.cos(az);
+
+  projectedStars.push({
+    id: "Moon",
+    x,
+    y,
+    altDeg,
+    isMoon: true,
+    raHours: moon.raHours,
+    decDeg: moon.decDeg,
+    illumination: moon.illumination
+  });
+}
+
   // --- Constellation lines ---
   ctx.strokeStyle = "#888888";
   ctx.lineWidth = 1;
