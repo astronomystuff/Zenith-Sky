@@ -1495,13 +1495,15 @@ async function runPlanner() {
   modalContent.innerHTML = `
 <div style="display:flex;flex-direction:row;width:100%;height:100%;gap:20px;">
   <div style="flex:1;display:flex;flex-direction:column;gap:20px;">
-    <div style="background:#f5f5f5;border:1px solid #ccc;border-radius:12px;padding:12px;height:180px;">
-      <h3 style="margin-top:0;">Observation Details – Zenith Sky</h3>
-      <p>Date: ${dateStr}</p>
-      <p>Time: ${timeStr}</p>
-      <p>Latitude: ${lat}</p>
-      <p>Longitude: ${lon}</p>
-    </div>
+    <div id="planner-modal-details"
+     style="background:#f5f5f5;border:1px solid #ccc;border-radius:12px;padding:12px;min-height:180px;">
+  <h3 style="margin-top:0;">Observation Details – Zenith Sky</h3>
+  <p>Date: ${dateStr}</p>
+  <p>Time: ${timeStr}</p>
+  <p>Latitude: ${lat}</p>
+  <p>Longitude: ${lon}</p>
+  <!-- Moon details will be injected here -->
+</div>
 
     <div style="background:#ffffff;border-radius:12px;padding:10px;flex:1;display:flex;align-items:center;justify-content:center;border:1px solid #ccc;">
       <canvas id="planner-star-map" style="width:100%;height:100%;border-radius:8px;"></canvas>
@@ -1532,7 +1534,42 @@ async function runPlanner() {
 
   modalOverlay.style.display = "flex";
 
-  drawOnScreenMap(lat, lon, dt);
+// --- Compute Moon for modal ---
+const moon = computeMoon(dt);
+
+const latRad = deg2rad(lat);
+const lonRad = deg2rad(lon);
+const jd = toJulianDate(dt);
+const lst = localSiderealTime(jd, lonRad);
+
+const raRad = deg2rad(moon.raHours * 15);
+const decRad = deg2rad(moon.decDeg);
+const ha = normalizeAngle(lst - raRad);
+
+const sinAlt =
+  Math.sin(latRad) * Math.sin(decRad) +
+  Math.cos(latRad) * Math.cos(decRad) * Math.cos(ha);
+
+moon.altDeg = rad2deg(Math.asin(sinAlt));
+
+const moonRS = computeRiseSet(lat, moon.decDeg, moon.raHours, dt);
+
+// --- Inject Moon details ---
+const detailsDiv = document.getElementById("planner-modal-details");
+if (detailsDiv) {
+  detailsDiv.innerHTML += `
+    <h4 style="margin:8px 0 2px 0;">Moon</h4>
+    <p>Phase: ${moon.phaseName} (${Math.round(moon.illumination * 100)}%)</p>
+    <p>Altitude: ${moon.altDeg.toFixed(1)}°</p>
+    <p>RA: ${formatRA(moon.raHours)}</p>
+    <p>Dec: ${formatDec(moon.decDeg)}</p>
+    <p>Rise: ${moonRS.rise}</p>
+    <p>Set: ${moonRS.set}</p>
+  `;
+}
+
+// finally draw the map
+drawOnScreenMap(lat, lon, dt);
 }
 
 function prepareCanvasForDrawing(canvas, cssWidth, cssHeight) {
