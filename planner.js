@@ -1496,7 +1496,8 @@ async function runPlanner() {
 <div style="display:flex;flex-direction:row;width:100%;height:100%;gap:20px;">
   <div style="flex:1;display:flex;flex-direction:column;gap:20px;">
     <div id="planner-modal-details"
-     style="background:#f5f5f5;border:1px solid #ccc;border-radius:12px;padding:12px;min-height:180px;">
+     style="background:#f5f5f5;border:1px solid #ccc;border-radius:12px;padding:12px;
+            height:260px;overflow-y:auto;">
   <h3 style="margin-top:0;">Observation Details – Zenith Sky</h3>
   <p>Date: ${dateStr}</p>
   <p>Time: ${timeStr}</p>
