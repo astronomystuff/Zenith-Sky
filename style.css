@@ -67,10 +67,6 @@ button,
   font-family: inherit;
 }
 
-body {
-  margin-left: 12px; 
-}
-
 /* =============================== */
 /* iOS 26 LIQUID‑GLASS INPUT FIELDS */
 /* =============================== */
@@ -471,6 +467,10 @@ style.textContent = `
   font-size: 12pt !important;
   line-height: 1.1;
   margin: 0 0 4px 0;
+}
+
+body {
+  margin-left: 12px; 
 }
 `;
 win.document.head.appendChild(style);
