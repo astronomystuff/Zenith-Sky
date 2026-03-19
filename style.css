@@ -67,6 +67,10 @@ button,
   font-family: inherit;
 }
 
+body {
+  margin-left: 12px; 
+}
+
 /* =============================== */
 /* iOS 26 LIQUID‑GLASS INPUT FIELDS */
 /* =============================== */
