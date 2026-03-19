@@ -761,33 +761,35 @@ function visibilityScore(eph, magInput, observationDate, obj, moon) {
 
   let score = altNorm * 50 + magNorm * 30 + transitNorm * 20;
 
-  // ------------------------------------------------------------
-  // ⭐ MOON PROXIMITY + ILLUMINATION PENALTY (DSOs only)
-  // ------------------------------------------------------------
-  if (obj.type !== "Planet" && moon) {
-    const sep = angularSeparation(obj.ra_h, obj.dec_deg, moon.raHours, moon.decDeg);
+ // ------------------------------------------------------------
+// ⭐ MOON PROXIMITY + ILLUMINATION PENALTY (DSOs only)
+// ------------------------------------------------------------
+if (obj && obj.type && obj.type !== "Planet" && moon) {
+
+  // Require RA/Dec for both object and Moon
+  if (isFinite(obj.ra_h) && isFinite(obj.dec_deg) &&
+      isFinite(moon.raHours) && isFinite(moon.decDeg)) {
+
+    const sep = angularSeparation(obj.ra_h, obj.dec_deg,
+                                  moon.raHours, moon.decDeg);
 
     // proximity penalty (0–1)
     let prox = 0;
-    if (sep < 5) prox = 1.0;
+    if (sep < 5)       prox = 1.0;
     else if (sep < 10) prox = 0.6;
     else if (sep < 15) prox = 0.4;
     else if (sep < 25) prox = 0.2;
 
     // illumination penalty (0.1–1.0)
-    const illum = moon.illumination; // 0–1
+    const illum = Math.max(0, Math.min(1, moon.illumination || 0));
     const illumFactor = 0.1 + 0.9 * illum;
 
     const finalPenalty = prox * illumFactor;
 
     score *= (1 - finalPenalty);
   }
-
-  score = Math.min(100, score);
-  if (score < 20) score = 20;
-
-  return score;
 }
+
 
 // ------------------------------------------------------------
 // EPHEMERIS ENGINE
