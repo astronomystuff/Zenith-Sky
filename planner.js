@@ -1504,6 +1504,7 @@ async function runPlanner() {
        min-height:180px;
        flex-shrink:0;
        overflow-y:auto;
+       color:#000;
      ">
   <h3 style="margin-top:0;">Observation Details – Zenith Sky</h3>
   <p>Date: ${dateStr}</p>
