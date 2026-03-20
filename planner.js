@@ -1581,6 +1581,58 @@ function buildTonightSkyWindow(lat, lon, dt) {
   `;
 }
 
+async function fetchAstroWeather(lat, lon) {
+  const url = `https://www.7timer.info/bin/api.pl?lon=${lon}&lat=${lat}&product=astro&output=json`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Weather fetch failed");
+  return res.json();
+}
+
+async function populateAstroWeather(lat, lon) {
+  const wDiv = document.getElementById("planner-sky-window-weather");
+  if (!wDiv) return;
+
+  wDiv.textContent = "Loading weather…";
+
+  try {
+    const data = await fetchAstroWeather(lat, lon);
+    const first = data?.dataseries?.[0];
+    if (!first) {
+      wDiv.textContent = "Weather data unavailable.";
+      return;
+    }
+
+    const cc = first.cloudcover;
+    const seeing = first.seeing;
+    const trans = first.transparency;
+
+    function cloudLabel(c) {
+      if (c <= 2) return "Clear";
+      if (c <= 4) return "Mostly clear";
+      if (c <= 6) return "Partly cloudy";
+      if (c <= 8) return "Mostly cloudy";
+      return "Overcast";
+    }
+
+    function qualityLabel(v) {
+      if (v <= 2) return "Excellent";
+      if (v <= 4) return "Good";
+      if (v <= 6) return "Fair";
+      if (v <= 8) return "Poor";
+      return "Very poor";
+    }
+
+    wDiv.innerHTML = `
+      <strong>Weather (7Timer):</strong><br>
+      Clouds: ${cloudLabel(cc)} (index ${cc})<br>
+      Transparency: ${qualityLabel(trans)} (index ${trans})<br>
+      Seeing: ${qualityLabel(seeing)} (index ${seeing})
+    `;
+  } catch (err) {
+    wDiv.textContent = "Weather fetch failed.";
+  }
+}
+
 // RUN PLANNER
 async function runPlanner() {
   const modalOverlay = document.getElementById("planner-modal-overlay");
