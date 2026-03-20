@@ -2063,27 +2063,27 @@ firstLeft.appendChild(buildPdfWeather(weather));
 async function openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, timeStr) {
 
   drawOnScreenMap(lat, lon, dt);
-  
+
+  // Fetch weather BEFORE building PDF
   let weather = null;
-try {
-  const w = await fetchAstroWeather(lat, lon);
-  const first = w?.dataseries?.[0];
-  if (first) {
-    weather = {
-      cc: first.cloudcover,
-      seeing: first.seeing,
-      trans: first.transparency
-    };
+  try {
+    const w = await fetchAstroWeather(lat, lon);
+    const first = w?.dataseries?.[0];
+    if (first) {
+      weather = {
+        cc: first.cloudcover,
+        seeing: first.seeing,
+        trans: first.transparency
+      };
+    }
+  } catch (e) {
+    weather = null;
   }
-} catch (e) {
-  weather = null;
-}
-  
-  async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather) {
 
-  const root = document.getElementById("planner-pdf-root");
-  if (!root) return;
+  // Build PDF content BEFORE opening print window
+  await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
 
+  // Now configure print window
   win.onload = async () => {
 
     win.document.body.innerHTML = "";
@@ -2150,7 +2150,7 @@ try {
     container.id = "planner-pdf-print-root";
     win.document.body.appendChild(container);
 
-    const pages = root.querySelectorAll(".planner-pdf-page");
+    const pages = document.querySelectorAll(".planner-pdf-page");
     pages.forEach(page => container.appendChild(page.cloneNode(true)));
 
     const imgs = Array.from(win.document.images || []);
@@ -2162,7 +2162,8 @@ try {
     win.focus();
     win.print();
   };
-}
+} // <-- THIS WAS MISSING
+
 
 // ===============================
 // ATTACH PRINT BUTTON HANDLER
