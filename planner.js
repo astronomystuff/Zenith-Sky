@@ -9,7 +9,6 @@ document.addEventListener("DOMContentLoaded", () => {
       if (modalOverlay) modalOverlay.style.display = "none";
     }
   });
-
 });
 
 function deg2rad(d) { return d * Math.PI / 180; }
@@ -1575,7 +1574,7 @@ function buildTonightSkyWindow(lat, lon, dt) {
       <strong>Now:</strong>
       Sun alt ${current.sunAlt.toFixed(1)}°, Moon alt ${current.moonAlt.toFixed(1)}°
     </p>
-    <div id="planner-sky-window-weather" style="margin-top:6px;font-size:11px;">
+    <div id="planner-sky-window-weather" style="margin-top:6px;font-size:13px;">
       Loading weather…
     </div>
   `;
@@ -1703,7 +1702,7 @@ async function runPlanner() {
          style="background:#f5f5f5;border:1px solid #ccc;border-radius:12px;
                 padding:12px;flex:0 0 auto;min-height:140px;overflow:hidden;">
       <h3 style="margin-top:0;font-size:14px;">Tonight's Sky Window</h3>
-      <div id="planner-sky-window-content" style="font-size:12px;color:#000;">
+      <div id="planner-sky-window-content" style="font-size:13px;color:#000;">
         Loading sky window…
       </div>
     </div>
@@ -1972,100 +1971,40 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr) {
   return d;
 }
 
-  function buildPdfWeather(lat, lon) {
+  function buildPdfWeather(weather) {
   const d = document.createElement("div");
   d.style.marginTop = "6px";
   d.style.fontSize = "9pt";
-  d.innerHTML = `<p><strong>Weather:</strong> Loading…</p>`;
 
-  fetch(`https://www.7timer.info/bin/api.pl?lon=${lon}&lat=${lat}&product=astro&output=json`)
-    .then(r => r.json())
-    .then(data => {
-      const first = data?.dataseries?.[0];
-      if (!first) {
-        d.innerHTML = "<p><strong>Weather:</strong> Unavailable</p>";
-        return;
-      }
+  if (!weather) {
+    d.innerHTML = "<p><strong>Weather:</strong> Unavailable</p>";
+    return d;
+  }
 
-      const cc = first.cloudcover;
-      const seeing = first.seeing;
-      const trans = first.transparency;
+  const { cc, seeing, trans } = weather;
 
-      function cloudLabel(c) {
-        if (c <= 2) return "Clear";
-        if (c <= 4) return "Mostly clear";
-        if (c <= 6) return "Partly cloudy";
-        if (c <= 8) return "Mostly cloudy";
-        return "Overcast";
-      }
+  function cloudLabel(c) {
+    if (c <= 2) return "Clear";
+    if (c <= 4) return "Mostly clear";
+    if (c <= 6) return "Partly cloudy";
+    if (c <= 8) return "Mostly cloudy";
+    return "Overcast";
+  }
 
-      function qualityLabel(v) {
-        if (v <= 2) return "Excellent";
-        if (v <= 4) return "Good";
-        if (v <= 6) return "Fair";
-        if (v <= 8) return "Poor";
-        return "Very poor";
-      }
+  function qualityLabel(v) {
+    if (v <= 2) return "Excellent";
+    if (v <= 4) return "Good";
+    if (v <= 6) return "Fair";
+    if (v <= 8) return "Poor";
+    return "Very poor";
+  }
 
-      d.innerHTML = `
-        <h4 style="margin:4px 0 2px 0;">Weather (7Timer)</h4>
-        <p>Clouds: ${cloudLabel(cc)} (index ${cc})</p>
-        <p>Transparency: ${qualityLabel(trans)} (index ${trans})</p>
-        <p>Seeing: ${qualityLabel(seeing)} (index ${seeing})</p>
-      `;
-    })
-    .catch(() => {
-      d.innerHTML = "<p><strong>Weather:</strong> Fetch failed</p>";
-    });
-
-  return d;
-}
-
-  function buildPdfWeather(lat, lon) {
-  const d = document.createElement("div");
-  d.style.marginTop = "6px";
-  d.style.fontSize = "9pt";
-  d.innerHTML = `<p><strong>Weather:</strong> Loading…</p>`;
-
-  fetch(`https://www.7timer.info/bin/api.pl?lon=${lon}&lat=${lat}&product=astro&output=json`)
-    .then(r => r.json())
-    .then(data => {
-      const first = data?.dataseries?.[0];
-      if (!first) {
-        d.innerHTML = "<p><strong>Weather:</strong> Unavailable</p>";
-        return;
-      }
-
-      const cc = first.cloudcover;
-      const seeing = first.seeing;
-      const trans = first.transparency;
-
-      function cloudLabel(c) {
-        if (c <= 2) return "Clear";
-        if (c <= 4) return "Mostly clear";
-        if (c <= 6) return "Partly cloudy";
-        if (c <= 8) return "Mostly cloudy";
-        return "Overcast";
-      }
-
-      function qualityLabel(v) {
-        if (v <= 2) return "Excellent";
-        if (v <= 4) return "Good";
-        if (v <= 6) return "Fair";
-        if (v <= 8) return "Poor";
-        return "Very poor";
-      }
-
-      d.innerHTML = `
-        <h4 style="margin:4px 0 2px 0;">Weather (7Timer)</h4>
-        <p>Clouds: ${cloudLabel(cc)} (index ${cc})</p>
-        <p>Transparency: ${qualityLabel(trans)} (index ${trans})</p>
-        <p>Seeing: ${qualityLabel(seeing)} (index ${seeing})</p>
-      `;
-    })
-    .catch(() => {
-      d.innerHTML = "<p><strong>Weather:</strong> Fetch failed</p>";
-    });
+  d.innerHTML = `
+    <h4 style="margin:4px 0 2px 0;">Weather (7Timer)</h4>
+    <p>Clouds: ${cloudLabel(cc)} (index ${cc})</p>
+    <p>Transparency: ${qualityLabel(trans)} (index ${trans})</p>
+    <p>Seeing: ${qualityLabel(seeing)} (index ${seeing})</p>
+  `;
 
   return d;
 }
@@ -2092,7 +2031,7 @@ const moonRS = computeRiseSet(lat, moon.decDeg, moon.raHours, dt);
 firstLeft.appendChild(buildDetails(moon, moonRS));
 firstLeft.appendChild(renderMapImageForPrint(lat, lon, dt));
 firstLeft.appendChild(buildPdfSkyWindow(lat, lon, dt));
-firstLeft.appendChild(buildPdfWeather(lat, lon));
+firstLeft.appendChild(buildPdfWeather(weather));
   
   const firstRows = results.slice(0, rowsPerPage);
   const firstTableContainer = document.createElement("div");
@@ -2124,7 +2063,23 @@ firstLeft.appendChild(buildPdfWeather(lat, lon));
 async function openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, timeStr) {
 
   drawOnScreenMap(lat, lon, dt);
-  await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr);
+  
+  let weather = null;
+try {
+  const w = await fetchAstroWeather(lat, lon);
+  const first = w?.dataseries?.[0];
+  if (first) {
+    weather = {
+      cc: first.cloudcover,
+      seeing: first.seeing,
+      trans: first.transparency
+    };
+  }
+} catch (e) {
+  weather = null;
+}
+  
+  async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
 
   const root = document.getElementById("planner-pdf-root");
   if (!root) return;
