@@ -1446,6 +1446,91 @@ function computeRiseSet(latDeg, decDeg, raHours, date) {
   };
 }
 
+function buildTonightSkyWindow(lat, lon, dt) {
+  const container = document.getElementById("planner-sky-window-content");
+  if (!container) return;
+
+  container.textContent = "Loading sky window…";
+
+  const start = new Date(dt);
+  start.setHours(18, 0, 0, 0); // 18:00 local
+  const end = new Date(dt);
+  end.setHours(6, 0, 0, 0);    // 06:00 next day
+  if (end <= start) end.setDate(end.getDate() + 1);
+
+  const samples = [];
+  let t = new Date(start);
+  while (t <= end) {
+    samples.push(new Date(t));
+    t = new Date(t.getTime() + 60 * 60 * 1000); // hourly
+  }
+
+  const latRad = deg2rad(lat);
+  const lonRad = deg2rad(lon);
+
+  const points = samples.map(time => {
+    const jd = toJulianDate(time);
+    const lst = localSiderealTime(jd, lonRad);
+
+    // Sun
+    const sun = computeSun(time); // you already call this in Moon drawing
+    const sunRaRad = deg2rad(sun.raHours * 15);
+    const sunDecRad = deg2rad(sun.decDeg);
+    const sunHa = normalizeAngle(lst - sunRaRad);
+    const sunSinAlt =
+      Math.sin(latRad) * Math.sin(sunDecRad) +
+      Math.cos(latRad) * Math.cos(sunDecRad) * Math.cos(sunHa);
+    const sunAlt = rad2deg(Math.asin(Math.max(-1, Math.min(1, sunSinAlt))));
+
+    // Moon
+    const moon = computeMoon(time);
+    const moonRaRad = deg2rad(moon.raHours * 15);
+    const moonDecRad = deg2rad(moon.decDeg);
+    const moonHa = normalizeAngle(lst - moonRaRad);
+    const moonSinAlt =
+      Math.sin(latRad) * Math.sin(moonDecRad) +
+      Math.cos(latRad) * Math.cos(moonDecRad) * Math.cos(moonHa);
+    const moonAlt = rad2deg(Math.asin(Math.max(-1, Math.min(1, moonSinAlt))));
+
+    return { time, sunAlt, moonAlt };
+  });
+
+  const now = dt;
+
+  const fmt = t => t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  const darkest = points
+    .filter(p => p.sunAlt < -12) // nautical+ night
+    .map(p => fmt(p.time));
+
+  const moonUp = points
+    .filter(p => p.moonAlt > 0)
+    .map(p => fmt(p.time));
+
+  const current = points.reduce((best, p) =>
+    Math.abs(p.time - now) < Math.abs(best.time - now) ? p : best,
+    points[0]
+  );
+
+  container.innerHTML = `
+    <p style="margin:0 0 4px 0;">
+      <strong>Darkest window:</strong>
+      ${darkest.length ? `${darkest[0]} – ${darkest[darkest.length - 1]}` : "None (Sun too high)"}
+    </p>
+    <p style="margin:0 0 4px 0;">
+      <strong>Moon above horizon:</strong>
+      ${moonUp.length ? `${moonUp[0]} – ${moonUp[moonUp.length - 1]}` : "Moon below horizon all night"}
+    </p>
+    <p style="margin:0 0 4px 0;">
+      <strong>Now:</strong>
+      Sun alt ${current.sunAlt.toFixed(1)}°, Moon alt ${current.moonAlt.toFixed(1)}°
+    </p>
+    <div id="planner-sky-window-weather" style="margin-top:6px;font-size:11px;">
+      Loading weather…
+    </div>
+  `;
+}
+
 // RUN PLANNER
 async function runPlanner() {
   const modalOverlay = document.getElementById("planner-modal-overlay");
@@ -1496,38 +1581,45 @@ async function runPlanner() {
 <div style="display:flex;flex-direction:row;width:100%;height:100%;gap:20px;">
   <div style="flex:1;display:flex;flex-direction:column;gap:20px;">
     <div id="planner-modal-details"
-     style="
-       background:#f5f5f5;
-       border:1px solid #ccc;
-       border-radius:12px;
-       padding:12px;
-       min-height:180px;
-       flex-shrink:0;
-       overflow-y:auto;
-       color:#000;
-     ">
-  <h3 style="margin-top:0;">Observation Details – Zenith Sky</h3>
-  <p>Date: ${dateStr}</p>
-  <p>Time: ${timeStr}</p>
-  <p>Latitude: ${lat}</p>
-  <p>Longitude: ${lon}</p>
-  <!-- Moon details will be injected here -->
-</div>
+         style="background:#f5f5f5;border:1px solid #ccc;border-radius:12px;
+                padding:12px;min-height:180px;flex-shrink:0;overflow-y:auto;color:#000;">
+      <h3 style="margin-top:0;">Observation Details – Zenith Sky</h3>
+      <p>Date: ${dateStr}</p>
+      <p>Time: ${timeStr}</p>
+      <p>Latitude: ${lat}</p>
+      <p>Longitude: ${lon}</p>
+      <!-- Moon details injected below -->
+    </div>
 
-    <div style="background:#ffffff;border-radius:12px;padding:10px;flex:1;display:flex;align-items:center;justify-content:center;border:1px solid #ccc;">
+    <div style="background:#ffffff;border-radius:12px;padding:10px;
+                display:flex;align-items:center;justify-content:center;
+                border:1px solid #ccc;flex:0 0 auto;">
       <canvas id="planner-star-map" style="width:100%;height:100%;border-radius:8px;"></canvas>
+    </div>
+
+    <div id="planner-sky-window"
+         style="background:#f5f5f5;border:1px solid #ccc;border-radius:12px;
+                padding:12px;flex:0 0 auto;min-height:140px;overflow:hidden;">
+      <h3 style="margin-top:0;font-size:14px;">Tonight's Sky Window</h3>
+      <div id="planner-sky-window-content" style="font-size:12px;color:#000;">
+        Loading sky window…
+      </div>
     </div>
   </div>
 
-  <div style="flex:1;background:#f5f5f5;border:1px solid #ccc;border-radius:12px;padding:12px;overflow:auto;">
+  <div style="flex:1;background:#f5f5f5;border:1px solid #ccc;border-radius:12px;
+              padding:12px;overflow:auto;">
     <h3 style="margin-top:0;">Visible Objects</h3>
-    <table border="1" cellspacing="0" cellpadding="6" style="width:100%;font-size:13px;border-collapse:collapse;">
+    <table border="1" cellspacing="0" cellpadding="6"
+           style="width:100%;font-size:13px;border-collapse:collapse;">
       <tr>
-        <th>Object</th><th>Type</th><th>Mag</th><th>RA</th><th>Dec</th><th>Transit</th><th>Alt</th><th>Score</th>
+        <th>Object</th><th>Type</th><th>Mag</th><th>RA</th><th>Dec</th>
+        <th>Transit</th><th>Alt</th><th>Score</th>
       </tr>
       ${results.map(r => `
         <tr>
-          <td>${r.type === "Planet" ? r.name : (r.name && r.name !== r.id ? `${r.id} — ${r.name}` : r.id)}</td>
+          <td>${r.type === "Planet" ? r.name :
+            (r.name && r.name !== r.id ? `${r.id} — ${r.name}` : r.id)}</td>
           <td>${safeText(r.type)}</td>
           <td>${safeText(r.mag)}</td>
           <td>${formatRA(r.ra_h)}</td>
@@ -1577,7 +1669,9 @@ if (detailsDiv) {
   `;
 }
 
-// finally draw the map
+buildTonightSkyWindow(lat, lon, dt);
+populateAstroWeather(lat, lon);
+
 drawOnScreenMap(lat, lon, dt);
 }
 
@@ -1712,6 +1806,168 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr) {
     return table;
   }
 
+  function buildPdfSkyWindow(lat, lon, dt) {
+  const d = document.createElement("div");
+  d.style.marginTop = "8px";
+  d.style.fontSize = "9pt";
+
+  const start = new Date(dt);
+  start.setHours(18, 0, 0, 0);
+  const end = new Date(dt);
+  end.setHours(6, 0, 0, 0);
+  if (end <= start) end.setDate(end.getDate() + 1);
+
+  const samples = [];
+  let t = new Date(start);
+  while (t <= end) {
+    samples.push(new Date(t));
+    t = new Date(t.getTime() + 60 * 60 * 1000);
+  }
+
+  const latRad = deg2rad(lat);
+  const lonRad = deg2rad(lon);
+
+  const points = samples.map(time => {
+    const jd = toJulianDate(time);
+    const lst = localSiderealTime(jd, lonRad);
+
+    const sun = computeSun(time);
+    const sunRaRad = deg2rad(sun.raHours * 15);
+    const sunDecRad = deg2rad(sun.decDeg);
+    const sunHa = normalizeAngle(lst - sunRaRad);
+    const sunAlt = rad2deg(Math.asin(
+      Math.sin(latRad)*Math.sin(sunDecRad) +
+      Math.cos(latRad)*Math.cos(sunDecRad)*Math.cos(sunHa)
+    ));
+
+    const moon = computeMoon(time);
+    const moonRaRad = deg2rad(moon.raHours * 15);
+    const moonDecRad = deg2rad(moon.decDeg);
+    const moonHa = normalizeAngle(lst - moonRaRad);
+    const moonAlt = rad2deg(Math.asin(
+      Math.sin(latRad)*Math.sin(moonDecRad) +
+      Math.cos(latRad)*Math.cos(moonDecRad)*Math.cos(moonHa)
+    ));
+
+    return { time, sunAlt, moonAlt };
+  });
+
+  const fmt = t => t.toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" });
+
+  const darkest = points.filter(p => p.sunAlt < -12).map(p => fmt(p.time));
+  const moonUp = points.filter(p => p.moonAlt > 0).map(p => fmt(p.time));
+
+  d.innerHTML = `
+    <h4 style="margin:4px 0 2px 0;">Tonight's Sky Window</h4>
+    <p><strong>Darkest window:</strong> ${
+      darkest.length ? `${darkest[0]} – ${darkest[darkest.length - 1]}` : "None"
+    }</p>
+    <p><strong>Moon above horizon:</strong> ${
+      moonUp.length ? `${moonUp[0]} – ${moonUp[moonUp.length - 1]}` : "Moon below horizon"
+    }</p>
+  `;
+
+  return d;
+}
+
+  function buildPdfWeather(lat, lon) {
+  const d = document.createElement("div");
+  d.style.marginTop = "6px";
+  d.style.fontSize = "9pt";
+  d.innerHTML = `<p><strong>Weather:</strong> Loading…</p>`;
+
+  fetch(`https://www.7timer.info/bin/api.pl?lon=${lon}&lat=${lat}&product=astro&output=json`)
+    .then(r => r.json())
+    .then(data => {
+      const first = data?.dataseries?.[0];
+      if (!first) {
+        d.innerHTML = "<p><strong>Weather:</strong> Unavailable</p>";
+        return;
+      }
+
+      const cc = first.cloudcover;
+      const seeing = first.seeing;
+      const trans = first.transparency;
+
+      function cloudLabel(c) {
+        if (c <= 2) return "Clear";
+        if (c <= 4) return "Mostly clear";
+        if (c <= 6) return "Partly cloudy";
+        if (c <= 8) return "Mostly cloudy";
+        return "Overcast";
+      }
+
+      function qualityLabel(v) {
+        if (v <= 2) return "Excellent";
+        if (v <= 4) return "Good";
+        if (v <= 6) return "Fair";
+        if (v <= 8) return "Poor";
+        return "Very poor";
+      }
+
+      d.innerHTML = `
+        <h4 style="margin:4px 0 2px 0;">Weather (7Timer)</h4>
+        <p>Clouds: ${cloudLabel(cc)} (index ${cc})</p>
+        <p>Transparency: ${qualityLabel(trans)} (index ${trans})</p>
+        <p>Seeing: ${qualityLabel(seeing)} (index ${seeing})</p>
+      `;
+    })
+    .catch(() => {
+      d.innerHTML = "<p><strong>Weather:</strong> Fetch failed</p>";
+    });
+
+  return d;
+}
+
+  function buildPdfWeather(lat, lon) {
+  const d = document.createElement("div");
+  d.style.marginTop = "6px";
+  d.style.fontSize = "9pt";
+  d.innerHTML = `<p><strong>Weather:</strong> Loading…</p>`;
+
+  fetch(`https://www.7timer.info/bin/api.pl?lon=${lon}&lat=${lat}&product=astro&output=json`)
+    .then(r => r.json())
+    .then(data => {
+      const first = data?.dataseries?.[0];
+      if (!first) {
+        d.innerHTML = "<p><strong>Weather:</strong> Unavailable</p>";
+        return;
+      }
+
+      const cc = first.cloudcover;
+      const seeing = first.seeing;
+      const trans = first.transparency;
+
+      function cloudLabel(c) {
+        if (c <= 2) return "Clear";
+        if (c <= 4) return "Mostly clear";
+        if (c <= 6) return "Partly cloudy";
+        if (c <= 8) return "Mostly cloudy";
+        return "Overcast";
+      }
+
+      function qualityLabel(v) {
+        if (v <= 2) return "Excellent";
+        if (v <= 4) return "Good";
+        if (v <= 6) return "Fair";
+        if (v <= 8) return "Poor";
+        return "Very poor";
+      }
+
+      d.innerHTML = `
+        <h4 style="margin:4px 0 2px 0;">Weather (7Timer)</h4>
+        <p>Clouds: ${cloudLabel(cc)} (index ${cc})</p>
+        <p>Transparency: ${qualityLabel(trans)} (index ${trans})</p>
+        <p>Seeing: ${qualityLabel(seeing)} (index ${seeing})</p>
+      `;
+    })
+    .catch(() => {
+      d.innerHTML = "<p><strong>Weather:</strong> Fetch failed</p>";
+    });
+
+  return d;
+}
+
   const rowsPerPage = Math.max(1, Math.floor((PAGE_HEIGHT - 160) / ROW_HEIGHT));
   let index = 0;
 
@@ -1732,9 +1988,10 @@ moon.altDeg = rad2deg(Math.asin(sinAlt));
 const moonRS = computeRiseSet(lat, moon.decDeg, moon.raHours, dt);
 
 firstLeft.appendChild(buildDetails(moon, moonRS));
-
-  firstLeft.appendChild(renderMapImageForPrint(lat, lon, dt));
-
+firstLeft.appendChild(renderMapImageForPrint(lat, lon, dt));
+firstLeft.appendChild(buildPdfSkyWindow(lat, lon, dt));
+firstLeft.appendChild(buildPdfWeather(lat, lon));
+  
   const firstRows = results.slice(0, rowsPerPage);
   const firstTableContainer = document.createElement("div");
   firstTableContainer.className = "planner-pdf-table";
