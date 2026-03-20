@@ -2079,7 +2079,7 @@ try {
   weather = null;
 }
   
-  async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather)
+  async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather) {
 
   const root = document.getElementById("planner-pdf-root");
   if (!root) return;
