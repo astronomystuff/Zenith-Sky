@@ -1826,7 +1826,7 @@ function renderMapImageForPrint(lat, lon, dt) {
   return img;
 }
 
-async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr) {
+async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather) {
   const root = document.getElementById("planner-pdf-root");
   if (!root) return;
   root.innerHTML = "";
