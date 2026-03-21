@@ -2081,6 +2081,9 @@ try {
 
 await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
 
+  await Promise.resolve(); // microtask
+  await Promise.resolve(); // second microtask
+
   win.onload = async () => {
 
     win.document.body.innerHTML = "";
