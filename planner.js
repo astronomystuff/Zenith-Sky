@@ -1602,15 +1602,46 @@ async function populateAstroWeather(lat, lon, targetDoc = document) {
       return;
     }
 
+    // Convert 7Timer indices (1=best, 9=worst)
+    const cc_raw = first.cloudcover;
+    const seeing_raw = first.seeing;
+    const trans_raw = first.transparency;
+
+    // Cloud cover: invert (9 = clear, 1 = overcast)
+    const cc = 9 - cc_raw;
+
+    // Seeing & transparency: normal (9 = excellent)
+    const seeing = 9 - seeing_raw;
+    const trans = 9 - trans_raw;
+
+    // Helper to build bar graphs
+    const bar = (value) => {
+      const filled = "▮".repeat(value);
+      const empty = "▯".repeat(9 - value);
+      return filled + empty;
+    };
+
     container.innerHTML = `
-      <p><strong>Cloud Cover:</strong> ${9 - first.cloudcover}/9</p>
-      <p><strong>Seeing:</strong> ${9 - first.seeing}/9</p>
-      <p><strong>Transparency:</strong> ${9 - first.transparency}/9</p>
+      <div style="margin-top:6px; font-size:13px; line-height:1.35;">
+        <p style="margin:0 0 4px 0;">
+          <strong>Cloud Cover:</strong> ${cc}/9<br>
+          <span style="font-family:monospace;">${bar(cc)}</span>
+        </p>
+        <p style="margin:0 0 4px 0;">
+          <strong>Seeing:</strong> ${seeing}/9<br>
+          <span style="font-family:monospace;">${bar(seeing)}</span>
+        </p>
+        <p style="margin:0;">
+          <strong>Transparency:</strong> ${trans}/9<br>
+          <span style="font-family:monospace;">${bar(trans)}</span>
+        </p>
+      </div>
     `;
   } catch (e) {
     container.textContent = "Weather unavailable.";
   }
 }
+
 
 // RUN PLANNER
 async function runPlanner() {
