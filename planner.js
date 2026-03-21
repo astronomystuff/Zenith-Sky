@@ -1847,30 +1847,84 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, w
     return { page, left, right };
   }
 
- function buildDetails(moon, moonRS) {
-  const d = document.createElement("div");
-  d.className = "planner-pdf-details";
+  function buildDetails(moon, moonRS) {
+    const d = document.createElement("div");
+    d.className = "planner-pdf-details";
 
-  d.innerHTML = `
-    <h3 style="font-size:12pt; margin:0 0 4px 0; line-height:1.1;">
-      Observation Details – Zenith Sky
-    </h3>
+    d.innerHTML = `
+      <h3 style="font-size:12pt; margin:0 0 4px 0; line-height:1.1;">
+        Observation Details – Zenith Sky
+      </h3>
 
-    <p>Date: ${dateStr}</p>
-    <p>Time: ${timeStr}</p>
-    <p>Latitude: ${lat}</p>
-    <p>Longitude: ${lon}</p>
+      <p>Date: ${dateStr}</p>
+      <p>Time: ${timeStr}</p>
+      <p>Latitude: ${lat}</p>
+      <p>Longitude: ${lon}</p>
 
-    <h4 style="margin:8px 0 2px 0;">Moon</h4>
-    <p>Phase: ${moon.phaseName} (${Math.round(moon.illumination * 100)}%)</p>
-    <p>Altitude: ${moon.altDeg.toFixed(1)}°</p>
-    <p>RA: ${formatRA(moon.raHours)}</p>
-    <p>Dec: ${formatDec(moon.decDeg)}</p>
-    <p>Rise: ${moonRS.rise}</p>
-    <p>Set: ${moonRS.set}</p>
+      <h4 style="margin:8px 0 2px 0;">Moon</h4>
+      <p>Phase: ${moon.phaseName} (${Math.round(moon.illumination * 100)}%)</p>
+      <p>Altitude: ${moon.altDeg.toFixed(1)}°</p>
+      <p>RA: ${formatRA(moon.raHours)}</p>
+      <p>Dec: ${formatDec(moon.decDeg)}</p>
+      <p>Rise: ${moonRS.rise}</p>
+      <p>Set: ${moonRS.set}</p>
+    `;
+
+    return d;
+  }
+
+  const { page, left, right } = createPage();
+
+  const moon = computeMoon(dt);
+  const moonRS = computeMoonRiseSet(lat, lon, dt);
+  left.appendChild(buildDetails(moon, moonRS));
+
+  const skyWindow = document.createElement("div");
+  skyWindow.className = "planner-pdf-sky-window";
+  skyWindow.style.marginTop = "12px";
+  skyWindow.style.fontSize = "10pt";
+
+  skyWindow.innerHTML = `
+    <h4 style="margin:4px 0 2px 0;">Tonight's Sky Window</h4>
+
+    <div id="planner-sky-window-content" style="margin-bottom:6px;">
+      Computing sky window…
+    </div>
+
+    <div id="planner-sky-window-weather" style="margin-top:4px; font-size:10pt;">
+      Loading weather…
+    </div>
   `;
 
-  return d;
+  left.appendChild(skyWindow);
+
+  const table = document.createElement("table");
+  table.className = "planner-pdf-table";
+
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th>Object</th>
+        <th>Alt</th>
+        <th>Az</th>
+        <th>Type</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${results.map(r => `
+        <tr>
+          <td>${r.name}</td>
+          <td>${r.alt.toFixed(1)}°</td>
+          <td>${r.az.toFixed(1)}°</td>
+          <td>${r.type}</td>
+        </tr>
+      `).join("")}
+    </tbody>
+  `;
+
+  right.appendChild(table);
+
+  root.appendChild(page);
 }
 
   function buildTableRows(rows) {
