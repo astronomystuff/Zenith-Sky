@@ -2107,7 +2107,6 @@ firstLeft.appendChild(buildPdfWeather(weather));
     root.appendChild(page);
     index += rowsPerPage;
   }
-}
 
 // ===============================
 // openPlannerModalAndPrint
