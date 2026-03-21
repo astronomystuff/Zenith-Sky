@@ -1495,7 +1495,7 @@ function computeRiseSet(latDeg, decDeg, raHours, date) {
   };
 }
 
-function buildTonightSkyWindow(lat, lon, dt) {
+async function buildTonightSkyWindow(lat, lon, dt) {
   const container = document.getElementById("planner-sky-window-content");
   if (!container) return;
 
@@ -1587,48 +1587,28 @@ async function fetchAstroWeather(lat, lon) {
   return res.json();
 }
 
-async function populateAstroWeather(lat, lon) {
-  const wDiv = document.getElementById("planner-sky-window-weather");
-  if (!wDiv) return;
+async function populateAstroWeather(lat, lon, targetDoc = document) {
+  const container = targetDoc.getElementById("planner-sky-window-content");
+  if (!container) return;
 
-  wDiv.textContent = "Loading weather…";
+  container.textContent = "Loading weather…";
 
   try {
     const data = await fetchAstroWeather(lat, lon);
     const first = data?.dataseries?.[0];
+
     if (!first) {
-      wDiv.textContent = "Weather data unavailable.";
+      container.textContent = "No weather data available.";
       return;
     }
 
-    const cc = first.cloudcover;
-    const seeing = first.seeing;
-    const trans = first.transparency;
-
-    function cloudLabel(c) {
-      if (c <= 2) return "Clear";
-      if (c <= 4) return "Mostly clear";
-      if (c <= 6) return "Partly cloudy";
-      if (c <= 8) return "Mostly cloudy";
-      return "Overcast";
-    }
-
-    function qualityLabel(v) {
-      if (v <= 2) return "Excellent";
-      if (v <= 4) return "Good";
-      if (v <= 6) return "Fair";
-      if (v <= 8) return "Poor";
-      return "Very poor";
-    }
-
-    wDiv.innerHTML = `
-      <strong>Weather (7Timer):</strong><br>
-      Clouds: ${cloudLabel(cc)} (index ${cc})<br>
-      Transparency: ${qualityLabel(trans)} (index ${trans})<br>
-      Seeing: ${qualityLabel(seeing)} (index ${seeing})
+    container.innerHTML = `
+      <p><strong>Cloud Cover:</strong> ${first.cloudcover}/9</p>
+      <p><strong>Seeing:</strong> ${first.seeing}/9</p>
+      <p><strong>Transparency:</strong> ${first.transparency}/9</p>
     `;
-  } catch (err) {
-    wDiv.textContent = "Weather fetch failed.";
+  } catch (e) {
+    container.textContent = "Weather unavailable.";
   }
 }
 
@@ -2062,8 +2042,6 @@ firstLeft.appendChild(buildPdfWeather(weather));
 // ===============================
 async function openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, timeStr) {
 
-  drawOnScreenMap(lat, lon, dt);
-
   let weather = null;
   try {
     const w = await fetchAstroWeather(lat, lon);
@@ -2084,47 +2062,42 @@ async function openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, tim
   await Promise.resolve();
   await Promise.resolve();
 
-  win.onload = async () => {
+  const doc = win.document;
+  doc.body.innerHTML = "";
 
-    setTimeout(async () => {
+  const style = doc.createElement("style");
+  style.textContent = `
+    @page { size: 8.5in 11in; margin: 0; }
+    html, body { width: 8.5in; height: 11in; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .planner-pdf-page { width: 8.5in; min-height: 11in; page-break-after: always; display: flex; flex-direction: row; }
+    .planner-pdf-left { width: 3.5in; padding: 0.25in; }
+    .planner-pdf-right { width: 5in; padding: 0.25in; overflow: visible !important; }
+    table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+    th, td { padding: 4px 6px; border-bottom: 1px solid #ddd; }
+    img { max-width: 100%; height: auto; display: block; }
+  `;
+  doc.head.appendChild(style);
 
-      win.document.body.innerHTML = "";
+  const container = doc.createElement("div");
+  container.id = "planner-pdf-print-root";
+  doc.body.appendChild(container);
 
-      const style = win.document.createElement("style");
-      style.textContent = `
-        @page { size: 8.5in 11in; margin: 0; }
-        html, body { width: 8.5in; height: 11in; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        .planner-pdf-page { width: 8.5in; min-height: 11in; page-break-after: always; box-sizing: border-box; display: flex; flex-direction: row; }
-        .planner-pdf-left { width: 3.5in; padding: 0.25in; box-sizing: border-box; }
-        .planner-pdf-right { width: 5in; padding: 0.25in; box-sizing: border-box; overflow: visible !important; }
-        .planner-pdf-table { width: 100%; height: auto !important; max-height: none !important; overflow: visible !important; }
-        table { width: 100%; border-collapse: collapse; font-size: 9pt; page-break-inside: auto; }
-        thead { display: table-header-group; }
-        tbody tr { page-break-inside: avoid; }
-        th, td { padding: 4px 6px; border-bottom: 1px solid #ddd; text-align: left; }
-        img { max-width: 100%; height: auto; display: block; }
-      `;
-      win.document.head.appendChild(style);
+  const pages = document.querySelectorAll(".planner-pdf-page");
+  pages.forEach(page => container.appendChild(page.cloneNode(true)));
 
-      const container = win.document.createElement("div");
-      container.id = "planner-pdf-print-root";
-      win.document.body.appendChild(container);
+  await populateAstroWeather(lat, lon, doc);
+  await buildTonightSkyWindow(lat, lon, dt, doc);
 
-      const pages = document.querySelectorAll(".planner-pdf-page");
-      pages.forEach(page => container.appendChild(page.cloneNode(true)));
+  const imgs = Array.from(doc.images);
+  await Promise.all(imgs.map(img => {
+    if (img.complete) return Promise.resolve();
+    return new Promise(res => { img.onload = img.onerror = res; });
+  }));
 
-      const imgs = Array.from(win.document.images || []);
-      await Promise.all(imgs.map(img => {
-        if (img.complete) return Promise.resolve();
-        return new Promise(res => { img.onload = img.onerror = res; });
-      }));
-
-      win.focus();
-      win.print();
-
-    }, 0); 
-  }; 
+  win.focus();
+  win.print();
 }
+
 
 // ===============================
 // ATTACH PRINT BUTTON HANDLER
