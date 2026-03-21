@@ -1588,7 +1588,7 @@ async function fetchAstroWeather(lat, lon) {
 }
 
 async function populateAstroWeather(lat, lon, targetDoc = document) {
-  const container = targetDoc.getElementById("planner-sky-window-content");
+  const container = targetDoc.getElementById("planner-sky-window-weather");
   if (!container) return;
 
   container.textContent = "Loading weather…";
