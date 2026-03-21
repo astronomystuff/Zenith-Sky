@@ -2062,9 +2062,12 @@ firstLeft.appendChild(buildPdfWeather(weather));
 // ===============================
 async function openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, timeStr) {
 
+  // Draw map in modal before PDF generation
   drawOnScreenMap(lat, lon, dt);
 
-  // Fetch weather BEFORE building PDF
+  // -----------------------------------------
+  // Fetch weather BEFORE building the PDF
+  // -----------------------------------------
   let weather = null;
   try {
     const w = await fetchAstroWeather(lat, lon);
@@ -2080,10 +2083,14 @@ async function openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, tim
     weather = null;
   }
 
+  // -----------------------------------------
   // Build PDF content BEFORE opening print window
+  // -----------------------------------------
   await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
 
-  // Now configure print window
+  // -----------------------------------------
+  // Configure print window
+  // -----------------------------------------
   win.onload = async () => {
 
     win.document.body.innerHTML = "";
@@ -2162,8 +2169,7 @@ async function openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, tim
     win.focus();
     win.print();
   };
-} // <-- THIS WAS MISSING
-
+}
 
 // ===============================
 // ATTACH PRINT BUTTON HANDLER
@@ -2193,4 +2199,3 @@ window.addEventListener("DOMContentLoaded", () => {
     await openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, timeStr);
   });
 });
-
