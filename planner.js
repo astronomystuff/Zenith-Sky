@@ -1828,9 +1828,25 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, w
   const root = document.getElementById("planner-pdf-root");
   if (!root) return;
   root.innerHTML = "";
-
   const PAGE_HEIGHT = 1056;
   const ROW_HEIGHT = 22;
+  
+  function createPage() {
+  const page = document.createElement("div");
+  page.className = "planner-pdf-page";
+
+  const left = document.createElement("div");
+  left.className = "planner-pdf-left";
+
+  const right = document.createElement("div");
+  right.className = "planner-pdf-right";
+
+  page.appendChild(left);
+  page.appendChild(right);
+
+  return { page, left, right };
+}
+
 
   function createPage() {
     const page = document.createElement("div");
