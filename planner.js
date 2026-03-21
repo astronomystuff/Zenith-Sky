@@ -2065,103 +2065,65 @@ async function openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, tim
   drawOnScreenMap(lat, lon, dt);
 
   let weather = null;
-try {
-  const w = await fetchAstroWeather(lat, lon);
-  const first = w?.dataseries?.[0];
-  if (first) {
-    weather = {
-      cc: first.cloudcover,
-      seeing: first.seeing,
-      trans: first.transparency
-    };
+  try {
+    const w = await fetchAstroWeather(lat, lon);
+    const first = w?.dataseries?.[0];
+    if (first) {
+      weather = {
+        cc: first.cloudcover,
+        seeing: first.seeing,
+        trans: first.transparency
+      };
+    }
+  } catch (e) {
+    weather = null;
   }
-} catch (e) {
-  weather = null;
-}
 
-await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
+  await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
 
-  await Promise.resolve(); // microtask
-  await Promise.resolve(); // second microtask
+  await Promise.resolve();
+  await Promise.resolve();
 
   win.onload = async () => {
 
-    win.document.body.innerHTML = "";
+    setTimeout(async () => {
 
-    const style = win.document.createElement("style");
-    style.textContent = `
-      @page { size: 8.5in 11in; margin: 0; }
-      html, body { width: 8.5in; height: 11in; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+      win.document.body.innerHTML = "";
 
-      .planner-pdf-page {
-        width: 8.5in;
-        min-height: 11in;
-        page-break-after: always;
-        box-sizing: border-box;
-        display: flex;
-        flex-direction: row;
-      }
+      const style = win.document.createElement("style");
+      style.textContent = `
+        @page { size: 8.5in 11in; margin: 0; }
+        html, body { width: 8.5in; height: 11in; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .planner-pdf-page { width: 8.5in; min-height: 11in; page-break-after: always; box-sizing: border-box; display: flex; flex-direction: row; }
+        .planner-pdf-left { width: 3.5in; padding: 0.25in; box-sizing: border-box; }
+        .planner-pdf-right { width: 5in; padding: 0.25in; box-sizing: border-box; overflow: visible !important; }
+        .planner-pdf-table { width: 100%; height: auto !important; max-height: none !important; overflow: visible !important; }
+        table { width: 100%; border-collapse: collapse; font-size: 9pt; page-break-inside: auto; }
+        thead { display: table-header-group; }
+        tbody tr { page-break-inside: avoid; }
+        th, td { padding: 4px 6px; border-bottom: 1px solid #ddd; text-align: left; }
+        img { max-width: 100%; height: auto; display: block; }
+      `;
+      win.document.head.appendChild(style);
 
-      .planner-pdf-left {
-        width: 3.5in;
-        padding: 0.25in;
-        box-sizing: border-box;
-      }
+      const container = win.document.createElement("div");
+      container.id = "planner-pdf-print-root";
+      win.document.body.appendChild(container);
 
-      .planner-pdf-right {
-        width: 5in;
-        padding: 0.25in;
-        box-sizing: border-box;
-        overflow: visible !important;
-      }
+      const pages = document.querySelectorAll(".planner-pdf-page");
+      pages.forEach(page => container.appendChild(page.cloneNode(true)));
 
-      .planner-pdf-table {
-        width: 100%;
-        height: auto !important;
-        max-height: none !important;
-        overflow: visible !important;
-      }
+      const imgs = Array.from(win.document.images || []);
+      await Promise.all(imgs.map(img => {
+        if (img.complete) return Promise.resolve();
+        return new Promise(res => { img.onload = img.onerror = res; });
+      }));
 
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 9pt;
-        page-break-inside: auto;
-      }
+      win.focus();
+      win.print();
 
-      thead { display: table-header-group; }
-      tbody tr { page-break-inside: avoid; }
-
-      th, td {
-        padding: 4px 6px;
-        border-bottom: 1px solid #ddd;
-        text-align: left;
-      }
-
-      img {
-        max-width: 100%;
-        height: auto;
-        display: block;
-      }
-    `;
-    win.document.head.appendChild(style);
-
-    const container = win.document.createElement("div");
-    container.id = "planner-pdf-print-root";
-    win.document.body.appendChild(container);
-
-    const pages = document.querySelectorAll(".planner-pdf-page");
-    pages.forEach(page => container.appendChild(page.cloneNode(true)));
-
-    const imgs = Array.from(win.document.images || []);
-    await Promise.all(imgs.map(img => {
-      if (img.complete) return Promise.resolve();
-      return new Promise(res => { img.onload = img.onerror = res; });
-    }));
-
-    win.focus();
-    win.print();
-  };
+    }, 0); 
+  }; 
 }
 
 // ===============================
