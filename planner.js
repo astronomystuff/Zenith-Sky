@@ -1603,9 +1603,9 @@ async function populateAstroWeather(lat, lon, targetDoc = document) {
     }
 
     container.innerHTML = `
-      <p><strong>Cloud Cover:</strong> ${first.cloudcover}/9</p>
-      <p><strong>Seeing:</strong> ${first.seeing}/9</p>
-      <p><strong>Transparency:</strong> ${first.transparency}/9</p>
+      <p><strong>Cloud Cover:</strong> ${9 - first.cloudcover}/9</p>
+      <p><strong>Seeing:</strong> ${9 - first.seeing}/9</p>
+      <p><strong>Transparency:</strong> ${9 - first.transparency}/9</p>
     `;
   } catch (e) {
     container.textContent = "Weather unavailable.";
