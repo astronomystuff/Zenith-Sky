@@ -1580,13 +1580,6 @@ async function buildTonightSkyWindow(lat, lon, dt) {
   `;
 }
 
-async function fetchAstroWeather(lat, lon) {
-  const url = `https://www.7timer.info/bin/api.pl?lon=${lon}&lat=${lat}&product=astro&output=json`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("Weather fetch failed");
-  return res.json();
-}
-
 async function populateAstroWeather(lat, lon, targetDoc = document) {
   const container = targetDoc.getElementById("planner-sky-window-weather");
   if (!container) return;
@@ -1602,19 +1595,14 @@ async function populateAstroWeather(lat, lon, targetDoc = document) {
       return;
     }
 
-    // Convert 7Timer indices (1=best, 9=worst)
-    const cc_raw = first.cloudcover;
-    const seeing_raw = first.seeing;
-    const trans_raw = first.transparency;
+    // Cloud cover: 0 = clear, 9 = overcast (use raw)
+    const cc = first.cloudcover;
 
-    // Cloud cover: invert (9 = clear, 1 = overcast)
-    const cc = 9 - cc_raw;
+    // Seeing & transparency: invert (9 = excellent)
+    const seeing = 9 - first.seeing;
+    const trans = 9 - first.transparency;
 
-    // Seeing & transparency: normal (9 = excellent)
-    const seeing = 9 - seeing_raw;
-    const trans = 9 - trans_raw;
-
-    // Helper to build bar graphs
+    // Bar graph helper
     const bar = (value) => {
       const filled = "▮".repeat(value);
       const empty = "▯".repeat(9 - value);
@@ -1638,10 +1626,9 @@ async function populateAstroWeather(lat, lon, targetDoc = document) {
       </div>
     `;
   } catch (e) {
-    container.textContent = "Weather unavailable.";
+    container.textContent = "Weather Unavailable.";
   }
 }
-
 
 // RUN PLANNER
 async function runPlanner() {
