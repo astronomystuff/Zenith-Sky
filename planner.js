@@ -2061,6 +2061,8 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, w
   return d;
 }
 
+  const PAGE_HEIGHT = 1056;
+  const ROW_HEIGHT = 22;
   const rowsPerPage = Math.max(1, Math.floor((PAGE_HEIGHT - 160) / ROW_HEIGHT));
   let index = 0;
 
