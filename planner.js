@@ -2103,7 +2103,7 @@ async function openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, tim
   const pages = document.querySelectorAll(".planner-pdf-page");
   pages.forEach(page => container.appendChild(page.cloneNode(true)));
 
-  await populateAstroWeather(lat, lon, doc);
+  await populateAstroWeather(lat, lon, win.document);
   await buildTonightSkyWindow(lat, lon, dt, doc);
 
   const imgs = Array.from(doc.images);
