@@ -11,6 +11,20 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+async function fetchAstroWeather(lat, lon) {
+  const url = `https://www.7timer.info/bin/api.pl?lon=${lon}&lat=${lat}&product=astro&output=json`;
+
+  try {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data;
+  } catch (e) {
+    console.warn("Weather fetch failed:", e);
+    return null;
+  }
+}
+
 function deg2rad(d) { return d * Math.PI / 180; }
 function rad2deg(r) { return r * 180 / Math.PI; }
 function toJulianDate(date) { return date.getTime() / 86400000 + 2440587.5; }
@@ -1767,9 +1781,6 @@ if (detailsDiv) {
     <p>Set: ${moonRS.set}</p>
   `;
 }
-
-buildTonightSkyWindow(lat, lon, dt);
-populateAstroWeather(lat, lon);
 
 drawOnScreenMap(lat, lon, dt);
 }
