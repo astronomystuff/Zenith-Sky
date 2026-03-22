@@ -1831,7 +1831,11 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, w
 
   const PAGE_HEIGHT = 1056;
   const ROW_HEIGHT = 22;
+  const rowsPerPage = Math.max(1, Math.floor((PAGE_HEIGHT - 160) / ROW_HEIGHT));
 
+  // -------------------------
+  // PAGE CREATOR
+  // -------------------------
   function createPage() {
     const page = document.createElement("div");
     page.className = "planner-pdf-page";
@@ -1847,6 +1851,9 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, w
     return { page, left, right };
   }
 
+  // -------------------------
+  // DETAILS BLOCK
+  // -------------------------
   function buildDetails(moon, moonRS) {
     const d = document.createElement("div");
     d.className = "planner-pdf-details";
@@ -1872,149 +1879,165 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, w
     return d;
   }
 
-  // --- FIRST PAGE ---
-  const { page, left, right } = createPage();
+  // -------------------------
+  // TABLE BUILDER
+  // -------------------------
+  function buildTableRows(rows) {
+    const table = document.createElement("table");
+    table.className = "planner-pdf-table-inner";
+
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th>Object</th><th>Type</th><th>Mag</th><th>RA</th><th>Dec</th>
+          <th>Transit</th><th>Alt</th><th>Score</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    `;
+
+    const tbody = table.querySelector("tbody");
+
+    rows.forEach(r => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${r.name || r.id}</td>
+        <td>${r.type || ""}</td>
+        <td>${r.mag}</td>
+        <td>${formatRA(r.ra_h)}</td>
+        <td>${formatDec(r.dec_deg)}</td>
+        <td>${r.transit ? r.transit.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",hour12:false}) : "—"}</td>
+        <td>${r.altAtObs ? r.altAtObs.toFixed(1) + "°" : "—"}</td>
+        <td>${r.score ? r.score.toFixed(0) : "—"}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    return table;
+  }
+
+  // -------------------------
+  // SKY WINDOW
+  // -------------------------
+  function buildPdfSkyWindow(lat, lon, dt) {
+    const d = document.createElement("div");
+    d.style.marginTop = "8px";
+    d.style.fontSize = "9pt";
+
+    const start = new Date(dt);
+    start.setHours(18, 0, 0, 0);
+    const end = new Date(dt);
+    end.setHours(6, 0, 0, 0);
+    if (end <= start) end.setDate(end.getDate() + 1);
+
+    const samples = [];
+    let t = new Date(start);
+    while (t <= end) {
+      samples.push(new Date(t));
+      t = new Date(t.getTime() + 60 * 60 * 1000);
+    }
+
+    const latRad = deg2rad(lat);
+    const lonRad = deg2rad(lon);
+
+    const points = samples.map(time => {
+      const jd = toJulianDate(time);
+      const lst = localSiderealTime(jd, lonRad);
+
+      const sun = computeSun(time);
+      const sunRaRad = deg2rad(sun.raHours * 15);
+      const sunDecRad = deg2rad(sun.decDeg);
+      const sunHa = normalizeAngle(lst - sunRaRad);
+      const sunAlt = rad2deg(Math.asin(
+        Math.sin(latRad)*Math.sin(sunDecRad) +
+        Math.cos(latRad)*Math.cos(sunDecRad)*Math.cos(sunHa)
+      ));
+
+      const moon = computeMoon(time);
+      const moonRaRad = deg2rad(moon.raHours * 15);
+      const moonDecRad = deg2rad(moon.decDeg);
+      const moonHa = normalizeAngle(lst - moonRaRad);
+      const moonAlt = rad2deg(Math.asin(
+        Math.sin(latRad)*Math.sin(moonDecRad) +
+        Math.cos(latRad)*Math.cos(moonDecRad)*Math.cos(moonHa)
+      ));
+
+      return { time, sunAlt, moonAlt };
+    });
+
+    const fmt = t => t.toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" });
+
+    const darkest = points.filter(p => p.sunAlt < -12).map(p => fmt(p.time));
+    const moonUp = points.filter(p => p.moonAlt > 0).map(p => fmt(p.time));
+
+    d.innerHTML = `
+      <h4 style="margin:4px 0 2px 0;">Tonight's Sky Window</h4>
+      <p><strong>Darkest window:</strong> ${
+        darkest.length ? `${darkest[0]} – ${darkest[darkest.length - 1]}` : "None"
+      }</p>
+      <p><strong>Moon above horizon:</strong> ${
+        moonUp.length ? `${moonUp[0]} – ${moonUp[moonUp.length - 1]}` : "Moon below horizon"
+      }</p>
+    `;
+
+    return d;
+  }
+
+  // -------------------------
+  // WEATHER
+  // -------------------------
+  function buildPdfWeather(weather) {
+    const d = document.createElement("div");
+    d.style.marginTop = "6px";
+    d.style.fontSize = "9pt";
+
+    if (!weather) {
+      d.innerHTML = "<p><strong>Weather:</strong> Unavailable</p>";
+      return d;
+    }
+
+    const { cc, seeing, trans } = weather;
+
+    function cloudLabel(c) {
+      if (c <= 2) return "Clear";
+      if (c <= 4) return "Mostly clear";
+      if (c <= 6) return "Partly cloudy";
+      if (c <= 8) return "Mostly cloudy";
+      return "Overcast";
+    }
+
+    function qualityLabel(v) {
+      if (v <= 2) return "Excellent";
+      if (v <= 4) return "Good";
+      if (v <= 6) return "Fair";
+      if (v <= 8) return "Poor";
+      return "Very poor";
+    }
+
+    d.innerHTML = `
+      <h4 style="margin:4px 0 2px 0;">Weather (7Timer)</h4>
+      <p>Clouds: ${cloudLabel(cc)} (index ${cc})</p>
+      <p>Transparency: ${qualityLabel(trans)} (index ${trans})</p>
+      <p>Seeing: ${qualityLabel(seeing)} (index ${seeing})</p>
+    `;
+
+    return d;
+  }
+
+  // -------------------------
+  // FIRST PAGE
+  // -------------------------
+  const { page: firstPage, left: firstLeft, right: firstRight } = createPage();
 
   const moonDate = dt instanceof Date ? dt : new Date(dt);
   const moon = computeMoon(moonDate);
   const moonRS = computeMoonRiseSet(lat, lon, moonDate);
-  left.appendChild(buildDetails(moon, moonRS));
 
-  // --- SKY WINDOW BLOCK ---
-  const skyWindow = document.createElement("div");
-  skyWindow.className = "planner-pdf-sky-window";
-  skyWindow.style.marginTop = "12px";
-  skyWindow.style.fontSize = "10pt";
+  firstLeft.appendChild(buildDetails(moon, moonRS));
+  firstLeft.appendChild(renderMapImageForPrint(lat, lon, dt));
+  firstLeft.appendChild(buildPdfSkyWindow(lat, lon, dt));
+  firstLeft.appendChild(buildPdfWeather(weather));
 
-  skyWindow.innerHTML = `
-    <h4 style="margin:4px 0 2px 0;">Tonight's Sky Window</h4>
-
-    <div id="planner-sky-window-content" style="margin-bottom:6px;">
-      Computing sky window…
-    </div>
-
-    <div id="planner-sky-window-weather" style="margin-top:4px; font-size:10pt;">
-      Loading weather…
-    </div>
-  `;
-
-  left.appendChild(skyWindow);
-
-  // --- TABLE (FIRST PAGE) ---
-  const table = document.createElement("table");
-  table.className = "planner-pdf-table";
-
-  table.innerHTML = `
-    <thead>
-      <tr>
-        <th>Object</th>
-        <th>Alt</th>
-        <th>Az</th>
-        <th>Type</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${results.map(r => `
-        <tr>
-          <td>${r.name}</td>
-          <td>${r.alt.toFixed(1)}°</td>
-          <td>${r.az.toFixed(1)}°</td>
-          <td>${r.type}</td>
-        </tr>
-      `).join("")}
-    </tbody>
-  `;
-
-  right.appendChild(table);
-
-  root.appendChild(page);
-} 
-
-
-
-function buildPdfWeather(weather) {
-  const d = document.createElement("div");
-  d.style.marginTop = "6px";
-  d.style.fontSize = "9pt";
-
-  if (!weather) {
-    d.innerHTML = "<p><strong>Weather:</strong> Unavailable</p>";
-    return d;
-  }
-
-  const { cc, seeing, trans } = weather;
-
-  function cloudLabel(c) {
-    if (c <= 2) return "Clear";
-    if (c <= 4) return "Mostly clear";
-    if (c <= 6) return "Partly cloudy";
-    if (c <= 8) return "Mostly cloudy";
-    return "Overcast";
-  }
-
-  function qualityLabel(v) {
-    if (v <= 2) return "Excellent";
-    if (v <= 4) return "Good";
-    if (v <= 6) return "Fair";
-    if (v <= 8) return "Poor";
-    return "Very poor";
-  }
-
-  d.innerHTML = `
-    <h4 style="margin:4px 0 2px 0;">Weather (7Timer)</h4>
-    <p>Clouds: ${cloudLabel(cc)} (index ${cc})</p>
-    <p>Transparency: ${qualityLabel(trans)} (index ${trans})</p>
-    <p>Seeing: ${qualityLabel(seeing)} (index ${seeing})</p>
-  `;
-
-  return d;
-}
-
-
-  const PAGE_HEIGHT = 1056;
-  const ROW_HEIGHT = 22;
-  const rowsPerPage = Math.max(1, Math.floor((PAGE_HEIGHT - 160) / ROW_HEIGHT));
-  let index = 0;
-
- function createPage() {
-  const page = document.createElement("div");
-  page.className = "planner-pdf-page";
-
-  const left = document.createElement("div");
-  left.className = "planner-pdf-left";
-
-  const right = document.createElement("div");
-  right.className = "planner-pdf-right";
-
-  page.appendChild(left);
-  page.appendChild(right);
-
-  return { page, left, right };
-}
-
-const { page: firstPage, left: firstLeft, right: firstRight } = createPage();
-const moonDate = dt instanceof Date ? dt : new Date(dt);
-const moon = computeMoon(moonDate);
-const moonRS = computeMoonRiseSet(lat, lon, moonDate);
-
-
-const latRad = deg2rad(lat);
-const lonRad = deg2rad(lon);
-const jd = toJulianDate(dt);
-const lst = localSiderealTime(jd, lonRad);
-const raRad = deg2rad(moon.raHours * 15);
-const decRad = deg2rad(moon.decDeg);
-const ha = normalizeAngle(lst - raRad);
-const sinAlt =
-  Math.sin(latRad) * Math.sin(decRad) +
-  Math.cos(latRad) * Math.cos(decRad) * Math.cos(ha);
-moon.altDeg = rad2deg(Math.asin(sinAlt));
-
-firstLeft.appendChild(buildDetails(moon, moonRS));
-firstLeft.appendChild(renderMapImageForPrint(lat, lon, dt));
-firstLeft.appendChild(buildPdfSkyWindow(lat, lon, dt));
-firstLeft.appendChild(buildPdfWeather(weather));
-  
   const firstRows = results.slice(0, rowsPerPage);
   const firstTableContainer = document.createElement("div");
   firstTableContainer.className = "planner-pdf-table";
@@ -2022,7 +2045,11 @@ firstLeft.appendChild(buildPdfWeather(weather));
   firstRight.appendChild(firstTableContainer);
 
   root.appendChild(firstPage);
-  index += rowsPerPage;
+
+  // -------------------------
+  // PAGINATION
+  // -------------------------
+  let index = rowsPerPage;
 
   while (index < results.length) {
     const { page, left, right } = createPage();
@@ -2037,6 +2064,7 @@ firstLeft.appendChild(buildPdfWeather(weather));
     root.appendChild(page);
     index += rowsPerPage;
   }
+}
 
 // ===============================
 // openPlannerModalAndPrint
