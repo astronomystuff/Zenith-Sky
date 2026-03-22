@@ -2181,22 +2181,6 @@ async function openPlannerModalAndPrint(modalWin, lat, lon, dt, results, dateStr
   requestAnimationFrame(() => {
     setTimeout(async () => {
 
-      try {
-        if (typeof populateAstroWeather === "function") {
-          await populateAstroWeather(lat, lon, printWin.document);
-        }
-      } catch (e) {
-        console.warn("populateAstroWeather failed in print window:", e);
-      }
-
-      try {
-        if (typeof buildTonightSkyWindow === "function") {
-          await buildTonightSkyWindow(lat, lon, dt, printWin.document);
-        }
-      } catch (e) {
-        console.warn("buildTonightSkyWindow failed in print window:", e);
-      }
-
       const imgs = Array.from(printWin.document.images || []);
       await Promise.all(
         imgs.map(img =>
