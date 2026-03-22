@@ -2083,6 +2083,13 @@ moon.altDeg = rad2deg(Math.asin(sinAlt));
 // openPlannerModalAndPrint
 // ===============================
 async function openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, timeStr) {
+  if (!win || win.closed) {
+    win = window.open("", "_blank", "width=900,height=700");
+    if (!win) {
+      alert("Popup blocked — please allow popups for this site.");
+      return;
+    }
+  }
 
   let weather = null;
   try {
@@ -2100,54 +2107,69 @@ async function openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, tim
   }
 
   await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
-const src = document.getElementById("planner-pdf-root");
-const dest = win.document.getElementById("planner-pdf-print-root");
-
-if (src && dest) {
-  dest.innerHTML = src.innerHTML;
-}
-
-win.onload = () => {
-  setTimeout(() => {
-    win.print();
-    win.close();
-  }, 150);
-};
 
   const doc = win.document;
-  doc.body.innerHTML = "";
+  doc.open();
+  doc.write(`
+    <html>
+      <head>
+        <title>Observation Planner</title>
+        <style>
+          @page { size: 8.5in 11in; margin: 0; }
+          html, body { width: 8.5in; height: 11in; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+          .planner-pdf-page { width: 8.5in; min-height: 11in; page-break-after: always; display: flex; flex-direction: row; }
+          .planner-pdf-left { width: 3.5in; padding: 0.25in; box-sizing: border-box; }
+          .planner-pdf-right { width: 5in; padding: 0.25in; box-sizing: border-box; overflow: visible !important; }
+          .planner-pdf-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+          .planner-pdf-table-inner th, .planner-pdf-table-inner td { border-bottom: 1px solid #ddd; padding: 4px 6px; font-size: 9pt; }
+          img { max-width: 100%; height: auto; display: block; }
+        </style>
+      </head>
+      <body>
+        <div id="planner-pdf-print-root"></div>
+      </body>
+    </html>
+  `);
+  doc.close();
 
-  const style = doc.createElement("style");
-  style.textContent = `
-    @page { size: 8.5in 11in; margin: 0; }
-    html, body { width: 8.5in; height: 11in; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    .planner-pdf-page { width: 8.5in; min-height: 11in; page-break-after: always; display: flex; flex-direction: row; }
-    .planner-pdf-left { width: 3.5in; padding: 0.25in; }
-    .planner-pdf-right { width: 5in; padding: 0.25in; overflow: visible !important; }
-    table { width: 100%; border-collapse: collapse; font-size: 9pt; }
-    th, td { padding: 4px 6px; border-bottom: 1px solid #ddd; }
-    img { max-width: 100%; height: auto; display: block; }
-  `;
-  doc.head.appendChild(style);
+  const src = document.getElementById("planner-pdf-root");
+  const dest = doc.getElementById("planner-pdf-print-root");
+  if (src && dest) {
+    dest.innerHTML = src.innerHTML;
+  }
 
-  const container = doc.createElement("div");
-  container.id = "planner-pdf-print-root";
-  doc.body.appendChild(container);
+  try {
+    if (typeof populateAstroWeather === "function") {
+      await populateAstroWeather(lat, lon, doc);
+    }
+  } catch (e) {
+    console.warn("populateAstroWeather failed for print window:", e);
+  }
 
-  const pages = document.querySelectorAll(".planner-pdf-page");
-  pages.forEach(page => container.appendChild(page.cloneNode(true)));
+  try {
+    if (typeof buildTonightSkyWindow === "function") {
+      await buildTonightSkyWindow(lat, lon, dt, doc);
+    }
+  } catch (e) {
+    console.warn("buildTonightSkyWindow failed for print window:", e);
+  }
 
-  await populateAstroWeather(lat, lon, win.document);
-  await buildTonightSkyWindow(lat, lon, dt, doc);
-
-  const imgs = Array.from(doc.images);
+  const imgs = Array.from(doc.images || []);
   await Promise.all(imgs.map(img => {
     if (img.complete) return Promise.resolve();
     return new Promise(res => { img.onload = img.onerror = res; });
   }));
 
-  win.focus();
-  win.print();
+  setTimeout(() => {
+    try {
+      win.focus();
+      win.print();
+    } catch (e) {
+      console.warn("Print failed:", e);
+    } finally {
+      try { win.close(); } catch (e) { /* ignore */ }
+    }
+  }, 200);
 }
 
 
