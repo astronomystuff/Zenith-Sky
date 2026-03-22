@@ -1704,6 +1704,8 @@ async function runPlanner() {
 
   modalOverlay.style.display = "flex";
 
+await buildTonightSkyWindow(lat, lon, dt);
+
 // --- Compute Moon for modal ---
 const moon = computeMoon(dt);
 
