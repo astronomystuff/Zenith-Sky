@@ -2009,7 +2009,6 @@ const sinAlt =
   Math.sin(latRad) * Math.sin(decRad) +
   Math.cos(latRad) * Math.cos(decRad) * Math.cos(ha);
 moon.altDeg = rad2deg(Math.asin(sinAlt));
-const moonRS = computeRiseSet(lat, moon.decDeg, moon.raHours, dt);
 
 firstLeft.appendChild(buildDetails(moon, moonRS));
 firstLeft.appendChild(renderMapImageForPrint(lat, lon, dt));
