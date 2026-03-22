@@ -2083,6 +2083,7 @@ moon.altDeg = rad2deg(Math.asin(sinAlt));
 // openPlannerModalAndPrint
 // ===============================
 async function openPlannerModalAndPrint(modalWin, lat, lon, dt, results, dateStr, timeStr) {
+  // 1. Fetch weather (best-effort)
   let weather = null;
   try {
     const w = await fetchAstroWeather(lat, lon);
@@ -2098,14 +2099,17 @@ async function openPlannerModalAndPrint(modalWin, lat, lon, dt, results, dateStr
     weather = null;
   }
 
+  // 2. Build the PDF DOM in the main window
   await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
 
+  // 3. Open a *dedicated* print window (NOT the modal window)
   const printWin = window.open("", "_blank", "width=900,height=700");
   if (!printWin) {
     alert("Popup blocked — please allow popups for this site.");
     return;
   }
 
+  // 4. Write the print shell with forced white background
   printWin.document.open();
   printWin.document.write(`
     <html>
@@ -2122,7 +2126,6 @@ async function openPlannerModalAndPrint(modalWin, lat, lon, dt, results, dateStr
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
           }
           @page { size: 8.5in 11in; margin: 0; }
-
           .planner-pdf-page {
             width: 8.5in;
             min-height: 11in;
@@ -2130,33 +2133,28 @@ async function openPlannerModalAndPrint(modalWin, lat, lon, dt, results, dateStr
             display: flex;
             flex-direction: row;
           }
-
           .planner-pdf-left {
             width: 3.5in;
             padding: 0.25in;
             box-sizing: border-box;
           }
-
           .planner-pdf-right {
             width: 5in;
             padding: 0.25in;
             box-sizing: border-box;
             overflow: visible !important;
           }
-
           .planner-pdf-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 8px;
           }
-
           .planner-pdf-table-inner th,
           .planner-pdf-table-inner td {
             border-bottom: 1px solid #ddd;
             padding: 4px 6px;
             font-size: 9pt;
           }
-
           img {
             max-width: 100%;
             height: auto;
@@ -2171,43 +2169,24 @@ async function openPlannerModalAndPrint(modalWin, lat, lon, dt, results, dateStr
   `);
   printWin.document.close();
 
+  // 5. Copy the built DOM into the print window
   const src = document.getElementById("planner-pdf-root");
   const dest = printWin.document.getElementById("planner-pdf-print-root");
   if (src && dest) {
     dest.innerHTML = src.innerHTML;
   }
 
-  try {
-    if (typeof populateAstroWeather === "function") {
-      await populateAstroWeather(lat, lon, printWin.document);
-    }
-  } catch (e) {
-    console.warn("populateAstroWeather failed in print window:", e);
-  }
-
-  try {
-    if (typeof buildTonightSkyWindow === "function") {
-      await buildTonightSkyWindow(lat, lon, dt, printWin.document);
-    }
-  } catch (e) {
-    console.warn("buildTonightSkyWindow failed in print window:", e);
-  }
-
+  // 6. Wait for images to load
   const imgs = Array.from(printWin.document.images || []);
   await Promise.all(
-    imgs.map(img => {
-      if (img.complete) return Promise.resolve();
-      return new Promise(res => (img.onload = img.onerror = res));
-    })
+    imgs.map(img => img.complete ? Promise.resolve() : new Promise(res => (img.onload = img.onerror = res)))
   );
 
+  // 7. Print after a short delay
   setTimeout(() => {
-    try {
-      printWin.focus();
-      printWin.print();
-    } finally {
-      try { printWin.close(); } catch (e) {}
-    }
+    printWin.focus();
+    printWin.print();
+    printWin.close(); // closes ONLY the print window
   }, 200);
 }
 
