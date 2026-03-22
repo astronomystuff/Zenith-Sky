@@ -2031,7 +2031,7 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, w
 
   const moonDate = dt instanceof Date ? dt : new Date(dt);
   const moon = computeMoon(moonDate);
-  const moonRS = computeMoonRiseSet(lat, lon, moonDate);
+  const moonRS = computeRiseSet(lat, moon.decDeg, moon.raHours, moonDate);
 
   firstLeft.appendChild(buildDetails(moon, moonRS));
   firstLeft.appendChild(renderMapImageForPrint(lat, lon, dt));
