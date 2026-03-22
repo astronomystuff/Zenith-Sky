@@ -2100,9 +2100,19 @@ async function openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, tim
   }
 
   await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
+const src = document.getElementById("planner-pdf-root");
+const dest = win.document.getElementById("planner-pdf-print-root");
 
-  await Promise.resolve();
-  await Promise.resolve();
+if (src && dest) {
+  dest.innerHTML = src.innerHTML;
+}
+
+win.onload = () => {
+  setTimeout(() => {
+    win.print();
+    win.close();
+  }, 150);
+};
 
   const doc = win.document;
   doc.body.innerHTML = "";
