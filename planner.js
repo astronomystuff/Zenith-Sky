@@ -2082,15 +2082,7 @@ moon.altDeg = rad2deg(Math.asin(sinAlt));
 // ===============================
 // openPlannerModalAndPrint
 // ===============================
-async function openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, timeStr) {
-  if (!win || win.closed) {
-    win = window.open("", "_blank", "width=900,height=700");
-    if (!win) {
-      alert("Popup blocked — please allow popups for this site.");
-      return;
-    }
-  }
-
+async function openPlannerModalAndPrint(modalWin, lat, lon, dt, results, dateStr, timeStr) {
   let weather = null;
   try {
     const w = await fetchAstroWeather(lat, lon);
@@ -2108,21 +2100,68 @@ async function openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, tim
 
   await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
 
-  const doc = win.document;
-  doc.open();
-  doc.write(`
+  const printWin = window.open("", "_blank", "width=900,height=700");
+  if (!printWin) {
+    alert("Popup blocked — please allow popups for this site.");
+    return;
+  }
+
+  printWin.document.open();
+  printWin.document.write(`
     <html>
       <head>
         <title>Observation Planner</title>
         <style>
+          html, body {
+            background: white !important;
+            color: black !important;
+            margin: 0;
+            padding: 0;
+            width: 8.5in;
+            height: 11in;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          }
           @page { size: 8.5in 11in; margin: 0; }
-          html, body { width: 8.5in; height: 11in; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-          .planner-pdf-page { width: 8.5in; min-height: 11in; page-break-after: always; display: flex; flex-direction: row; }
-          .planner-pdf-left { width: 3.5in; padding: 0.25in; box-sizing: border-box; }
-          .planner-pdf-right { width: 5in; padding: 0.25in; box-sizing: border-box; overflow: visible !important; }
-          .planner-pdf-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-          .planner-pdf-table-inner th, .planner-pdf-table-inner td { border-bottom: 1px solid #ddd; padding: 4px 6px; font-size: 9pt; }
-          img { max-width: 100%; height: auto; display: block; }
+
+          .planner-pdf-page {
+            width: 8.5in;
+            min-height: 11in;
+            page-break-after: always;
+            display: flex;
+            flex-direction: row;
+          }
+
+          .planner-pdf-left {
+            width: 3.5in;
+            padding: 0.25in;
+            box-sizing: border-box;
+          }
+
+          .planner-pdf-right {
+            width: 5in;
+            padding: 0.25in;
+            box-sizing: border-box;
+            overflow: visible !important;
+          }
+
+          .planner-pdf-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+          }
+
+          .planner-pdf-table-inner th,
+          .planner-pdf-table-inner td {
+            border-bottom: 1px solid #ddd;
+            padding: 4px 6px;
+            font-size: 9pt;
+          }
+
+          img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+          }
         </style>
       </head>
       <body>
@@ -2130,48 +2169,47 @@ async function openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, tim
       </body>
     </html>
   `);
-  doc.close();
+  printWin.document.close();
 
   const src = document.getElementById("planner-pdf-root");
-  const dest = doc.getElementById("planner-pdf-print-root");
+  const dest = printWin.document.getElementById("planner-pdf-print-root");
   if (src && dest) {
     dest.innerHTML = src.innerHTML;
   }
 
   try {
     if (typeof populateAstroWeather === "function") {
-      await populateAstroWeather(lat, lon, doc);
+      await populateAstroWeather(lat, lon, printWin.document);
     }
   } catch (e) {
-    console.warn("populateAstroWeather failed for print window:", e);
+    console.warn("populateAstroWeather failed in print window:", e);
   }
 
   try {
     if (typeof buildTonightSkyWindow === "function") {
-      await buildTonightSkyWindow(lat, lon, dt, doc);
+      await buildTonightSkyWindow(lat, lon, dt, printWin.document);
     }
   } catch (e) {
-    console.warn("buildTonightSkyWindow failed for print window:", e);
+    console.warn("buildTonightSkyWindow failed in print window:", e);
   }
 
-  const imgs = Array.from(doc.images || []);
-  await Promise.all(imgs.map(img => {
-    if (img.complete) return Promise.resolve();
-    return new Promise(res => { img.onload = img.onerror = res; });
-  }));
+  const imgs = Array.from(printWin.document.images || []);
+  await Promise.all(
+    imgs.map(img => {
+      if (img.complete) return Promise.resolve();
+      return new Promise(res => (img.onload = img.onerror = res));
+    })
+  );
 
   setTimeout(() => {
     try {
-      win.focus();
-      win.print();
-    } catch (e) {
-      console.warn("Print failed:", e);
+      printWin.focus();
+      printWin.print();
     } finally {
-      try { win.close(); } catch (e) { /* ignore */ }
+      try { printWin.close(); } catch (e) {}
     }
   }, 200);
 }
-
 
 // ===============================
 // ATTACH PRINT BUTTON HANDLER
