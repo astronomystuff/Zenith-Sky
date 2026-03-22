@@ -1875,9 +1875,7 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, w
   // --- FIRST PAGE ---
   const { page, left, right } = createPage();
 
-  // Ensure dt is a Date
   const moonDate = dt instanceof Date ? dt : new Date(dt);
-
   const moon = computeMoon(moonDate);
   const moonRS = computeMoonRiseSet(lat, lon, moonDate);
   left.appendChild(buildDetails(moon, moonRS));
@@ -1930,7 +1928,19 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, w
   right.appendChild(table);
 
   root.appendChild(page);
-}
+} 
+
+
+
+function buildPdfWeather(weather) {
+  const d = document.createElement("div");
+  d.style.marginTop = "6px";
+  d.style.fontSize = "9pt";
+
+  if (!weather) {
+    d.innerHTML = "<p><strong>Weather:</strong> Unavailable</p>";
+    return d;
+  }
 
   const { cc, seeing, trans } = weather;
 
@@ -1959,6 +1969,7 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, w
 
   return d;
 }
+
 
   const PAGE_HEIGHT = 1056;
   const ROW_HEIGHT = 22;
