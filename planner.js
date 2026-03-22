@@ -1536,7 +1536,7 @@ async function buildTonightSkyWindow(lat, lon, dt) {
     const lst = localSiderealTime(jd, lonRad);
 
     // Sun
-    const sun = computeSun(time); // you already call this in Moon drawing
+    const sun = computeSun(time);
     const sunRaRad = deg2rad(sun.raHours * 15);
     const sunDecRad = deg2rad(sun.decDeg);
     const sunHa = normalizeAngle(lst - sunRaRad);
@@ -1559,11 +1559,10 @@ async function buildTonightSkyWindow(lat, lon, dt) {
   });
 
   const now = dt;
-
   const fmt = t => t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   const darkest = points
-    .filter(p => p.sunAlt < -12) // nautical+ night
+    .filter(p => p.sunAlt < -12)
     .map(p => fmt(p.time));
 
   const moonUp = points
@@ -1592,7 +1591,11 @@ async function buildTonightSkyWindow(lat, lon, dt) {
       Loading weather…
     </div>
   `;
+
+  // ⭐ FIX: Populate weather in the modal (this was missing)
+  await populateAstroWeather(lat, lon);
 }
+
 
 async function populateAstroWeather(lat, lon, targetDoc = document) {
   const container = targetDoc.getElementById("planner-sky-window-weather");
@@ -1609,14 +1612,10 @@ async function populateAstroWeather(lat, lon, targetDoc = document) {
       return;
     }
 
-    // Cloud cover: 0 = clear, 9 = overcast (use raw)
     const cc = first.cloudcover;
-
-    // Seeing & transparency: invert (9 = excellent)
     const seeing = 9 - first.seeing;
     const trans = 9 - first.transparency;
 
-    // Bar graph helper
     const bar = (value) => {
       const filled = "▮".repeat(value);
       const empty = "▯".repeat(9 - value);
@@ -1643,6 +1642,7 @@ async function populateAstroWeather(lat, lon, targetDoc = document) {
     container.textContent = "Weather Unavailable.";
   }
 }
+
 
 // RUN PLANNER
 async function runPlanner() {
