@@ -2031,6 +2031,19 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, w
 
   const moonDate = dt instanceof Date ? dt : new Date(dt);
   const moon = computeMoon(moonDate);
+  const latRad = deg2rad(lat);
+  const lonRad = deg2rad(lon);
+  const jd = toJulianDate(moonDate);
+  const lst = localSiderealTime(jd, lonRad);
+  const raRad = deg2rad(moon.raHours * 15);
+  const decRad = deg2rad(moon.decDeg);
+  const ha = normalizeAngle(lst - raRad);
+  const sinAlt =
+     Math.sin(latRad) * Math.sin(decRad) +
+     Math.cos(latRad) * Math.cos(decRad) * Math.cos(ha);
+
+moon.altDeg = rad2deg(Math.asin(sinAlt));
+
   const moonRS = computeRiseSet(lat, moon.decDeg, moon.raHours, moonDate);
 
   firstLeft.appendChild(buildDetails(moon, moonRS));
