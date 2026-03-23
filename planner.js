@@ -2179,10 +2179,13 @@ await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
       );
 
       setTimeout(() => {
-        printWin.focus();
-        printWin.print();
-        printWin.close(); 
-      }, 150);
+  printWin.focus();
+  setTimeout(() => {
+    printWin.print();
+    printWin.close();
+  }, 50);
+}, 150);
+
 
     }, 0);
   }); 
