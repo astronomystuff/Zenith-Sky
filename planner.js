@@ -2186,8 +2186,8 @@ printWin.document.write(`
         }
         th,td{
           border:1px solid #bbb;
-          padding:3px 4px;
-          line-height:1.2;
+          padding:2.5px 3px;
+          line-height:1.15;
         }
         th{
           background:#eee;
