@@ -1160,28 +1160,34 @@ if (s.isMoon) {
     Math.cos(sunDec) * Math.sin(moonDec) * Math.cos(sunRA - moonRA)
   );
 
-  const k = s.illumination;
-  const phase = 2 * k - 1;   // -1=new, +1=full
+  const phaseAngle = d2r(
+    180 -
+    r2d(D) -
+    6.289 * Math.sin(M1) +
+    2.1 * Math.sin(M) -
+    1.274 * Math.sin(2 * D - M1)
+  );
+
+  const terminatorX = R * Math.cos(phaseAngle);
 
   ctx.save();
   ctx.translate(s.x, s.y);
   ctx.rotate(angleToSun);
 
-  ctx.fillStyle = "#000000";
+  ctx.fillStyle = "#000";
   ctx.beginPath();
   ctx.arc(0, 0, R, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle = "#fff";
   ctx.beginPath();
   ctx.arc(0, 0, R, 0, Math.PI * 2);
   ctx.fill();
-
   ctx.globalCompositeOperation = "destination-out";
   ctx.beginPath();
   ctx.ellipse(
     0, 0,
-    R * Math.abs(phase),
+    Math.abs(terminatorX),
     R,
     0,
     0,
@@ -1193,7 +1199,6 @@ if (s.isMoon) {
   ctx.globalCompositeOperation = "source-over";
   return;
 }
-
 
   // PLANETS
   if (s.isPlanet) {
@@ -2192,8 +2197,8 @@ printWin.document.write(`
 
         th, td {
           border: 1px solid #b5b5b5;
-          padding: 3px 4px;
-          line-height: 1.2;
+          padding: 2.5px 3px;
+          line-height: 1.15;
           font-size: inherit;
         }
 
