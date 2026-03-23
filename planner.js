@@ -2158,12 +2158,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
   plannerPrintBtn.addEventListener("click", async () => {
 
-    const win = window.open("planner-print.html", "_blank");
-    if (!win) {
-      alert("Popup blocked — please allow popups for this site.");
-      return;
-    }
-
     const modalOverlay = document.getElementById("planner-modal-overlay");
     if (modalOverlay) modalOverlay.style.display = "flex";
 
@@ -2174,6 +2168,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const dateStr = window.lastPlannerDateStr || dt.toLocaleDateString();
     const timeStr = window.lastPlannerTimeStr || dt.toLocaleTimeString();
 
-    await openPlannerModalAndPrint(win, lat, lon, dt, results, dateStr, timeStr);
+    await openPlannerModalAndPrint(null, lat, lon, dt, results, dateStr, timeStr);
   });
 });
+
