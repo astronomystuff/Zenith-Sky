@@ -2052,7 +2052,23 @@ moon.altDeg = rad2deg(Math.asin(sinAlt));
 // openPlannerModalAndPrint
 // ===============================
 async function openPlannerModalAndPrint(modalWin, lat, lon, dt, results, dateStr, timeStr) {
-  // 1. Fetch weather (best-effort)
+let weather = null;
+try {
+  const w = await fetchAstroWeather(lat, lon);
+  const first = w?.dataseries?.[0];
+  if (first) {
+    weather = {
+      cc: first.cloudcover,
+      seeing: 9 - first.seeing,
+      trans: 9 - first.transparency
+    };
+  }
+} catch (e) {
+  weather = null;
+}
+
+await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
+
   let weather = null;
   try {
     const w = await fetchAstroWeather(lat, lon);
