@@ -1398,7 +1398,7 @@ function computeSun(date) {
   };
 }
 
-
+// computeMoon
 function computeMoon(dt) {
   const jd = toJulianDate(dt);
   const T = (jd - 2451545.0) / 36525;
@@ -1434,12 +1434,19 @@ function computeMoon(dt) {
   const raHours = r2d(ra) / 15;
   const decDeg = r2d(dec);
 
-  const phaseAngle =
+  // --- Correct Meeus phase-angle computation (all in degrees) ---
+  const Ddeg  = 297.8501921 + 445267.1114034 * T;
+  const Mdeg  = 357.5291092 + 35999.0502909 * T;
+  const M1deg = 134.9633964 + 477198.8675055 * T;
+
+  let phaseAngle =
     180 -
-    r2d(D) -
-    6.289 * Math.sin(M1) +
-    2.1 * Math.sin(M) -
-    1.274 * Math.sin(2 * D - M1);
+    Ddeg -
+    6.289 * Math.sin(d2r(M1deg)) +
+    2.1   * Math.sin(d2r(Mdeg)) -
+    1.274 * Math.sin(d2r(2 * Ddeg - M1deg));
+
+  phaseAngle = ((phaseAngle % 360) + 360) % 360;
 
   const illumination = (1 + Math.cos(d2r(phaseAngle))) / 2;
 
