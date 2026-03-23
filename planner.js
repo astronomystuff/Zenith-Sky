@@ -1164,8 +1164,6 @@ if (s.isMoon) {
   const phaseAngleRad = d2r(s.phaseAngle);
   const crescentWidth = R * Math.cos(phaseAngleRad);
 
-  console.log("phaseAngle:", s.phaseAngle, "illum:", s.illumination);
-
   ctx.save();
   ctx.translate(s.x, s.y);
   ctx.rotate(angleToSun);
@@ -1175,21 +1173,20 @@ if (s.isMoon) {
   ctx.arc(0, 0, R, 0, Math.PI * 2);
   ctx.fill();
 
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(0, 0, Math.abs(crescentWidth), R, 0, 0, Math.PI * 2);
+  ctx.clip();
+
   ctx.fillStyle = "#fff";
   ctx.beginPath();
   ctx.arc(0, 0, R, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.globalCompositeOperation = "destination-out";
-  ctx.beginPath();
-  ctx.ellipse(0, 0, Math.abs(crescentWidth), R, 0, 0, Math.PI * 2);
-  ctx.fill();
-
   ctx.restore();
-  ctx.globalCompositeOperation = "source-over";
+  ctx.restore();
   return;
 }
-
 
   // PLANETS
   if (s.isPlanet) {
