@@ -1036,6 +1036,7 @@ function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date) {
   // --- MOON ---
 const moon = computeMoon(date);
 {
+  Object.assign(s, computeMoon(date));
   const raRad = deg2rad(moon.raHours * 15);
   const decRad = deg2rad(moon.decDeg);
   const ha = normalizeAngle(lst - raRad);
