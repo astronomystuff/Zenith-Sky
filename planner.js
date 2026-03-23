@@ -2072,28 +2072,28 @@ moon.altDeg = rad2deg(Math.asin(sinAlt));
 // openPlannerModalAndPrint
 // ===============================
 async function openPlannerModalAndPrint(modalWin, lat, lon, dt, results, dateStr, timeStr) {
-let weather = null;
-try {
-  const w = await fetchAstroWeather(lat, lon);
-  const first = w?.dataseries?.[0];
-  if (first) {
-    weather = {
-      cc: first.cloudcover,
-      seeing: 9 - first.seeing,
-      trans: 9 - first.transparency
-    };
-  }
-} catch (e) {
-  weather = null;
-}
-
-await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
-
   const printWin = window.open("", "_blank", "width=900,height=700");
   if (!printWin) {
     alert("Popup blocked — please allow popups for this site.");
     return;
   }
+
+  let weather = null;
+  try {
+    const w = await fetchAstroWeather(lat, lon);
+    const first = w?.dataseries?.[0];
+    if (first) {
+      weather = {
+        cc: first.cloudcover,
+        seeing: 9 - first.seeing,
+        trans: 9 - first.transparency
+      };
+    }
+  } catch (e) {
+    weather = null;
+  }
+
+  await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
 
   printWin.document.open();
   printWin.document.write(`
@@ -2101,56 +2101,12 @@ await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
       <head>
         <title>Observation Planner</title>
         <style>
-          html, body {
-            background: white !important;
-            color: black !important;
-            margin: 0;
-            padding: 0;
-            width: 8.5in;
-            height: 11in;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-          }
-          @page { size: 8.5in 11in; margin: 0; }
-
-          .planner-pdf-page {
-            width: 8.5in;
-            min-height: 11in;
-            page-break-after: always;
-            display: flex;
-            flex-direction: row;
-          }
-
-          .planner-pdf-left {
-            width: 3.5in;
-            padding: 0.25in;
-            box-sizing: border-box;
-          }
-
-          .planner-pdf-right {
-            width: 5in;
-            padding: 0.25in;
-            box-sizing: border-box;
-            overflow: visible !important;
-          }
-
-          .planner-pdf-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 8px;
-          }
-
-          .planner-pdf-table-inner th,
-          .planner-pdf-table-inner td {
-            border-bottom: 1px solid #ddd;
-            padding: 4px 6px;
-            font-size: 9pt;
-          }
-
-          img {
-            max-width: 100%;
-            height: auto;
-            display: block;
-          }
+          html,body{background:white;color:black;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}
+          @page{size:8.5in 11in;margin:0;}
+          .planner-pdf-page{width:8.5in;min-height:11in;page-break-after:always;display:flex;flex-direction:row;}
+          .planner-pdf-left{width:3.5in;padding:0.25in;box-sizing:border-box;}
+          .planner-pdf-right{width:5in;padding:0.25in;box-sizing:border-box;overflow:visible;}
+          img{max-width:100%;height:auto;display:block;}
         </style>
       </head>
       <body>
@@ -2162,37 +2118,27 @@ await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
 
   const src = document.getElementById("planner-pdf-root");
   const dest = printWin.document.getElementById("planner-pdf-print-root");
-  if (src && dest) {
-    dest.innerHTML = src.innerHTML;
-  }
+  if (src && dest) dest.innerHTML = src.innerHTML;
+
+  const imgs = Array.from(printWin.document.images || []);
+  await Promise.all(imgs.map(img =>
+    img.complete ? Promise.resolve() : new Promise(res => { img.onload = img.onerror = res; })
+  ));
 
   requestAnimationFrame(() => {
-    setTimeout(async () => {
+    requestAnimationFrame(() => {
+      try { printWin.focus(); } catch (e) { /* ignore focus failures */ }
 
-      const imgs = Array.from(printWin.document.images || []);
-      await Promise.all(
-        imgs.map(img =>
-          img.complete
-            ? Promise.resolve()
-            : new Promise(res => (img.onload = img.onerror = res))
-        )
-      );
-
-requestAnimationFrame(() => {
-  requestAnimationFrame(() => {
-    printWin.focus(); 
-
-    setTimeout(() => {
-      printWin.print();
-      printWin.close();
-    }, 50);
+      setTimeout(() => {
+        try {
+          printWin.print();
+        } catch (e) {
+        } finally {
+          try { printWin.close(); } catch (e) {}
+        }
+      }, 50);
+    });
   });
-});
-
-
-
-    }, 0);
-  }); 
 }
 
 // ===============================
