@@ -2123,17 +2123,18 @@ if (src && dest) {
   const style = printWin.document.createElement("style");
   style.textContent = `
     table { width: 100%; border-collapse: collapse; font-size: 12pt; }
-    table th, table td { border: 1px solid #ccc; padding: 6px; text-align: left; }
-    table th { background: #f2f2f2; font-weight: 600; }
-    /* keep any other PDF-specific rules you rely on */
+    th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+    th { background: #f2f2f2; font-weight: 600; }
     .planner-pdf-page { page-break-after: always; }
     img { max-width: 100%; height: auto; display: block; }
   `;
   printWin.document.head.appendChild(style);
 
-  const imported = printWin.document.importNode(src, true);
   dest.innerHTML = "";
-  dest.appendChild(imported);
+  Array.from(src.children).forEach(child => {
+    const imported = printWin.document.importNode(child, true);
+    dest.appendChild(imported);
+  });
 }
 
 const imgs = Array.from(printWin.document.images || []);
@@ -2150,6 +2151,7 @@ requestAnimationFrame(() => {
     }, 50);
   });
 });
+
 }
 
 // ===============================
