@@ -2069,15 +2069,19 @@ moon.altDeg = rad2deg(Math.asin(sinAlt));
 }
 
 let printWin;
+
 // ===============================
 // openPlannerModalAndPrint
 // ===============================
 async function openPlannerModalAndPrint(modalWin, lat, lon, dt, results, dateStr, timeStr) {
-  printWin = window.open("", "_blank", "width=900,height=700");
+  const printWin = window.open("", "_blank", "width=900,height=700");
   if (!printWin) {
     alert("Popup blocked — please allow popups for this site.");
     return;
   }
+
+  printWin.document.write("<html><body>Preparing PDF…</body></html>");
+  printWin.document.close();
 
   let weather = null;
   try {
@@ -2090,9 +2094,7 @@ async function openPlannerModalAndPrint(modalWin, lat, lon, dt, results, dateStr
         trans: 9 - first.transparency
       };
     }
-  } catch (e) {
-    weather = null;
-  }
+  } catch (e) {}
 
   await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
 
@@ -2107,6 +2109,9 @@ async function openPlannerModalAndPrint(modalWin, lat, lon, dt, results, dateStr
           .planner-pdf-page{width:8.5in;min-height:11in;page-break-after:always;display:flex;flex-direction:row;}
           .planner-pdf-left{width:3.5in;padding:0.25in;box-sizing:border-box;}
           .planner-pdf-right{width:5in;padding:0.25in;box-sizing:border-box;overflow:visible;}
+          table{width:100%;border-collapse:collapse;font-size:13px;}
+          th,td{border:1px solid #ccc;padding:6px;}
+          th{background:#f5f5f5;font-weight:600;}
           img{max-width:100%;height:auto;display:block;}
         </style>
       </head>
@@ -2121,16 +2126,6 @@ async function openPlannerModalAndPrint(modalWin, lat, lon, dt, results, dateStr
   const dest = printWin.document.getElementById("planner-pdf-print-root");
 
   if (src && dest) {
-    const style = printWin.document.createElement("style");
-    style.textContent = `
-      table { width: 100%; border-collapse: collapse; font-size: 13px; }
-      th, td { border: 1px solid #ccc; padding: 6px; }
-      th { background: #f5f5f5; font-weight: 600; }
-      .planner-pdf-page { page-break-after: always; }
-      img { max-width: 100%; height: auto; display: block; }
-    `;
-    printWin.document.head.appendChild(style);
-
     dest.innerHTML = "";
     Array.from(src.children).forEach(child => {
       const imported = printWin.document.importNode(child, true);
