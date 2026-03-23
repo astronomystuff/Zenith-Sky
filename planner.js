@@ -1163,6 +1163,8 @@ if (s.isMoon) {
   const phaseAngleRad = d2r(s.phaseAngle);
   const crescentWidth = R * Math.cos(phaseAngleRad);
 
+  console.log("phaseAngle:", s.phaseAngle, "illum:", s.illumination);
+
   ctx.save();
   ctx.translate(s.x, s.y);
   ctx.rotate(angleToSun);
@@ -2162,7 +2164,6 @@ printWin.document.write(`
           width:3.5in;
           padding:0.25in;
           box-sizing:border-box;
-          line-height:1.5;
         }
         .planner-pdf-right{
           width:5in;
