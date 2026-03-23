@@ -1144,20 +1144,18 @@ const scale = canvas.width / 1050; // 1050px = 3.5 inches @ 300 DPI
 projectedStars.forEach((s) => {
   if (s.altDeg <= 0) return;
 
-  // --- MOON ---
+// --- MOON ---
 if (s.isMoon) {
-  const moonR = 10 * scale;
+  const R = 10 * scale;
 
-  // Draw full dark disk
   ctx.fillStyle = "#000000";
   ctx.beginPath();
-  ctx.arc(s.x, s.y, moonR, 0, Math.PI * 2);
+  ctx.arc(s.x, s.y, R, 0, Math.PI * 2);
   ctx.fill();
 
-  const sun = computeSun(date); 
+  const sun = computeSun(date);
   const sunRA = deg2rad(sun.raHours * 15);
   const sunDec = deg2rad(sun.decDeg);
-
   const moonRA = deg2rad(s.raHours * 15);
   const moonDec = deg2rad(s.decDeg);
 
@@ -1167,29 +1165,35 @@ if (s.isMoon) {
     Math.cos(sunDec) * Math.sin(moonDec) * Math.cos(sunRA - moonRA)
   );
 
-  const k = s.illumination;      // 0=new, 1=full
-  const phase = 2 * k - 1;       // -1=new → +1=full
+  const k = s.illumination;
+  const phase = 2 * k - 1;   // -1=new, +1=full
 
   ctx.save();
   ctx.translate(s.x, s.y);
-  ctx.rotate(angleToSun);        // orient crescent toward Sun
-  ctx.translate(-s.x, -s.y);
+  ctx.rotate(angleToSun);
 
   ctx.fillStyle = "#ffffff";
   ctx.beginPath();
-
-  if (phase >= 0) {
-    ctx.ellipse(s.x, s.y, moonR * phase, moonR, 0, 0, Math.PI * 2);
-  } else {
-    ctx.ellipse(s.x, s.y, moonR * -phase, moonR, 0, Math.PI, Math.PI * 3);
-  }
-
+  ctx.arc(0, 0, R, 0, Math.PI * 2);
   ctx.fill();
+
+  ctx.globalCompositeOperation = "destination-out";
+  ctx.beginPath();
+  ctx.ellipse(
+    0, 0,
+    R * Math.abs(phase),
+    R,
+    0,
+    0,
+    Math.PI * 2
+  );
+  ctx.fill();
+
   ctx.restore();
+  ctx.globalCompositeOperation = "source-over";
   return;
 }
 
-  
   // PLANETS
   if (s.isPlanet) {
     ctx.fillStyle = "#000000";
