@@ -2182,7 +2182,7 @@ printWin.document.write(`
         table{
           width:100%;
           border-collapse:collapse;
-          font-size:11.5px;
+          font-size:11px;
         }
         th,td{
           border:1px solid #bbb;
