@@ -1146,7 +1146,7 @@ projectedStars.forEach((s) => {
 
 // --- MOON ---
 if (s.isMoon) {
-  const R = scale * 0.26;
+  const R = 8 * scale;
 
   const sun = computeSun(date);
   const sunRA = deg2rad(sun.raHours * 15);
@@ -2184,19 +2184,22 @@ printWin.document.write(`
           overflow:visible;
         }
 
-        table{
-          width:100%;
-          border-collapse:collapse;
-          font-size:11.25px;
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 11.5px;
         }
-        th,td{
-          border:1px solid #bbb;
-          padding:2.5px 3px;
-          line-height:1.15;
+
+        th, td {
+          border: 1px solid #b5b5b5;
+          padding: 3px 4px;
+          line-height: 1.2;
+          font-size: inherit;
         }
-        th{
-          background:#eee;
-          font-weight:600;
+
+        th {
+          background: #eee;
+          font-weight: 600;
         }
 
         img{
