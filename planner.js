@@ -1510,94 +1510,114 @@ function computeRiseSet(latDeg, decDeg, raHours, date) {
 }
 
 async function buildTonightSkyWindow(lat, lon, dt) {
-  console.log("[SkyWindow] Starting buildTonightSkyWindow", { lat, lon, dt });
-
   const container = document.getElementById("planner-sky-window-content");
-  if (!container) {
-    console.warn("[SkyWindow] Container not found");
-    return;
-  }
+  if (!container) return;
 
   container.textContent = "Loading sky window…";
 
-  // Build the astronomical timeline
-  try {
-    console.log("[SkyWindow] Computing Sun/Moon altitudes…");
-    // (your existing code unchanged)
-  } catch (err) {
-    console.error("[SkyWindow] ERROR computing altitudes:", err);
-    container.textContent = "Error computing sky window.";
-    return;
+  const start = new Date(dt);
+  start.setHours(18, 0, 0, 0);
+  const end = new Date(dt);
+  end.setHours(6, 0, 0, 0);
+  if (end <= start) end.setDate(end.getDate() + 1);
+
+  const samples = [];
+  let t = new Date(start);
+  while (t <= end) {
+    samples.push(new Date(t));
+    t = new Date(t.getTime() + 60 * 60 * 1000);
   }
 
-  // Insert the HTML
-  console.log("[SkyWindow] Inserting base HTML (before weather)...");
+  const latRad = deg2rad(lat);
+  const lonRad = deg2rad(lon);
+
+  const points = samples.map(time => {
+    const jd = toJulianDate(time);
+    const lst = localSiderealTime(jd, lonRad);
+
+    const sun = computeSun(time);
+    const sunRaRad = deg2rad(sun.raHours * 15);
+    const sunDecRad = deg2rad(sun.decDeg);
+    const sunHa = normalizeAngle(lst - sunRaRad);
+    const sunSinAlt =
+      Math.sin(latRad) * Math.sin(sunDecRad) +
+      Math.cos(latRad) * Math.cos(sunDecRad) * Math.cos(sunHa);
+    const sunAlt = rad2deg(Math.asin(Math.max(-1, Math.min(1, sunSinAlt))));
+
+    const moon = computeMoon(time);
+    const moonRaRad = deg2rad(moon.raHours * 15);
+    const moonDecRad = deg2rad(moon.decDeg);
+    const moonHa = normalizeAngle(lst - moonRaRad);
+    const moonSinAlt =
+      Math.sin(latRad) * Math.sin(moonDecRad) +
+      Math.cos(latRad) * Math.cos(moonDecRad) * Math.cos(moonHa);
+    const moonAlt = rad2deg(Math.asin(Math.max(-1, Math.min(1, moonSinAlt))));
+
+    return { time, sunAlt, moonAlt };
+  });
+
+  const now = dt;
+  const fmt = t => t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  const darkest = points.filter(p => p.sunAlt < -12).map(p => fmt(p.time));
+  const moonUp = points.filter(p => p.moonAlt > 0).map(p => fmt(p.time));
+
+  const current = points.reduce((best, p) =>
+    Math.abs(p.time - now) < Math.abs(best.time - now) ? p : best,
+    points[0]
+  );
+
   container.innerHTML = `
-    <p><strong>Darkest window:</strong> computing…</p>
-    <p><strong>Moon above horizon:</strong> computing…</p>
-    <p><strong>Now:</strong> computing…</p>
-    <div id="planner-sky-window-weather">Loading weather…</div>
+    <p><strong>Darkest window:</strong>
+      ${darkest.length ? `${darkest[0]} – ${darkest[darkest.length - 1]}` : "None (Sun too high)"}
+    </p>
+    <p><strong>Moon above horizon:</strong>
+      ${moonUp.length ? `${moonUp[0]} – ${moonUp[moonUp.length - 1]}` : "Moon below horizon all night"}
+    </p>
+    <p><strong>Now:</strong>
+      Sun alt ${current.sunAlt.toFixed(1)}°, Moon alt ${current.moonAlt.toFixed(1)}°
+    </p>
+    <div id="planner-sky-window-weather" style="margin-top:6px;font-size:13px;">
+      Loading weather…
+    </div>
   `;
 
-  // ⭐ CRITICAL: Call weather
-  console.log("[SkyWindow] Calling populateAstroWeather…");
   await populateAstroWeather(lat, lon);
-
-  console.log("[SkyWindow] Finished buildTonightSkyWindow");
 }
 
 async function populateAstroWeather(lat, lon, targetDoc = document) {
-  console.log("[Weather] populateAstroWeather called", { lat, lon, targetDoc });
-
   const container = targetDoc.getElementById("planner-sky-window-weather");
-  if (!container) {
-    console.warn("[Weather] Weather container not found");
-    return;
-  }
+  if (!container) return;
 
   container.textContent = "Loading weather…";
 
   let data;
   try {
-    console.log("[Weather] Fetching weather…");
     data = await fetchAstroWeather(lat, lon);
-    console.log("[Weather] Raw weather data:", data);
-  } catch (err) {
-    console.error("[Weather] ERROR fetching weather:", err);
+  } catch {
     container.textContent = "Weather Unavailable.";
     return;
   }
 
   const first = data?.dataseries?.[0];
-  console.log("[Weather] First dataseries entry:", first);
-
   if (!first) {
-    console.warn("[Weather] No dataseries found");
     container.textContent = "No weather data available.";
     return;
   }
 
-  try {
-    console.log("[Weather] Rendering bars…");
-    const cc = first.cloudcover;
-    const seeing = 9 - first.seeing;
-    const trans = 9 - first.transparency;
+  const cc = first.cloudcover;
+  const seeing = 9 - first.seeing;
+  const trans = 9 - first.transparency;
 
-    const bar = (value) => "▮".repeat(value) + "▯".repeat(9 - value);
+  const bar = v => "▮".repeat(v) + "▯".repeat(9 - v);
 
-    container.innerHTML = `
-      <div>
-        <p><strong>Cloud Cover:</strong> ${cc}/9<br>${bar(cc)}</p>
-        <p><strong>Seeing:</strong> ${seeing}/9<br>${bar(seeing)}</p>
-        <p><strong>Transparency:</strong> ${trans}/9<br>${bar(trans)}</p>
-      </div>
-    `;
-
-    console.log("[Weather] Bars rendered successfully");
-  } catch (err) {
-    console.error("[Weather] ERROR rendering bars:", err);
-    container.textContent = "Weather Unavailable.";
-  }
+  container.innerHTML = `
+    <div style="font-size:13px; line-height:1.35;">
+      <p><strong>Cloud Cover:</strong> ${cc}/9<br>${bar(cc)}</p>
+      <p><strong>Seeing:</strong> ${seeing}/9<br>${bar(seeing)}</p>
+      <p><strong>Transparency:</strong> ${trans}/9<br>${bar(trans)}</p>
+    </div>
+  `;
 }
 
 // RUN PLANNER
