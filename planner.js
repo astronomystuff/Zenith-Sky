@@ -1161,29 +1161,39 @@ if (s.isMoon) {
     Math.cos(sunDec) * Math.sin(moonDec) * Math.cos(sunRA - moonRA)
   );
 
-  const phaseAngleRad = d2r(s.phaseAngle);
-  const crescentWidth = R * Math.cos(phaseAngleRad);
+  const phaseRad = d2r(s.phaseAngle);
+  const offset = R * Math.cos(phaseRad);
 
   ctx.save();
   ctx.translate(s.x, s.y);
-  ctx.rotate(angleToSun);
+  ctx.rotate(angleToSun + Math.PI);
 
+  // Dark disk
   ctx.fillStyle = "#000";
   ctx.beginPath();
   ctx.arc(0, 0, R, 0, Math.PI * 2);
   ctx.fill();
 
+  // Clip lit hemisphere
   ctx.save();
   ctx.beginPath();
-  ctx.ellipse(0, 0, Math.abs(crescentWidth), R, 0, 0, Math.PI * 2);
+  ctx.arc(offset, 0, R, 0, Math.PI * 2);
   ctx.clip();
 
+  // Bright disk
   ctx.fillStyle = "#fff";
   ctx.beginPath();
   ctx.arc(0, 0, R, 0, Math.PI * 2);
   ctx.fill();
-
   ctx.restore();
+
+  // Limb outline
+  ctx.strokeStyle = "#000";
+  ctx.lineWidth = 1 * scale;
+  ctx.beginPath();
+  ctx.arc(0, 0, R, 0, Math.PI * 2);
+  ctx.stroke();
+
   ctx.restore();
   return;
 }
