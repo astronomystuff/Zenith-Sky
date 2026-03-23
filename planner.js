@@ -2068,11 +2068,12 @@ moon.altDeg = rad2deg(Math.asin(sinAlt));
   }
 }
 
+let printWin;
 // ===============================
 // openPlannerModalAndPrint
 // ===============================
 async function openPlannerModalAndPrint(modalWin, lat, lon, dt, results, dateStr, timeStr) {
-  const printWin = window.open("", "_blank", "width=900,height=700");
+  printWin = window.open("", "_blank", "width=900,height=700");
   if (!printWin) {
     alert("Popup blocked — please allow popups for this site.");
     return;
@@ -2116,42 +2117,41 @@ async function openPlannerModalAndPrint(modalWin, lat, lon, dt, results, dateStr
   `);
   printWin.document.close();
 
-const src = document.getElementById("planner-pdf-root");
-const dest = printWin.document.getElementById("planner-pdf-print-root");
+  const src = document.getElementById("planner-pdf-root");
+  const dest = printWin.document.getElementById("planner-pdf-print-root");
 
-if (src && dest) {
-  const style = printWin.document.createElement("style");
-  style.textContent = `
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th, td { border: 1px solid #ccc; padding: 6px; }
-    th { background: #f5f5f5; font-weight: 600; }
-    .planner-pdf-page { page-break-after: always; }
-    img { max-width: 100%; height: auto; display: block; }
-  `;
-  printWin.document.head.appendChild(style);
+  if (src && dest) {
+    const style = printWin.document.createElement("style");
+    style.textContent = `
+      table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      th, td { border: 1px solid #ccc; padding: 6px; }
+      th { background: #f5f5f5; font-weight: 600; }
+      .planner-pdf-page { page-break-after: always; }
+      img { max-width: 100%; height: auto; display: block; }
+    `;
+    printWin.document.head.appendChild(style);
 
-  dest.innerHTML = "";
-  Array.from(src.children).forEach(child => {
-    const imported = printWin.document.importNode(child, true);
-    dest.appendChild(imported);
-  });
-}
+    dest.innerHTML = "";
+    Array.from(src.children).forEach(child => {
+      const imported = printWin.document.importNode(child, true);
+      dest.appendChild(imported);
+    });
+  }
 
-const imgs = Array.from(printWin.document.images || []);
-await Promise.all(imgs.map(img =>
-  img.complete ? Promise.resolve() : new Promise(res => { img.onload = img.onerror = res; })
-));
+  const imgs = Array.from(printWin.document.images || []);
+  await Promise.all(imgs.map(img =>
+    img.complete ? Promise.resolve() : new Promise(res => { img.onload = img.onerror = res; })
+  ));
 
-requestAnimationFrame(() => {
   requestAnimationFrame(() => {
-    try { printWin.focus(); } catch (e) {}
-    setTimeout(() => {
-      try { printWin.print(); } catch (e) {}
-      try { printWin.close(); } catch (e) {}
-    }, 50);
+    requestAnimationFrame(() => {
+      try { printWin.focus(); } catch (e) {}
+      setTimeout(() => {
+        try { printWin.print(); } catch (e) {}
+        try { printWin.close(); } catch (e) {}
+      }, 50);
+    });
   });
-});
-  
 }
 
 // ===============================
