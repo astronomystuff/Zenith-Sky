@@ -2122,9 +2122,9 @@ const dest = printWin.document.getElementById("planner-pdf-print-root");
 if (src && dest) {
   const style = printWin.document.createElement("style");
   style.textContent = `
-    table { width: 100%; border-collapse: collapse; font-size: 12pt; }
-    th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
-    th { background: #f2f2f2; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { border: 1px solid #ccc; padding: 6px; }
+    th { background: #f5f5f5; font-weight: 600; }
     .planner-pdf-page { page-break-after: always; }
     img { max-width: 100%; height: auto; display: block; }
   `;
@@ -2151,7 +2151,7 @@ requestAnimationFrame(() => {
     }, 50);
   });
 });
-
+  
 }
 
 // ===============================
