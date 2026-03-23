@@ -1605,17 +1605,50 @@ async function populateAstroWeather(lat, lon, targetDoc = document) {
     return;
   }
 
-  const cc = first.cloudcover;
-  const seeing = 9 - first.seeing;
-  const trans = 9 - first.transparency;
+  const rawCloud = first.cloudcover;      // 0 = clear, 9 = overcast
+  const seeing = 9 - first.seeing;        // invert to make 9 = best
+  const trans = 9 - first.transparency;   // invert to make 9 = best
+
+  const cloudLabel = cc => {
+    if (cc <= 1) return "Clear";
+    if (cc <= 3) return "Mostly clear";
+    if (cc <= 5) return "Partly cloudy";
+    if (cc <= 7) return "Mostly cloudy";
+    return "Very cloudy";
+  };
+
+  const seeingLabel = s => {
+    if (s >= 8) return "Excellent";
+    if (s >= 6) return "Good";
+    if (s >= 4) return "Average";
+    if (s >= 2) return "Poor";
+    return "Very poor";
+  };
+
+  const transparencyLabel = t => {
+    if (t >= 8) return "Excellent";
+    if (t >= 6) return "Good";
+    if (t >= 4) return "Average";
+    if (t >= 2) return "Poor";
+    return "Very poor";
+  };
 
   const bar = v => "▮".repeat(v) + "▯".repeat(9 - v);
 
   container.innerHTML = `
     <div style="font-size:13px; line-height:1.35;">
-      <p><strong>Cloud Cover:</strong> ${cc}/9<br>${bar(cc)}</p>
-      <p><strong>Seeing:</strong> ${seeing}/9<br>${bar(seeing)}</p>
-      <p><strong>Transparency:</strong> ${trans}/9<br>${bar(trans)}</p>
+      <p>
+        <strong>Cloud Cover:</strong> ${cloudLabel(rawCloud)}<br>
+        ${bar(9 - rawCloud)}
+      </p>
+      <p>
+        <strong>Seeing:</strong> ${seeingLabel(seeing)}<br>
+        ${bar(seeing)}
+      </p>
+      <p>
+        <strong>Transparency:</strong> ${transparencyLabel(trans)}<br>
+        ${bar(trans)}
+      </p>
     </div>
   `;
 }
@@ -2099,28 +2132,67 @@ async function openPlannerModalAndPrint(modalWin, lat, lon, dt, results, dateStr
   await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
 
   printWin.document.open();
-  printWin.document.write(`
-    <html>
-      <head>
-        <title>Observation Planner</title>
-        <style>
-          html,body{background:white;color:black;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}
-          @page{size:8.5in 11in;margin:0;}
-          .planner-pdf-page{width:8.5in;min-height:11in;page-break-after:always;display:flex;flex-direction:row;}
-          .planner-pdf-left{width:3.5in;padding:0.25in;box-sizing:border-box;}
-          .planner-pdf-right{width:5in;padding:0.25in;box-sizing:border-box;overflow:visible;}
-          table{width:100%;border-collapse:collapse;font-size:13px;}
-          th,td{border:1px solid #ccc;padding:6px;}
-          th{background:#f5f5f5;font-weight:600;}
-          img{max-width:100%;height:auto;display:block;}
-        </style>
-      </head>
-      <body>
-        <div id="planner-pdf-print-root"></div>
-      </body>
-    </html>
-  `);
-  printWin.document.close();
+printWin.document.write(`
+  <html>
+    <head>
+      <title>Observation Planner</title>
+      <style>
+        html,body{
+          background:white;
+          color:black;
+          margin:0;
+          padding:0;
+          font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+        }
+        @page{size:8.5in 11in;margin:0;}
+        .planner-pdf-page{
+          width:8.5in;
+          min-height:11in;
+          page-break-after:always;
+          display:flex;
+          flex-direction:row;
+        }
+        .planner-pdf-left{
+          width:3.5in;
+          padding:0.25in;
+          box-sizing:border-box;
+        }
+        .planner-pdf-right{
+          width:5in;
+          padding:0.25in;
+          box-sizing:border-box;
+          overflow:visible;
+        }
+
+        table{
+          width:100%;
+          border-collapse:collapse;
+          font-size:10px;
+        }
+        th,td{
+          border:1px solid #bbb;
+          padding:2px 3px;
+          line-height:1.15;
+        }
+        th{
+          background:#eee;
+          font-weight:600;
+        }
+
+        img{
+          max-width:100%;
+          height:auto;
+          display:block;
+        }
+      </style>
+    </head>
+    <body>
+      <div id="planner-pdf-print-root"></div>
+    </body>
+  </html>
+`);
+printWin.document.close();
+
 
   const src = document.getElementById("planner-pdf-root");
   const dest = printWin.document.getElementById("planner-pdf-print-root");
