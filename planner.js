@@ -1160,15 +1160,8 @@ if (s.isMoon) {
     Math.cos(sunDec) * Math.sin(moonDec) * Math.cos(sunRA - moonRA)
   );
 
-  const phaseAngle = d2r(
-    180 -
-    r2d(D) -
-    6.289 * Math.sin(M1) +
-    2.1 * Math.sin(M) -
-    1.274 * Math.sin(2 * D - M1)
-  );
-
-  const terminatorX = R * Math.cos(phaseAngle);
+  const phaseAngleRad = d2r(s.phaseAngle);
+  const crescentWidth = R * Math.cos(phaseAngleRad);
 
   ctx.save();
   ctx.translate(s.x, s.y);
@@ -1183,22 +1176,17 @@ if (s.isMoon) {
   ctx.beginPath();
   ctx.arc(0, 0, R, 0, Math.PI * 2);
   ctx.fill();
+
   ctx.globalCompositeOperation = "destination-out";
   ctx.beginPath();
-  ctx.ellipse(
-    0, 0,
-    Math.abs(terminatorX),
-    R,
-    0,
-    0,
-    Math.PI * 2
-  );
+  ctx.ellipse(0, 0, Math.abs(crescentWidth), R, 0, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.restore();
   ctx.globalCompositeOperation = "source-over";
   return;
 }
+
 
   // PLANETS
   if (s.isPlanet) {
@@ -1272,7 +1260,7 @@ function heliocentricPosition(planet, jd) {
   const r = Math.sqrt(xv * xv + yv * yv);
 
   const O_rad = d2r(O);
-  const w_arg = d2r(wBar - O);       // argument of perihelion ω = ϖ − Ω
+  const w_arg = d2r(wBar - O);
   const u = v + w_arg;
 
   const xh = r * (Math.cos(O_rad) * Math.cos(u) - Math.sin(O_rad) * Math.sin(u) * Math.cos(i));
@@ -1418,58 +1406,8 @@ function computeMoon(dt) {
     raHours,
     decDeg,
     illumination,
+    phaseAngle,
     phaseName
-  };
-}
-
-function computeSun(date) {
-  const jd = toJulianDate(date);
-  const T = (jd - 2451545.0) / 36525;
-
-  // Mean longitude (deg)
-  const L0 = 280.46646 + 36000.76983 * T + 0.0003032 * T * T;
-
-  // Mean anomaly (deg)
-  const M = 357.52911 + 35999.05029 * T - 0.0001537 * T * T;
-
-  // Equation of center
-  const C =
-    (1.914602 - 0.004817 * T - 0.000014 * T * T) * Math.sin(deg2rad(M)) +
-    (0.019993 - 0.000101 * T) * Math.sin(deg2rad(2 * M)) +
-    0.000289 * Math.sin(deg2rad(3 * M));
-
-  // True longitude (deg)
-  const trueLong = L0 + C;
-
-  // Apparent longitude (deg)
-  const omega = 125.04 - 1934.136 * T;
-  const lambda = trueLong - 0.00569 - 0.00478 * Math.sin(deg2rad(omega));
-
-  // Obliquity of the ecliptic
-  const eps0 =
-    23.439291 -
-    0.0130042 * T -
-    1.64e-7 * T * T +
-    5.04e-7 * T * T * T;
-
-  const eps = eps0 + 0.00256 * Math.cos(deg2rad(omega));
-
-  // Convert to RA/Dec
-  const lambdaRad = deg2rad(lambda);
-  const epsRad = deg2rad(eps);
-
-  const sinDec = Math.sin(epsRad) * Math.sin(lambdaRad);
-  const dec = Math.asin(sinDec);
-
-  const y = Math.cos(epsRad) * Math.sin(lambdaRad);
-  const x = Math.cos(lambdaRad);
-
-  let ra = Math.atan2(y, x);
-  if (ra < 0) ra += 2 * Math.PI;
-
-  return {
-    raHours: rad2deg(ra) / 15,
-    decDeg: rad2deg(dec)
   };
 }
 
