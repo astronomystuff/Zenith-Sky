@@ -2116,29 +2116,40 @@ async function openPlannerModalAndPrint(modalWin, lat, lon, dt, results, dateStr
   `);
   printWin.document.close();
 
-  const src = document.getElementById("planner-pdf-root");
-  const dest = printWin.document.getElementById("planner-pdf-print-root");
-  if (src && dest) dest.innerHTML = src.innerHTML;
+const src = document.getElementById("planner-pdf-root");
+const dest = printWin.document.getElementById("planner-pdf-print-root");
 
-  const imgs = Array.from(printWin.document.images || []);
-  await Promise.all(imgs.map(img =>
-    img.complete ? Promise.resolve() : new Promise(res => { img.onload = img.onerror = res; })
-  ));
+if (src && dest) {
+  const style = printWin.document.createElement("style");
+  style.textContent = `
+    table { width: 100%; border-collapse: collapse; font-size: 12pt; }
+    table th, table td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+    table th { background: #f2f2f2; font-weight: 600; }
+    /* keep any other PDF-specific rules you rely on */
+    .planner-pdf-page { page-break-after: always; }
+    img { max-width: 100%; height: auto; display: block; }
+  `;
+  printWin.document.head.appendChild(style);
 
+  const imported = printWin.document.importNode(src, true);
+  dest.innerHTML = "";
+  dest.appendChild(imported);
+}
+
+const imgs = Array.from(printWin.document.images || []);
+await Promise.all(imgs.map(img =>
+  img.complete ? Promise.resolve() : new Promise(res => { img.onload = img.onerror = res; })
+));
+
+requestAnimationFrame(() => {
   requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      try { printWin.focus(); } catch (e) { /* ignore focus failures */ }
-
-      setTimeout(() => {
-        try {
-          printWin.print();
-        } catch (e) {
-        } finally {
-          try { printWin.close(); } catch (e) {}
-        }
-      }, 50);
-    });
+    try { printWin.focus(); } catch (e) {}
+    setTimeout(() => {
+      try { printWin.print(); } catch (e) {}
+      try { printWin.close(); } catch (e) {}
+    }, 50);
   });
+});
 }
 
 // ===============================
