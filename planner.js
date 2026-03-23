@@ -2069,23 +2069,6 @@ try {
 
 await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
 
-  let weather = null;
-  try {
-    const w = await fetchAstroWeather(lat, lon);
-    const first = w?.dataseries?.[0];
-    if (first) {
-      weather = {
-        cc: first.cloudcover,
-        seeing: first.seeing,
-        trans: first.transparency
-      };
-    }
-  } catch (e) {
-    weather = null;
-  }
-
-  await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
-
   const printWin = window.open("", "_blank", "width=900,height=700");
   if (!printWin) {
     alert("Popup blocked — please allow popups for this site.");
