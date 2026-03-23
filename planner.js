@@ -2170,7 +2170,7 @@ printWin.document.write(`
           width:3.5in;
           padding:0.25in;
           box-sizing:border-box;
-          line-height:1.35;
+          line-height:1.5;
         }
         .planner-pdf-right{
           width:5in;
@@ -2182,12 +2182,12 @@ printWin.document.write(`
         table{
           width:100%;
           border-collapse:collapse;
-          font-size:11px;
+          font-size:11.5px;
         }
         th,td{
           border:1px solid #bbb;
-          padding:2px 3px;
-          line-height:1.15;
+          padding:3px 4px;
+          line-height:1.2;
         }
         th{
           background:#eee;
