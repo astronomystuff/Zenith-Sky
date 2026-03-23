@@ -2009,42 +2009,56 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, w
   // WEATHER
   // -------------------------
   function buildPdfWeather(weather) {
-    const d = document.createElement("div");
-    d.style.marginTop = "6px";
-    d.style.fontSize = "9pt";
+  const d = document.createElement("div");
+  d.style.marginTop = "6px";
+  d.style.fontSize = "9pt";
 
-    if (!weather) {
-      d.innerHTML = "<p><strong>Weather:</strong> Unavailable</p>";
-      return d;
-    }
-
-    const { cc, seeing, trans } = weather;
-
-    function cloudLabel(c) {
-      if (c <= 2) return "Clear";
-      if (c <= 4) return "Mostly clear";
-      if (c <= 6) return "Partly cloudy";
-      if (c <= 8) return "Mostly cloudy";
-      return "Overcast";
-    }
-
-    function qualityLabel(v) {
-      if (v <= 2) return "Excellent";
-      if (v <= 4) return "Good";
-      if (v <= 6) return "Fair";
-      if (v <= 8) return "Poor";
-      return "Very poor";
-    }
-
-    d.innerHTML = `
-      <h4 style="margin:4px 0 2px 0;">Weather (7Timer)</h4>
-      <p>Clouds: ${cloudLabel(cc)} (index ${cc})</p>
-      <p>Transparency: ${qualityLabel(trans)} (index ${trans})</p>
-      <p>Seeing: ${qualityLabel(seeing)} (index ${seeing})</p>
-    `;
-
+  if (!weather) {
+    d.innerHTML = "<p><strong>Weather:</strong> Unavailable</p>";
     return d;
   }
+
+  const { cc, seeing, trans } = weather;
+
+  function cloudLabel(c) {
+    if (c <= 1) return "Clear";
+    if (c <= 3) return "Mostly clear";
+    if (c <= 5) return "Partly cloudy";
+    if (c <= 7) return "Mostly cloudy";
+    return "Overcast";
+  }
+
+  function qualityLabel(v) {
+    if (v >= 8) return "Excellent";
+    if (v >= 6) return "Good";
+    if (v >= 4) return "Fair";
+    if (v >= 2) return "Poor";
+    return "Very poor";
+  }
+
+  const bar = v => "▮".repeat(v) + "▯".repeat(9 - v);
+
+  d.innerHTML = `
+    <h4 style="margin:4px 0 2px 0;">Weather (7Timer)</h4>
+
+    <p style="margin:2px 0;">
+      <strong>Clouds:</strong> ${cloudLabel(cc)}<br>
+      <span style="font-family:monospace;">${bar(9 - cc)}</span>
+    </p>
+
+    <p style="margin:2px 0;">
+      <strong>Transparency:</strong> ${qualityLabel(trans)}<br>
+      <span style="font-family:monospace;">${bar(trans)}</span>
+    </p>
+
+    <p style="margin:2px 0;">
+      <strong>Seeing:</strong> ${qualityLabel(seeing)}<br>
+      <span style="font-family:monospace;">${bar(seeing)}</span>
+    </p>
+  `;
+
+  return d;
+}
 
   // -------------------------
   // FIRST PAGE
@@ -2167,7 +2181,7 @@ printWin.document.write(`
         table{
           width:100%;
           border-collapse:collapse;
-          font-size:10px;
+          font-size:12px;
         }
         th,td{
           border:1px solid #bbb;
