@@ -1146,12 +1146,7 @@ projectedStars.forEach((s) => {
 
 // --- MOON ---
 if (s.isMoon) {
-  const R = 10 * scale;
-
-  ctx.fillStyle = "#000000";
-  ctx.beginPath();
-  ctx.arc(s.x, s.y, R, 0, Math.PI * 2);
-  ctx.fill();
+  const R = scale * 0.26;
 
   const sun = computeSun(date);
   const sunRA = deg2rad(sun.raHours * 15);
@@ -1171,6 +1166,11 @@ if (s.isMoon) {
   ctx.save();
   ctx.translate(s.x, s.y);
   ctx.rotate(angleToSun);
+
+  ctx.fillStyle = "#000000";
+  ctx.beginPath();
+  ctx.arc(0, 0, R, 0, Math.PI * 2);
+  ctx.fill();
 
   ctx.fillStyle = "#ffffff";
   ctx.beginPath();
@@ -1193,6 +1193,7 @@ if (s.isMoon) {
   ctx.globalCompositeOperation = "source-over";
   return;
 }
+
 
   // PLANETS
   if (s.isPlanet) {
