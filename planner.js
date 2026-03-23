@@ -1352,6 +1352,50 @@ function computeAllPlanets(date) {
 // ------------------------------------------------------------
 // MOON (Meeus-style, RA/Dec + phase only)
 // ------------------------------------------------------------
+function computeSun(date) {
+  const jd = toJulianDate(date);
+  const T = (jd - 2451545.0) / 36525;
+
+  const L0 = 280.46646 + 36000.76983 * T + 0.0003032 * T * T;
+  const M = 357.52911 + 35999.05029 * T - 0.0001537 * T * T;
+
+  const C =
+    (1.914602 - 0.004817 * T - 0.000014 * T * T) * Math.sin(deg2rad(M)) +
+    (0.019993 - 0.000101 * T) * Math.sin(deg2rad(2 * M)) +
+    0.000289 * Math.sin(deg2rad(3 * M));
+
+  const trueLong = L0 + C;
+
+  const omega = 125.04 - 1934.136 * T;
+  const lambda = trueLong - 0.00569 - 0.00478 * Math.sin(deg2rad(omega));
+
+  const eps0 =
+    23.439291 -
+    0.0130042 * T -
+    1.64e-7 * T * T +
+    5.04e-7 * T * T * T;
+
+  const eps = eps0 + 0.00256 * Math.cos(deg2rad(omega));
+
+  const lambdaRad = deg2rad(lambda);
+  const epsRad = deg2rad(eps);
+
+  const sinDec = Math.sin(epsRad) * Math.sin(lambdaRad);
+  const dec = Math.asin(sinDec);
+
+  const y = Math.cos(epsRad) * Math.sin(lambdaRad);
+  const x = Math.cos(lambdaRad);
+
+  let ra = Math.atan2(y, x);
+  if (ra < 0) ra += 2 * Math.PI;
+
+  return {
+    raHours: rad2deg(ra) / 15,
+    decDeg: rad2deg(dec)
+  };
+}
+
+
 function computeMoon(dt) {
   const jd = toJulianDate(dt);
   const T = (jd - 2451545.0) / 36525;
