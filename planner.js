@@ -1149,7 +1149,7 @@ projectedStars.forEach((s) => {
 if (s.isMoon) {
   const R = 8 * scale;
 
-  const sun = computeSun(date);
+  const sun = computeSun(date, latDeg, lonDeg);
   const sunRA = deg2rad(sun.raHours * 15);
   const sunDec = deg2rad(sun.decDeg);
   const moonRA = deg2rad(s.raHours * 15);
