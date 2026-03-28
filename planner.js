@@ -1406,23 +1406,9 @@ function computeSun(date, latDeg, lonDeg) {
   let raGeo = Math.atan2(y, x);
   if (raGeo < 0) raGeo += 2 * Math.PI;
 
-  const latRad = d2r(latDeg);
-  const lst = localSiderealTime(jd, lonDeg);
-  const H = lst - raGeo;
-
-  const topRA = raGeo + Math.atan2(
-    -Math.cos(decGeo) * Math.sin(d2r(8.794 / 3600)) * Math.sin(H),
-    Math.cos(decGeo) - Math.sin(d2r(8.794 / 3600)) * Math.cos(H)
-  );
-
-  const topDec = Math.atan2(
-    (Math.sin(decGeo) - Math.sin(d2r(8.794 / 3600)) * Math.sin(latRad)) * Math.cos(H),
-    Math.cos(decGeo) - Math.sin(d2r(8.794 / 3600)) * Math.cos(H)
-  );
-
   return {
-    raHours: r2d(topRA) / 15,
-    decDeg: r2d(topDec)
+    raHours: r2d(raGeo) / 15,
+    decDeg: r2d(decGeo)
   };
 }
 
@@ -1471,23 +1457,8 @@ function computeMoon(dt, latDeg, lonDeg) {
   let raGeo = Math.atan2(y, x);
   if (raGeo < 0) raGeo += 2 * Math.PI;
 
-  const latRad = d2r(latDeg);
-  const HP = Math.asin(6378.14 / distKm);
-  const lst = localSiderealTime(jd, lonDeg);
-  const H = lst - raGeo;
-
-  const topRA = raGeo + Math.atan2(
-    -Math.cos(decGeo) * Math.sin(HP) * Math.sin(H),
-    Math.cos(decGeo) - Math.sin(HP) * Math.cos(H)
-  );
-
-  const topDec = Math.atan2(
-    (Math.sin(decGeo) - Math.sin(HP) * Math.sin(latRad)) * Math.cos(H),
-    Math.cos(decGeo) - Math.sin(HP) * Math.cos(H)
-  );
-
-  const raHours = r2d(topRA) / 15;
-  const decDeg = r2d(topDec);
+  const raHours = r2d(raGeo) / 15;
+  const decDeg = r2d(decGeo);
 
   let phaseAngle =
     180 -
