@@ -1152,45 +1152,50 @@ projectedStars.forEach((s) => {
 if (s.isMoon) {
   const R = 8 * scale;
 
-  const sun = computeSun(date, latDeg, lonDeg);
-  const sunRA = deg2rad(sun.raHours * 15);
-  const sunDec = deg2rad(sun.decDeg);
-  const moonRA = deg2rad(s.raHours * 15);
-  const moonDec = deg2rad(s.decDeg);
+  const sunPos = computeSun(date, latDeg, lonDeg);
+  const sunRaRad = deg2rad(sunPos.raHours * 15);
+  const sunDecRad = deg2rad(sunPos.decDeg);
 
-  const angleToSun = Math.atan2(
-    Math.cos(moonDec) * Math.sin(sunRA - moonRA),
-    Math.sin(sunDec) * Math.cos(moonDec) -
-    Math.cos(sunDec) * Math.sin(moonDec) * Math.cos(sunRA - moonRA)
-  );
+  const haSun = normalizeAngle(lst - sunRaRad);
+
+  const sinAltSun =
+    Math.sin(latRad) * Math.sin(sunDecRad) +
+    Math.cos(latRad) * Math.cos(sunDecRad) * Math.cos(haSun);
+
+  const altSun = Math.asin(sinAltSun);
+
+  const cosAzSun =
+    (Math.sin(sunDecRad) - Math.sin(altSun) * Math.sin(latRad)) /
+    (Math.cos(altSun) * Math.cos(latRad));
+
+  let azSun = Math.acos(Math.max(-1, Math.min(1, cosAzSun)));
+  if (Math.sin(haSun) > 0) azSun = 2 * Math.PI - azSun;
+
+  const angleToSun = azSun - s.az;
 
   const phaseRad = d2r(s.phaseAngle);
   const offset = R * Math.cos(phaseRad);
 
   ctx.save();
   ctx.translate(s.x, s.y);
-  ctx.rotate(angleToSun + Math.PI);
+  ctx.rotate(angleToSun);
 
-  // Dark disk
   ctx.fillStyle = "#000";
   ctx.beginPath();
   ctx.arc(0, 0, R, 0, Math.PI * 2);
   ctx.fill();
 
-  // Clip lit hemisphere
   ctx.save();
   ctx.beginPath();
   ctx.arc(offset, 0, R, 0, Math.PI * 2);
   ctx.clip();
 
-  // Bright disk
   ctx.fillStyle = "#fff";
   ctx.beginPath();
   ctx.arc(0, 0, R, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 
-  // Limb outline
   ctx.strokeStyle = "#000";
   ctx.lineWidth = 1 * scale;
   ctx.beginPath();
@@ -1201,7 +1206,7 @@ if (s.isMoon) {
   return;
 }
 
-  // PLANETS
+// --- PLANETS ---
   if (s.isPlanet) {
     ctx.fillStyle = "#000000";
 
