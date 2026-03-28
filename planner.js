@@ -838,7 +838,7 @@ function localSiderealTime(jd, lonDeg) {
 
 function altitudeAtTime(date, latRad, lonRad, raRad, decRad) {
   const jd = toJulianDate(date);
-  const lst = localSiderealTime(jd, lonRad);
+  const lst = localSiderealTime(jd, rad2deg(lonRad));
   const ha = normalizeAngle(lst - raRad);
   const sinAlt =
     Math.sin(latRad) * Math.sin(decRad) +
