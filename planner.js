@@ -773,7 +773,7 @@ function visibilityScore(eph, magInput, observationDate, obj, moon) {
   let score = altNorm * 50 + magNorm * 30 + transitNorm * 20;
 
   // ------------------------------------------------------------
-  // ⭐ MOON PROXIMITY + ILLUMINATION PENALTY (DSOs only)
+  // MOON PROXIMITY + ILLUMINATION PENALTY (DSOs only)
   // ------------------------------------------------------------
   if (obj && obj.type && obj.type !== "Planet" && moon) {
 
@@ -1034,7 +1034,7 @@ function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date) {
   });
 
   // --- MOON ---
-const moon = computeMoon(date);
+const moon = computeMoon(date, lat, lon);
 {
   const raRad = deg2rad(moon.raHours * 15);
   const decRad = deg2rad(moon.decDeg);
@@ -1585,23 +1585,23 @@ async function buildTonightSkyWindow(lat, lon, dt) {
     const jd = toJulianDate(time);
     const lst = localSiderealTime(jd, lonRad);
 
-    const sun = computeSun(time);
-    const sunRaRad = deg2rad(sun.raHours * 15);
-    const sunDecRad = deg2rad(sun.decDeg);
-    const sunHa = normalizeAngle(lst - sunRaRad);
-    const sunSinAlt =
-      Math.sin(latRad) * Math.sin(sunDecRad) +
-      Math.cos(latRad) * Math.cos(sunDecRad) * Math.cos(sunHa);
-    const sunAlt = rad2deg(Math.asin(Math.max(-1, Math.min(1, sunSinAlt))));
+const sun = computeSun(time, lat, lon);
+const sunRaRad = deg2rad(sun.raHours * 15);
+const sunDecRad = deg2rad(sun.decDeg);
+const sunHa = normalizeAngle(lst - sunRaRad);
+const sunSinAlt =
+  Math.sin(latRad) * Math.sin(sunDecRad) +
+  Math.cos(latRad) * Math.cos(sunDecRad) * Math.cos(sunHa);
+const sunAlt = rad2deg(Math.asin(Math.max(-1, Math.min(1, sunSinAlt))));
 
-    const moon = computeMoon(time);
-    const moonRaRad = deg2rad(moon.raHours * 15);
-    const moonDecRad = deg2rad(moon.decDeg);
-    const moonHa = normalizeAngle(lst - moonRaRad);
-    const moonSinAlt =
-      Math.sin(latRad) * Math.sin(moonDecRad) +
-      Math.cos(latRad) * Math.cos(moonDecRad) * Math.cos(moonHa);
-    const moonAlt = rad2deg(Math.asin(Math.max(-1, Math.min(1, moonSinAlt))));
+const moon = computeMoon(time, lat, lon);
+const moonRaRad = deg2rad(moon.raHours * 15);
+const moonDecRad = deg2rad(moon.decDeg);
+const moonHa = normalizeAngle(lst - moonRaRad);
+const moonSinAlt =
+  Math.sin(latRad) * Math.sin(moonDecRad) +
+  Math.cos(latRad) * Math.cos(moonDecRad) * Math.cos(moonHa);
+const moonAlt = rad2deg(Math.asin(Math.max(-1, Math.min(1, moonSinAlt))));
 
     return { time, sunAlt, moonAlt };
   });
@@ -1810,7 +1810,7 @@ async function runPlanner() {
 await buildTonightSkyWindow(lat, lon, dt);
 
 // --- Compute Moon for modal ---
-const moon = computeMoon(dt);
+const moon = computeMoon(dt, lat, lon);
 
 const latRad = deg2rad(lat);
 const lonRad = deg2rad(lon);
@@ -2016,7 +2016,7 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, w
       const jd = toJulianDate(time);
       const lst = localSiderealTime(jd, lonRad);
 
-      const sun = computeSun(time);
+      const sun = computeSun(time, lat, lon);
       const sunRaRad = deg2rad(sun.raHours * 15);
       const sunDecRad = deg2rad(sun.decDeg);
       const sunHa = normalizeAngle(lst - sunRaRad);
@@ -2025,7 +2025,7 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, w
         Math.cos(latRad)*Math.cos(sunDecRad)*Math.cos(sunHa)
       ));
 
-      const moon = computeMoon(time);
+      const moon = computeMoon(time, lat, lon);
       const moonRaRad = deg2rad(moon.raHours * 15);
       const moonDecRad = deg2rad(moon.decDeg);
       const moonHa = normalizeAngle(lst - moonRaRad);
