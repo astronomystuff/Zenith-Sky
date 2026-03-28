@@ -1362,22 +1362,26 @@ function computeAllPlanets(date) {
 // ------------------------------------------------------------
 // MOON (Meeus-style, RA/Dec + phase only)
 // ------------------------------------------------------------
-function computeSun(date) {
+function norm360(deg) {
+  return ((deg % 360) + 360) % 360;
+}
+
+function computeSun(date, latDeg, lonDeg) {
   const jd = toJulianDate(date);
   const T = (jd - 2451545.0) / 36525;
 
-  const L0 = 280.46646 + 36000.76983 * T + 0.0003032 * T * T;
-  const M = 357.52911 + 35999.05029 * T - 0.0001537 * T * T;
+  const L0 = norm360(280.46646 + 36000.76983 * T + 0.0003032 * T * T);
+  const M  = norm360(357.52911 + 35999.05029 * T - 0.0001537 * T * T);
 
   const C =
-    (1.914602 - 0.004817 * T - 0.000014 * T * T) * Math.sin(deg2rad(M)) +
-    (0.019993 - 0.000101 * T) * Math.sin(deg2rad(2 * M)) +
-    0.000289 * Math.sin(deg2rad(3 * M));
+    (1.914602 - 0.004817 * T - 0.000014 * T * T) * Math.sin(d2r(M)) +
+    (0.019993 - 0.000101 * T) * Math.sin(d2r(2 * M)) +
+    0.000289 * Math.sin(d2r(3 * M));
 
   const trueLong = L0 + C;
 
-  const omega = 125.04 - 1934.136 * T;
-  const lambda = trueLong - 0.00569 - 0.00478 * Math.sin(deg2rad(omega));
+  const omega = norm360(125.04 - 1934.136 * T);
+  const lambda = trueLong - 0.00569 - 0.00478 * Math.sin(d2r(omega));
 
   const eps0 =
     23.439291 -
@@ -1385,36 +1389,55 @@ function computeSun(date) {
     1.64e-7 * T * T +
     5.04e-7 * T * T * T;
 
-  const eps = eps0 + 0.00256 * Math.cos(deg2rad(omega));
+  const eps = eps0 + 0.00256 * Math.cos(d2r(omega));
 
-  const lambdaRad = deg2rad(lambda);
-  const epsRad = deg2rad(eps);
+  const lambdaRad = d2r(lambda);
+  const epsRad = d2r(eps);
 
   const sinDec = Math.sin(epsRad) * Math.sin(lambdaRad);
-  const dec = Math.asin(sinDec);
+  const decGeo = Math.asin(sinDec);
 
   const y = Math.cos(epsRad) * Math.sin(lambdaRad);
   const x = Math.cos(lambdaRad);
 
-  let ra = Math.atan2(y, x);
-  if (ra < 0) ra += 2 * Math.PI;
+  let raGeo = Math.atan2(y, x);
+  if (raGeo < 0) raGeo += 2 * Math.PI;
+
+  const latRad = d2r(latDeg);
+  const lst = localSiderealTime(jd, lonDeg);
+  const H = lst - raGeo;
+
+  const topRA = raGeo + Math.atan2(
+    -Math.cos(decGeo) * Math.sin(d2r(8.794 / 3600)) * Math.sin(H),
+    Math.cos(decGeo) - Math.sin(d2r(8.794 / 3600)) * Math.cos(H)
+  );
+
+  const topDec = Math.atan2(
+    (Math.sin(decGeo) - Math.sin(d2r(8.794 / 3600)) * Math.sin(latRad)) * Math.cos(H),
+    Math.cos(decGeo) - Math.sin(d2r(8.794 / 3600)) * Math.cos(H)
+  );
 
   return {
-    raHours: rad2deg(ra) / 15,
-    decDeg: rad2deg(dec)
+    raHours: r2d(topRA) / 15,
+    decDeg: r2d(topDec)
   };
 }
 
-// computeMoon
-function computeMoon(dt) {
+function computeMoon(dt, latDeg, lonDeg) {
   const jd = toJulianDate(dt);
   const T = (jd - 2451545.0) / 36525;
 
-  const L1 = d2r(218.3164477 + 481267.88123421 * T);
-  const M  = d2r(357.5291092 + 35999.0502909 * T);
-  const M1 = d2r(134.9633964 + 477198.8675055 * T);
-  const D  = d2r(297.8501921 + 445267.1114034 * T);
-  const F  = d2r(93.2720950 + 483202.0175233 * T);
+  const L1deg = norm360(218.3164477 + 481267.88123421 * T);
+  const Mdeg  = norm360(357.5291092 + 35999.0502909 * T);
+  const M1deg = norm360(134.9633964 + 477198.8675055 * T);
+  const Ddeg  = norm360(297.8501921 + 445267.1114034 * T);
+  const Fdeg  = norm360(93.2720950 + 483202.0175233 * T);
+
+  const L1 = d2r(L1deg);
+  const M  = d2r(Mdeg);
+  const M1 = d2r(M1deg);
+  const D  = d2r(Ddeg);
+  const F  = d2r(Fdeg);
 
   const lon = L1
     + d2r(6.289 * Math.sin(M1))
@@ -1428,23 +1451,40 @@ function computeMoon(dt) {
     + d2r(0.277 * Math.sin(M1 - F))
     + d2r(0.173 * Math.sin(2 * D - F));
 
+  const distKm =
+    385000.56 -
+    20905.0 * Math.cos(M1) -
+    3699.0  * Math.cos(2 * D - M1) -
+    2956.0  * Math.cos(2 * D) -
+    570.0   * Math.cos(2 * M1);
+
   const eps = d2r(23.439291 - 0.0130042 * T);
 
   const sinDec = Math.sin(lat) * Math.cos(eps) + Math.cos(lat) * Math.sin(eps) * Math.sin(lon);
-  const dec = Math.asin(sinDec);
+  const decGeo = Math.asin(sinDec);
 
   const y = Math.sin(lon) * Math.cos(eps) - Math.tan(lat) * Math.sin(eps);
   const x = Math.cos(lon);
-  let ra = Math.atan2(y, x);
-  if (ra < 0) ra += 2 * Math.PI;
+  let raGeo = Math.atan2(y, x);
+  if (raGeo < 0) raGeo += 2 * Math.PI;
 
-  const raHours = r2d(ra) / 15;
-  const decDeg = r2d(dec);
+  const latRad = d2r(latDeg);
+  const HP = Math.asin(6378.14 / distKm);
+  const lst = localSiderealTime(jd, lonDeg);
+  const H = lst - raGeo;
 
-  // --- Correct Meeus phase-angle computation (all in degrees) ---
-  const Ddeg  = 297.8501921 + 445267.1114034 * T;
-  const Mdeg  = 357.5291092 + 35999.0502909 * T;
-  const M1deg = 134.9633964 + 477198.8675055 * T;
+  const topRA = raGeo + Math.atan2(
+    -Math.cos(decGeo) * Math.sin(HP) * Math.sin(H),
+    Math.cos(decGeo) - Math.sin(HP) * Math.cos(H)
+  );
+
+  const topDec = Math.atan2(
+    (Math.sin(decGeo) - Math.sin(HP) * Math.sin(latRad)) * Math.cos(H),
+    Math.cos(decGeo) - Math.sin(HP) * Math.cos(H)
+  );
+
+  const raHours = r2d(topRA) / 15;
+  const decDeg = r2d(topDec);
 
   let phaseAngle =
     180 -
@@ -1453,7 +1493,7 @@ function computeMoon(dt) {
     2.1   * Math.sin(d2r(Mdeg)) -
     1.274 * Math.sin(d2r(2 * Ddeg - M1deg));
 
-  phaseAngle = ((phaseAngle % 360) + 360) % 360;
+  phaseAngle = norm360(phaseAngle);
 
   const illumination = (1 + Math.cos(d2r(phaseAngle))) / 2;
 
@@ -1468,7 +1508,8 @@ function computeMoon(dt) {
     decDeg,
     illumination,
     phaseAngle,
-    phaseName
+    phaseName,
+    distanceKm: distKm
   };
 }
 
