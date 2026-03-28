@@ -822,16 +822,19 @@ function sampleTimes(start, end, stepMinutes) {
   return out;
 }
 
-function localSiderealTime(jd, lonRad) {
+function localSiderealTime(jd, lonDeg) {
   const T = (jd - 2451545.0) / 36525.0;
   let GMST =
     280.46061837 +
     360.98564736629 * (jd - 2451545.0) +
     0.000387933 * T * T -
     (T * T * T) / 38710000;
+
   GMST = (GMST % 360 + 360) % 360;
-  return deg2rad(GMST) + lonRad;
+  const LSTdeg = GMST + lonDeg;
+  return deg2rad((LSTdeg % 360 + 360) % 360);
 }
+
 
 function altitudeAtTime(date, latRad, lonRad, raRad, decRad) {
   const jd = toJulianDate(date);
