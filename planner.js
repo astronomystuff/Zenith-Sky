@@ -834,11 +834,9 @@ function localSiderealTime(jd, lonDeg) {
   const LSTdeg = GMST + lonDeg;
   return deg2rad((LSTdeg % 360 + 360) % 360);
 }
-
-
-function altitudeAtTime(date, latRad, lonRad, raRad, decRad) {
+function altitudeAtTime(date, latRad, lonDeg, raRad, decRad) {
   const jd = toJulianDate(date);
-  const lst = localSiderealTime(jd, rad2deg(lonRad));
+  const lst = localSiderealTime(jd, lonDeg);
   const ha = normalizeAngle(lst - raRad);
   const sinAlt =
     Math.sin(latRad) * Math.sin(decRad) +
@@ -846,12 +844,12 @@ function altitudeAtTime(date, latRad, lonRad, raRad, decRad) {
   return rad2deg(Math.asin(Math.max(-1, Math.min(1, sinAlt))));
 }
 
-function refineCrossing(t1, t2, latRad, lonRad, raRad, decRad, targetAltDeg) {
+function refineCrossing(t1, t2, latRad, lonDeg, raRad, decRad, targetAltDeg) {
   let a = new Date(t1);
   let b = new Date(t2);
   for (let i = 0; i < 12; i++) {
     const mid = new Date((a.getTime() + b.getTime()) / 2);
-    const alt = altitudeAtTime(mid, latRad, rad2deg(lonRad), raRad, decRad);
+    const alt = altitudeAtTime(mid, latRad, lonDeg, raRad, decRad);
     if (alt > targetAltDeg) b = mid;
     else a = mid;
   }
@@ -866,7 +864,7 @@ function computeEphemerisForNight(lat, lon, dt, target) {
 
   const samples = sampleTimes(start, end, 5);
   const latRad = deg2rad(lat);
-  const lonRad = deg2rad(lon);
+  const lonDeg = lon;
   const raRad = deg2rad(target.ra * 15);
   const decRad = deg2rad(target.dec);
 
@@ -878,22 +876,26 @@ function computeEphemerisForNight(lat, lon, dt, target) {
   let prevTime = null;
 
   for (const t of samples) {
-    const alt = altitudeAtTime(t, latRad, rad2deg(lonRad), raRad, decRad);
+    const alt = altitudeAtTime(t, latRad, lonDeg, raRad, decRad);
+
     if (alt > maxAlt) {
       maxAlt = alt;
       maxAltTime = t;
     }
+
     if (prevAlt !== null) {
       if (prevAlt < 0 && alt >= 0 && !riseTime)
-        riseTime = refineCrossing(prevTime, t, latRad, lonRad, raRad, decRad, 0);
+        riseTime = refineCrossing(prevTime, t, latRad, lonDeg, raRad, decRad, 0);
+
       if (prevAlt >= 0 && alt < 0 && !setTime)
-        setTime = refineCrossing(prevTime, t, latRad, lonRad, raRad, decRad, 0);
+        setTime = refineCrossing(prevTime, t, latRad, lonDeg, raRad, decRad, 0);
     }
+
     prevAlt = alt;
     prevTime = t;
   }
 
-  const altAtObs = altitudeAtTime(dt, latRad, rad2deg(lonRad), raRad, decRad);
+  const altAtObs = altitudeAtTime(dt, latRad, lonDeg, raRad, decRad);
 
   return {
     rise: riseTime,
