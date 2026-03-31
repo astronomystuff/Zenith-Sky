@@ -1,4 +1,18 @@
 document.addEventListener("DOMContentLoaded", () => {
+
+  document.getElementById("toggle-inputs").addEventListener("click", () => {
+    const panel = document.getElementById("input-panel");
+    const btn = document.getElementById("toggle-inputs");
+
+    if (panel.style.display === "none") {
+      panel.style.display = "flex";
+      btn.textContent = "Hide Inputs";
+    } else {
+      panel.style.display = "none";
+      btn.textContent = "Show Inputs";
+    }
+  });
+
   document.addEventListener("click", (e) => {
     if (e.target.id === "planner-generate") {
       runPlanner();
@@ -9,6 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (modalOverlay) modalOverlay.style.display = "none";
     }
   });
+
 });
 
 async function fetchAstroWeather(lat, lon) {
