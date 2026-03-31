@@ -851,7 +851,7 @@ function refineCrossing(t1, t2, latRad, lonRad, raRad, decRad, targetAltDeg) {
   let b = new Date(t2);
   for (let i = 0; i < 12; i++) {
     const mid = new Date((a.getTime() + b.getTime()) / 2);
-    const alt = altitudeAtTime(mid, latRad, lonRad, raRad, decRad);
+    const alt = altitudeAtTime(mid, latRad, rad2deg(lonRad), raRad, decRad);
     if (alt > targetAltDeg) b = mid;
     else a = mid;
   }
@@ -878,7 +878,7 @@ function computeEphemerisForNight(lat, lon, dt, target) {
   let prevTime = null;
 
   for (const t of samples) {
-    const alt = altitudeAtTime(t, latRad, lonRad, raRad, decRad);
+    const alt = altitudeAtTime(t, latRad, rad2deg(lonRad), raRad, decRad);
     if (alt > maxAlt) {
       maxAlt = alt;
       maxAltTime = t;
@@ -893,7 +893,7 @@ function computeEphemerisForNight(lat, lon, dt, target) {
     prevTime = t;
   }
 
-  const altAtObs = altitudeAtTime(dt, latRad, lonRad, raRad, decRad);
+  const altAtObs = altitudeAtTime(dt, latRad, rad2deg(lonRad), raRad, decRad);
 
   return {
     rise: riseTime,
