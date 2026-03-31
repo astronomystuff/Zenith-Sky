@@ -14,101 +14,98 @@
 <div id="video-tool-root"></div>
 
 
-<!-- Observation Planner Tool -->
 <div class="tool-card" id="planner-root">
 
-<h2>Observation Planner</h2>
+  <h2>Observation Planner</h2>
 
-<div style="display:flex; flex-direction:column; gap:12px; max-width:320px;">
+  <button id="toggle-inputs" style="margin-bottom:10px;">Show Inputs</button>
 
-  <label>
-    Date:
-    <input type="date" id="planner-date">
-  </label>
+  <div id="input-panel" style="display:none; flex-direction:column; gap:12px; max-width:320px;">
 
-  <label>
-    Time:
-    <input type="time" id="planner-time">
-  </label>
+    <label>
+      Date:
+      <input type="date" id="planner-date">
+    </label>
 
-  <label>
-    Latitude:
-    <input type="number" id="planner-lat" step="0.0001" placeholder="e.g. 37.4">
-  </label>
+    <label>
+      Time:
+      <input type="time" id="planner-time">
+    </label>
 
-  <label>
-    Longitude:
-    <input type="number" id="planner-lon" step="0.0001" placeholder="e.g. -118.4">
-  </label>
+    <label>
+      Latitude:
+      <input type="number" id="planner-lat" step="0.0001" placeholder="e.g. 37.4">
+    </label>
 
-  <div style="display:flex; gap:10px; margin-top:10px;">
-    <button id="planner-generate" style="flex:1;">Generate</button>
+    <label>
+      Longitude:
+      <input type="number" id="planner-lon" step="0.0001" placeholder="e.g. -118.4">
+    </label>
+
+    <div style="display:flex; gap:10px; margin-top:10px;">
+      <button id="planner-generate" style="flex:1;">Generate</button>
+    </div>
+
   </div>
-
-</div>
 </div>
 
-<!-- ========================= -->
-<!-- MODAL OVERLAY + CONTENT   -->
-<!-- ========================= -->
 <div id="planner-modal-overlay" style="
-display:none;
-position:fixed;
-top:0; left:0;
-width:100vw; height:100vh;
-background:rgba(0,0,0,0.5);
-justify-content:center;
-align-items:center;
-z-index:9999;
+  display:none;
+  position:fixed;
+  top:0; left:0;
+  width:100vw; height:100vh;
+  background:rgba(0,0,0,0.5);
+  justify-content:center;
+  align-items:center;
+  z-index:9999;
 ">
 
-<div id="planner-modal" style="
-  background:white;
-  width:90%;
-  height:90%;
-  border-radius:12px;
-  padding:20px;
-  position:relative;
-  overflow:hidden;
-  display:flex;
-  flex-direction:column;
-">
+  <div id="planner-modal" style="
+    background:white;
+    width:90%;
+    height:90%;
+    border-radius:12px;
+    padding:20px;
+    position:relative;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+  ">
 
-<div id="planner-pdf-root" style="position:absolute; top:-9999px; left:-9999px;"></div>
-  
-  <!-- HEADER WITH DOWNLOAD + CLOSE -->
-<div style="
-display:flex;
-justify-content:space-between;
-align-items:center;
-margin-bottom:10px;
-">
-<button id="planner-print" style="
-font-size:20px;
-background:none;
-border:none;
-cursor:pointer;
-color:black;
-">Download</button>
+    <div id="planner-pdf-root" style="position:absolute; top:-9999px; left:-9999px;"></div>
 
-<button id="planner-modal-close" style="
-font-size:20px;
-background:none;
-border:none;
-cursor:pointer;
-color:black;
-">x</button>
+    <div style="
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:10px;
+    ">
+      <button id="planner-print" style="
+        font-size:20px;
+        background:none;
+        border:none;
+        cursor:pointer;
+        color:black;
+      ">Download</button>
+
+      <button id="planner-modal-close" style="
+        font-size:20px;
+        background:none;
+        border:none;
+        cursor:pointer;
+        color:black;
+      ">x</button>
+    </div>
+
+    <div id="planner-modal-content" style="
+      width:100%;
+      height:100%;
+      overflow:auto;
+    "></div>
+
+  </div>
 </div>
 
-  <!-- CONTENT -->
-  <div id="planner-modal-content" style="
-    width:100%;
-    height:100%;
-    overflow:auto;
-  "></div>
-
-</div>
-</div>
 
 <!-- WOIT Tool -->
 <div class="tool-card" id="woit-root">
