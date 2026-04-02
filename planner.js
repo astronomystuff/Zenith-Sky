@@ -1177,6 +1177,9 @@ console.log("DEBUG sunPos:", computeSun(date, latDeg, lonDeg));
   
 // --- MOON ---
 if (s.isMoon) {
+console.log("MOON RA/DEC:", s.raHours, s.decDeg);
+console.log("MOON AZ:", s.az);
+
   const R = 8 * scale;
 
   const sunPos = computeSun(date, latDeg, lonDeg);
