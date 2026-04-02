@@ -1507,6 +1507,15 @@ function computeMoon(dt, latDeg, lonDeg) {
     phaseName,
     distanceKm: distKm
   };
+
+  console.log(
+  "Moon phase debug:",
+  "date=", dt.toISOString(),
+  "phaseAngleDeg=", phaseAngleDeg.toFixed(2),
+  "illum=", illum.toFixed(3),
+  "k=", k.toFixed(3)
+);
+
 }
 
 // ------------------------------------------------------------
@@ -2039,14 +2048,11 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, w
     const moonUp = points.filter(p => p.moonAlt > 0).map(p => fmt(p.time));
 
     d.innerHTML = `
-      <h4 style="margin:4px 0 2px 0;">Tonight's Sky Window</h4>
-      <p><strong>Darkest window:</strong> ${
-        darkest.length ? `${darkest[0]} – ${darkest[darkest.length - 1]}` : "None"
-      }</p>
-      <p><strong>Moon above horizon:</strong> ${
-        moonUp.length ? `${moonUp[0]} – ${moonUp[moonUp.length - 1]}` : "Moon below horizon"
-      }</p>
-    `;
+  <h4 style="margin:4px 0 2px 0;">Tonight's Sky Window</h4>
+  <p><strong>Darkest window:</strong> ${
+    darkest.length ? `${darkest[0]} – ${darkest[darkest.length - 1]}` : "None"
+  }</p>
+`;
 
     return d;
   }
