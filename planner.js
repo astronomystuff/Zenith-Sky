@@ -1169,13 +1169,6 @@ projectedStars.forEach((s) => {
 const latRad = deg2rad(latDeg);
 const lonRad = deg2rad(lonDeg);
   
-console.log("DEBUG latDeg:", latDeg);
-console.log("DEBUG lonDeg:", lonDeg);
-console.log("DEBUG latRad:", latRad);
-console.log("DEBUG lst:", lst);
-console.log("DEBUG date:", date);
-console.log("DEBUG sunPos:", computeSun(date, latDeg, lonDeg));
-  
 // --- MOON ---
 if (s.isMoon) {
 console.log("MOON RA/DEC:", s.raHours, s.decDeg);
@@ -1206,14 +1199,6 @@ console.log("MOON AZ:", s.az);
   const illum = s.illumination;
   const k = 2 * illum - 1;
   const offset = R * k;
-
-    console.log(
-  "Moon debug:",
-  "phaseAngle=", s.phaseAngle.toFixed(2),
-  "illum=", s.illumination.toFixed(3),
-  "offset=", offset.toFixed(2),
-  "angleToSun=", angleToSun.toFixed(2)
-);
 
   ctx.save();
   ctx.translate(s.x, s.y);
@@ -1635,12 +1620,6 @@ const moonAlt = rad2deg(Math.asin(Math.max(-1, Math.min(1, moonSinAlt))));
   container.innerHTML = `
     <p><strong>Darkest window:</strong>
       ${darkest.length ? `${darkest[0]} – ${darkest[darkest.length - 1]}` : "None (Sun too high)"}
-    </p>
-    <p><strong>Moon above horizon:</strong>
-      ${moonUp.length ? `${moonUp[0]} – ${moonUp[moonUp.length - 1]}` : "Moon below horizon all night"}
-    </p>
-    <p><strong>Now:</strong>
-      Sun alt ${current.sunAlt.toFixed(1)}°, Moon alt ${current.moonAlt.toFixed(1)}°
     </p>
     <div id="planner-sky-window-weather" style="margin-top:6px;font-size:13px;">
       Loading weather…
