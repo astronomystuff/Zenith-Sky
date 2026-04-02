@@ -1165,6 +1165,13 @@ const scale = canvas.width / 1050; // 1050px = 3.5 inches @ 300 DPI
 projectedStars.forEach((s) => {
   if (s.altDeg <= 0) return;
 
+  const latRad = deg2rad(latDeg);
+const lonRad = deg2rad(lonDeg);
+  
+console.log("DEBUG latDeg:", latDeg);
+console.log("DEBUG lonDeg:", lonDeg);
+console.log("DEBUG latRad:", latRad);
+console.log("DEBUG lst:", lst);
 
 // --- MOON ---
 if (s.isMoon) {
