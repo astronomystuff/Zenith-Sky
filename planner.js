@@ -1081,6 +1081,7 @@ const moon = computeMoon(date, latDeg, lonDeg);
     x,
     y,
     altDeg,
+    az,
     isMoon: true,
     raHours: moon.raHours,
     decDeg: moon.decDeg,
