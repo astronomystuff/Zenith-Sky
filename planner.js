@@ -1165,13 +1165,6 @@ const scale = canvas.width / 1050; // 1050px = 3.5 inches @ 300 DPI
 projectedStars.forEach((s) => {
   if (s.altDeg <= 0) return;
 
-  console.log(
-  "Moon debug:",
-  "phaseAngle=", s.phaseAngle.toFixed(2),
-  "illum=", s.illumination.toFixed(3),
-  "offset=", offset.toFixed(2),
-  "angleToSun=", angleToSun.toFixed(2)
-);
 
 // --- MOON ---
 if (s.isMoon) {
@@ -1202,13 +1195,13 @@ t
   const k = 2 * illum - 1;
   const offset = R * k;
 
-  console.log(
-    "Moon debug:",
-    "phaseAngle=", s.phaseAngle.toFixed(2),
-    "illum=", s.illumination.toFixed(3),
-    "offset=", offset.toFixed(2),
-    "angleToSun=", angleToSun.toFixed(2)
-  );
+    console.log(
+  "Moon debug:",
+  "phaseAngle=", s.phaseAngle.toFixed(2),
+  "illum=", s.illumination.toFixed(3),
+  "offset=", offset.toFixed(2),
+  "angleToSun=", angleToSun.toFixed(2)
+);
 
   ctx.save();
   ctx.translate(s.x, s.y);
