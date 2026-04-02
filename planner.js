@@ -1165,6 +1165,14 @@ const scale = canvas.width / 1050; // 1050px = 3.5 inches @ 300 DPI
 projectedStars.forEach((s) => {
   if (s.altDeg <= 0) return;
 
+  console.log(
+  "Moon debug:",
+  "phaseAngle=", s.phaseAngle.toFixed(2),
+  "illum=", s.illumination.toFixed(3),
+  "offset=", offset.toFixed(2),
+  "angleToSun=", angleToSun.toFixed(2)
+);
+
 // --- MOON ---
 if (s.isMoon) {
   const R = 8 * scale;
@@ -1190,8 +1198,9 @@ if (s.isMoon) {
 
   const angleToSun = azSun - s.az;
 
-  const phaseRad = d2r(s.phaseAngle);
-  const offset = R * Math.cos(phaseRad);
+  const illum = s.illumination;
+  const k = 2 * illum - 1;
+  const offset = R * k;
 
   ctx.save();
   ctx.translate(s.x, s.y);
@@ -1213,8 +1222,8 @@ if (s.isMoon) {
   ctx.fill();
   ctx.restore();
 
-  ctx.strokeStyle = "#000";
-  ctx.lineWidth = 1 * scale;
+  ctx.lineWidth = 0.5 * scale;
+  ctx.strokeStyle = "rgba(0,0,0,0.6)";
   ctx.beginPath();
   ctx.arc(0, 0, R, 0, Math.PI * 2);
   ctx.stroke();
