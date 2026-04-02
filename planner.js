@@ -1190,7 +1190,6 @@ if (s.isMoon) {
   if (Math.sin(haSun) > 0) azSun = 2 * Math.PI - azSun;
 
   const angleToSun = azSun - s.az;
-t
   const illum = s.illumination;
   const k = 2 * illum - 1;
   const offset = R * k;
