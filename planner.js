@@ -1511,14 +1511,6 @@ function computeMoon(dt, latDeg, lonDeg) {
   else if (illumination > 0.25 && illumination <= 0.48) phaseName = "First Quarter";
   else if (illumination > 0.48 && illumination <= 0.97) phaseName = "Waxing Gibbous";
   else if (illumination > 0.97) phaseName = "Full Moon";
-
-  console.log(
-  "Moon phase debug:",
-  "date=", dt.toISOString(),
-  "phaseAngleDeg=", phaseAngleDeg.toFixed(2),
-  "illum=", illum.toFixed(3),
-  "k=", k.toFixed(3)
-);
   
   return {
     raHours,
