@@ -1197,40 +1197,44 @@ if (s.isMoon) {
   if (Math.sin(haSun) > 0) azSun = 2 * Math.PI - azSun;
 
   const angleToSun = azSun - s.az;
-
+t
   const illum = s.illumination;
   const k = 2 * illum - 1;
   const offset = R * k;
 
+  console.log(
+    "Moon debug:",
+    "phaseAngle=", s.phaseAngle.toFixed(2),
+    "illum=", s.illumination.toFixed(3),
+    "offset=", offset.toFixed(2),
+    "angleToSun=", angleToSun.toFixed(2)
+  );
+
   ctx.save();
   ctx.translate(s.x, s.y);
   ctx.rotate(angleToSun);
-
   ctx.fillStyle = "#000";
   ctx.beginPath();
   ctx.arc(0, 0, R, 0, Math.PI * 2);
   ctx.fill();
-
   ctx.save();
   ctx.beginPath();
   ctx.arc(offset, 0, R, 0, Math.PI * 2);
   ctx.clip();
-
   ctx.fillStyle = "#fff";
   ctx.beginPath();
   ctx.arc(0, 0, R, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
-
-  ctx.lineWidth = 0.5 * scale;
   ctx.strokeStyle = "rgba(0,0,0,0.6)";
+  ctx.lineWidth = 0.5 * scale;
   ctx.beginPath();
   ctx.arc(0, 0, R, 0, Math.PI * 2);
   ctx.stroke();
-
   ctx.restore();
   return;
 }
+
 
 // --- PLANETS ---
   if (s.isPlanet) {
@@ -1508,6 +1512,14 @@ function computeMoon(dt, latDeg, lonDeg) {
   else if (illumination > 0.48 && illumination <= 0.97) phaseName = "Waxing Gibbous";
   else if (illumination > 0.97) phaseName = "Full Moon";
 
+  console.log(
+  "Moon phase debug:",
+  "date=", dt.toISOString(),
+  "phaseAngleDeg=", phaseAngleDeg.toFixed(2),
+  "illum=", illum.toFixed(3),
+  "k=", k.toFixed(3)
+);
+  
   return {
     raHours,
     decDeg,
@@ -1516,14 +1528,6 @@ function computeMoon(dt, latDeg, lonDeg) {
     phaseName,
     distanceKm: distKm
   };
-
-  console.log(
-  "Moon phase debug:",
-  "date=", dt.toISOString(),
-  "phaseAngleDeg=", phaseAngleDeg.toFixed(2),
-  "illum=", illum.toFixed(3),
-  "k=", k.toFixed(3)
-);
 
 }
 
