@@ -1953,19 +1953,19 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, w
       Observation Details – Zenith Sky
     </h3>
 
-    <p style="margin:2px 0; line-height:1.2;">Date: ${dateStr}</p>
-    <p style="margin:2px 0; line-height:1.2;">Time: ${timeStr}</p>
-    <p style="margin:2px 0; line-height:1.2;">Latitude: ${lat}</p>
-    <p style="margin:2px 0; line-height:1.2;">Longitude: ${lon}</p>
+    <p style="margin:4px 0; line-height:1.6;">Date: ${dateStr}</p>
+    <p style="margin:4px 0; line-height:1.6;">Time: ${timeStr}</p>
+    <p style="margin:4px 0; line-height:1.6;">Latitude: ${lat}</p>
+    <p style="margin:4px 0; line-height:1.6;">Longitude: ${lon}</p>
 
     <h4 style="margin:6px 0 2px 0;">Moon</h4>
 
-    <p style="margin:2px 0; line-height:1.2;">Phase: ${moon.phaseName} (${Math.round(moon.illumination * 100)}%)</p>
-    <p style="margin:2px 0; line-height:1.2;">Altitude: ${moon.altDeg.toFixed(1)}°</p>
-    <p style="margin:2px 0; line-height:1.2;">RA: ${formatRA(moon.raHours)}</p>
-    <p style="margin:2px 0; line-height:1.2;">Dec: ${formatDec(moon.decDeg)}</p>
-    <p style="margin:2px 0; line-height:1.2;">Rise: ${moonRS.rise}</p>
-    <p style="margin:2px 0; line-height:1.2;">Set: ${moonRS.set}</p>
+    <p style="margin:4px 0; line-height:1.6;">Phase: ${moon.phaseName} (${Math.round(moon.illumination * 100)}%)</p>
+    <p style="margin:4px 0; line-height:1.6;">Altitude: ${moon.altDeg.toFixed(1)}°</p>
+    <p style="margin:4px 0; line-height:1.6;">RA: ${formatRA(moon.raHours)}</p>
+    <p style="margin:4px 0; line-height:1.6;">Dec: ${formatDec(moon.decDeg)}</p>
+    <p style="margin:4px 0; line-height:1.6;">Rise: ${moonRS.rise}</p>
+    <p style="margin:4px 0; line-height:1.6;">Set: ${moonRS.set}</p>
   `;
   return d;
 }
@@ -2107,17 +2107,17 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, w
   d.innerHTML = `
     <h4 style="margin:4px 0 2px 0;">Weather (7Timer)</h4>
 
-    <p style="margin:4px 0 3px 0; line-height:1.25;">
+    <p style="margin:4px 0 3px 0; line-height:1.6;">
       <strong>Clouds:</strong> ${cloudLabel(cc)}<br>
       <span style="font-family:monospace;">${bar(9 - cc)}</span>
     </p>
 
-    <p style="margin:4px 0 3px 0; line-height:1.25;">
+    <p style="margin:4px 0 3px 0; line-height:1.6;">
       <strong>Transparency:</strong> ${qualityLabel(trans)}<br>
       <span style="font-family:monospace;">${bar(trans)}</span>
     </p>
 
-    <p style="margin:4px 0 3px 0; line-height:1.25;">
+    <p style="margin:4px 0 3px 0; line-height:1.6;">
       <strong>Seeing:</strong> ${qualityLabel(seeing)}<br>
       <span style="font-family:monospace;">${bar(seeing)}</span>
     </p>
