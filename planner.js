@@ -26,14 +26,42 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 
-async function fetchAstroWeather(lat, lon) {
+async function fetchAstroWeather(lat, lon, targetDate) {
   const url = `https://www.7timer.info/bin/api.pl?lon=${lon}&lat=${lat}&product=astro&output=json`;
+
+  function getForecastBlockForDate(data, targetDate) {
+    if (!data?.dataseries) return null;
+
+    const now = new Date();
+    const diffMs = targetDate - now;
+    const diffHours = diffMs / (1000 * 60 * 60);
+
+    if (diffHours < 0 || diffHours > 72) {
+      return null; // <-- OUT OF RANGE
+    }
+
+    let best = null;
+    let bestDiff = Infinity;
+
+    for (const block of data.dataseries) {
+      const d = Math.abs(block.timepoint - diffHours);
+      if (d < bestDiff) {
+        bestDiff = d;
+        best = block;
+      }
+    }
+
+    return best;
+  }
 
   try {
     const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) return null;
+
     const data = await res.json();
-    return data;
+    const block = getForecastBlockForDate(data, targetDate);
+
+    return block; // may be null if out of range
   } catch (e) {
     console.warn("Weather fetch failed:", e);
     return null;
@@ -1626,29 +1654,22 @@ const moonAlt = rad2deg(Math.asin(Math.max(-1, Math.min(1, moonSinAlt))));
   await populateAstroWeather(lat, lon);
 }
 
-async function populateAstroWeather(lat, lon, targetDoc = document) {
+async function populateAstroWeather(lat, lon, targetDate, targetDoc = document) {
   const container = targetDoc.getElementById("planner-sky-window-weather");
   if (!container) return;
 
   container.textContent = "Loading weather…";
 
-  let data;
-  try {
-    data = await fetchAstroWeather(lat, lon);
-  } catch {
-    container.textContent = "Weather Unavailable.";
+  const block = await fetchAstroWeather(lat, lon, targetDate);
+
+  if (!block) {
+    container.textContent = "Weather unavailable at this time.";
     return;
   }
 
-  const first = data?.dataseries?.[0];
-  if (!first) {
-    container.textContent = "No weather data available.";
-    return;
-  }
-
-  const rawCloud = first.cloudcover;      // 0 = clear, 9 = overcast
-  const seeing = 9 - first.seeing;        // invert to make 9 = best
-  const trans = 9 - first.transparency;   // invert to make 9 = best
+  const rawCloud = block.cloudcover;      // 0 = clear, 9 = overcast
+  const seeing = 9 - block.seeing;        // invert to make 9 = best
+  const trans = 9 - block.transparency;   // invert to make 9 = best
 
   const cloudLabel = cc => {
     if (cc <= 1) return "Clear";
@@ -1763,7 +1784,7 @@ async function runPlanner() {
     <div id="planner-sky-window"
          style="background:#f5f5f5;border:1px solid #ccc;border-radius:12px;
                 padding:12px;flex:0 0 auto;min-height:140px;overflow:hidden;">
-      <h3 style="margin-top:0;font-size:14px;">Tonight's Sky Window</h3>
+      <h3 style="margin-top:0;font-size:14px;">Tonight's Sky Window (Weather via 7Timer)</h3>
       <div id="planner-sky-window-content" style="font-size:13px;color:#000;">
         Loading sky window…
       </div>
@@ -2034,7 +2055,7 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, w
     const moonUp = points.filter(p => p.moonAlt > 0).map(p => fmt(p.time));
 
     d.innerHTML = `
-  <h4 style="margin:4px 0 2px 0;">Tonight's Sky Window</h4>
+  <h4 style="margin:4px 0 2px 0;">Tonight's Sky Window (Weather via 7Timer)</h4>
   <p><strong>Darkest window:</strong> ${
     darkest.length ? `${darkest[0]} – ${darkest[darkest.length - 1]}` : "None"
   }</p>
