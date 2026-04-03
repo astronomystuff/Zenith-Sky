@@ -1911,6 +1911,9 @@ function renderMapImageForPrint(lat, lon, dt) {
   return img;
 }
 
+// -------------------------
+// buildPlannerPdfContent
+// -------------------------
 async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather) {
   const root = document.getElementById("planner-pdf-root");
   if (!root) return;
@@ -2194,7 +2197,7 @@ async function openPlannerModalAndPrint(modalWin, lat, lon, dt, results, dateStr
 
   let weather = null;
   try {
-    const w = await fetchAstroWeather(lat, lon);
+    const w = await fetchAstroWeather(lat, lon, dt);
     const first = w?.dataseries?.[0];
     if (first) {
       weather = {
