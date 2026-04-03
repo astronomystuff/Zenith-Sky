@@ -1945,29 +1945,30 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, w
   // DETAILS BLOCK
   // -------------------------
   function buildDetails(moon, moonRS) {
-    const d = document.createElement("div");
-    d.className = "planner-pdf-details";
+  const d = document.createElement("div");
+  d.className = "planner-pdf-details";
 
-    d.innerHTML = `
-      <h3 style="font-size:12pt; margin:0 0 4px 0; line-height:1.1;">
-        Observation Details – Zenith Sky
-      </h3>
+  d.innerHTML = `
+    <h3 style="font-size:12pt; margin:0 0 2px 0; line-height:1.1;">
+      Observation Details – Zenith Sky
+    </h3>
 
-      <p>Date: ${dateStr}</p>
-      <p>Time: ${timeStr}</p>
-      <p>Latitude: ${lat}</p>
-      <p>Longitude: ${lon}</p>
+    <p style="margin:2px 0; line-height:1.2;">Date: ${dateStr}</p>
+    <p style="margin:2px 0; line-height:1.2;">Time: ${timeStr}</p>
+    <p style="margin:2px 0; line-height:1.2;">Latitude: ${lat}</p>
+    <p style="margin:2px 0; line-height:1.2;">Longitude: ${lon}</p>
 
-      <h4 style="margin:8px 0 2px 0;">Moon</h4>
-      <p>Phase: ${moon.phaseName} (${Math.round(moon.illumination * 100)}%)</p>
-      <p>Altitude: ${moon.altDeg.toFixed(1)}°</p>
-      <p>RA: ${formatRA(moon.raHours)}</p>
-      <p>Dec: ${formatDec(moon.decDeg)}</p>
-      <p>Rise: ${moonRS.rise}</p>
-      <p>Set: ${moonRS.set}</p>
-    `;
-    return d;
-  }
+    <h4 style="margin:6px 0 2px 0;">Moon</h4>
+
+    <p style="margin:2px 0; line-height:1.2;">Phase: ${moon.phaseName} (${Math.round(moon.illumination * 100)}%)</p>
+    <p style="margin:2px 0; line-height:1.2;">Altitude: ${moon.altDeg.toFixed(1)}°</p>
+    <p style="margin:2px 0; line-height:1.2;">RA: ${formatRA(moon.raHours)}</p>
+    <p style="margin:2px 0; line-height:1.2;">Dec: ${formatDec(moon.decDeg)}</p>
+    <p style="margin:2px 0; line-height:1.2;">Rise: ${moonRS.rise}</p>
+    <p style="margin:2px 0; line-height:1.2;">Set: ${moonRS.set}</p>
+  `;
+  return d;
+}
 
   // -------------------------
   // TABLE BUILDER
@@ -2106,17 +2107,17 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, w
   d.innerHTML = `
     <h4 style="margin:4px 0 2px 0;">Weather (7Timer)</h4>
 
-    <p style="margin:2px 0;">
+    <p style="margin:4px 0 3px 0; line-height:1.25;">
       <strong>Clouds:</strong> ${cloudLabel(cc)}<br>
       <span style="font-family:monospace;">${bar(9 - cc)}</span>
     </p>
 
-    <p style="margin:2px 0;">
+    <p style="margin:4px 0 3px 0; line-height:1.25;">
       <strong>Transparency:</strong> ${qualityLabel(trans)}<br>
       <span style="font-family:monospace;">${bar(trans)}</span>
     </p>
 
-    <p style="margin:2px 0;">
+    <p style="margin:4px 0 3px 0; line-height:1.25;">
       <strong>Seeing:</strong> ${qualityLabel(seeing)}<br>
       <span style="font-family:monospace;">${bar(seeing)}</span>
     </p>
