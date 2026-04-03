@@ -1,6 +1,5 @@
 // --- CONFIG ---
-const MOON_IMAGE_SRC =
-  "https://drive.usercontent.google.com/download?export=download&confirm=t&id=1-PM1jMF8KHUJk_bIMPcObKhBqkoXWyHq";
+const MOON_IMAGE_SRC = "https://drive.usercontent.google.com/download?id=1-PM1jMF8KHUJk_bIMPcObKhBqkoXWyHq&export=download&authuser=1&confirm=t&uuid=de34b6ba-49af-48d7-9661-d98d99f4cf4e&at=AGN2oQ3QoN6gjnzAEHCH9KSBPQZ0%3A1775243726410";
 
 // --- DOM ELEMENTS ---
 const moonMapModal = document.getElementById("moonmap-modal");
