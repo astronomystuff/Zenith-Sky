@@ -3,15 +3,13 @@ const MOON_IMAGE_SRC =
   "https://drive.usercontent.google.com/download?export=download&confirm=t&id=1-PM1jMF8KHUJk_bIMPcObKhBqkoXWyHq";
 
 // --- DOM ELEMENTS ---
-const moonMapModal = document.getElementById("moonMapModal");
-const moonMapCanvas = document.getElementById("moonMapCanvas");
+const moonMapModal = document.getElementById("moonmap-modal");
+const moonMapCanvas = document.getElementById("moonCanvas");
 const moonMapCtx = moonMapCanvas.getContext("2d");
-
-const moonMapOpenBtn = document.getElementById("openMoonMap");
-const moonMapCloseBtn = document.getElementById("closeMoonMap");
-
-const moonMapResetBtn = document.getElementById("moonMapReset");
-const moonMapFlipBtn = document.getElementById("moonMapFlip");
+const moonMapOpenBtn = document.getElementById("moonmap-open");
+const moonMapCloseBtn = document.getElementById("moonmap-close");
+const moonMapResetBtn = document.getElementById("moonmap-reset");
+const moonMapFlipBtn = document.getElementById("moonmap-flip");
 
 // --- STATE ---
 let moonImg = new Image();
