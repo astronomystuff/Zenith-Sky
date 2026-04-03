@@ -1654,7 +1654,7 @@ const moonAlt = rad2deg(Math.asin(Math.max(-1, Math.min(1, moonSinAlt))));
     </div>
   `;
 
-  await populateAstroWeather(lat, lon, date);
+  await populateAstroWeather(lat, lon, dt);
 }
 
 async function populateAstroWeather(lat, lon, targetDate, targetDoc = document) {
