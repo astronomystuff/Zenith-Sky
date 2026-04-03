@@ -2197,15 +2197,15 @@ async function openPlannerModalAndPrint(modalWin, lat, lon, dt, results, dateStr
 
   let weather = null;
   try {
-    const w = await fetchAstroWeather(lat, lon, dt);
-    const first = w?.dataseries?.[0];
-    if (first) {
+    const block = await fetchAstroWeather(lat, lon, dt);
+    if (block) {
       weather = {
-        cc: first.cloudcover,
-        seeing: 9 - first.seeing,
-        trans: 9 - first.transparency
-      };
-    }
+        cc: block.cloudcover,
+        seeing: 9 - block.seeing,
+        trans: 9 - block.transparency
+    };
+}
+
   } catch (e) {}
 
   await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
