@@ -30,26 +30,31 @@ async function fetchAstroWeather(lat, lon, targetDate) {
   const url = `https://www.7timer.info/bin/api.pl?lon=${lon}&lat=${lat}&product=astro&output=json`;
 
   function getForecastBlockForDate(data, targetDate) {
-    if (!data?.dataseries) return null;
+    if (!data || !data.dataseries || !data.init) return null;
 
-    const now = new Date();
-    const diffMs = targetDate - now;
-    const diffHours = diffMs / (1000 * 60 * 60);
+    const init = data.init; // "YYYYMMDDHH"
+    const year = parseInt(init.slice(0, 4), 10);
+    const month = parseInt(init.slice(4, 6), 10);
+    const day = parseInt(init.slice(6, 8), 10);
+    const hour = parseInt(init.slice(8, 10), 10);
 
-    if (diffHours < 0 || diffHours > 72) {
-      return null; // <-- OUT OF RANGE
-    }
+    const initDate = new Date(Date.UTC(year, month - 1, day, hour));
+    const targetMs = targetDate.getTime();
 
     let best = null;
     let bestDiff = Infinity;
 
     for (const block of data.dataseries) {
-      const d = Math.abs(block.timepoint - diffHours);
-      if (d < bestDiff) {
-        bestDiff = d;
+      const blockDate = new Date(initDate.getTime() + block.timepoint * 3600 * 1000);
+      const diff = Math.abs(blockDate.getTime() - targetMs);
+      if (diff < bestDiff) {
+        bestDiff = diff;
         best = block;
       }
     }
+
+    const maxRangeMs = 72 * 3600 * 1000;
+    if (bestDiff > maxRangeMs) return null;
 
     return best;
   }
@@ -59,9 +64,7 @@ async function fetchAstroWeather(lat, lon, targetDate) {
     if (!res.ok) return null;
 
     const data = await res.json();
-    const block = getForecastBlockForDate(data, targetDate);
-
-    return block; // may be null if out of range
+    return getForecastBlockForDate(data, targetDate);
   } catch (e) {
     console.warn("Weather fetch failed:", e);
     return null;
@@ -1651,7 +1654,7 @@ const moonAlt = rad2deg(Math.asin(Math.max(-1, Math.min(1, moonSinAlt))));
     </div>
   `;
 
-  await populateAstroWeather(lat, lon);
+  await populateAstroWeather(lat, lon, date);
 }
 
 async function populateAstroWeather(lat, lon, targetDate, targetDoc = document) {
@@ -1667,9 +1670,9 @@ async function populateAstroWeather(lat, lon, targetDate, targetDoc = document) 
     return;
   }
 
-  const rawCloud = block.cloudcover;      // 0 = clear, 9 = overcast
-  const seeing = 9 - block.seeing;        // invert to make 9 = best
-  const trans = 9 - block.transparency;   // invert to make 9 = best
+  const rawCloud = block.cloudcover;
+  const seeing = 9 - block.seeing;
+  const trans = 9 - block.transparency;
 
   const cloudLabel = cc => {
     if (cc <= 1) return "Clear";
