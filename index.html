@@ -132,7 +132,7 @@
 </div>
 
 
-<!-- Moon Map Modal (moved outside tool-card) -->
+<!-- Moon Map Modal (centered, outside tool-card) -->
 <div id="moonmap-modal-overlay" style="
   display:none;
   position:fixed;
@@ -156,6 +156,7 @@
     color:white;
   ">
 
+    <!-- Header -->
     <div style="
       height:40px;
       padding:8px 12px;
@@ -165,8 +166,22 @@
       justify-content:space-between;
       align-items:center;
       flex-shrink:0;
+      gap:10px;
     ">
       <div>Moon Map</div>
+
+      <!-- NEW: Force High-Res Button -->
+      <button id="moonmap-force-highres" style="
+        font-size:13px;
+        background:none;
+        border:1px solid white;
+        padding:4px 8px;
+        border-radius:6px;
+        cursor:pointer;
+        color:white;
+        display:none;
+      ">Use High Resolution</button>
+
       <button id="moonmap-close" style="
         font-size:20px;
         background:none;
@@ -176,6 +191,7 @@
       ">×</button>
     </div>
 
+    <!-- Canvas Area -->
     <div id="moonmap-canvas-wrapper" style="
       flex:1;
       position:relative;
@@ -189,6 +205,7 @@
         background:black;
       "></canvas>
 
+      <!-- Controls -->
       <div id="moonmap-controls" style="
         position:absolute;
         right:10px;
@@ -213,7 +230,6 @@
 
   </div>
 </div>
-
 
 <!-- External scripts -->
 <script src="videotool.js"></script>
