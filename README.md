@@ -9,7 +9,6 @@ Observation Planner <br>
 <br>
 <br>
 ## Licensing<br>
-<br>
 Zenith Sky uses a hybrid licensing model designed to allow open access while<br>
 preventing commercial exploitation.<br>
 <br>
