@@ -14,6 +14,7 @@
 <div id="video-tool-root"></div>
 
 
+<!-- Observation Planner -->
 <div class="tool-card" id="planner-root">
 
   <h2>Observation Planner</h2>
@@ -49,6 +50,7 @@
   </div>
 </div>
 
+<!-- Planner Modal -->
 <div id="planner-modal-overlay" style="
   display:none;
   position:fixed;
@@ -122,96 +124,96 @@
   <div id="woit-result" style="display:none;"></div>
 </div>
 
+
 <!-- Moon Map Tool -->
 <div class="tool-card" id="moonmap-root">
   <h2>Moon Map</h2>
-
   <button id="moonmap-open">Open Moon Map</button>
+</div>
 
-  <div id="moonmap-modal-overlay" style="
-    display:none;
-    position:fixed;
-    top:0; left:0;
-    width:100vw; height:100vh;
-    background:rgba(0,0,0,0.5);
-    justify-content:center;
-    align-items:center;
-    z-index:9999;
+
+<!-- Moon Map Modal (moved outside tool-card) -->
+<div id="moonmap-modal-overlay" style="
+  display:none;
+  position:fixed;
+  top:0; left:0;
+  width:100vw; height:100vh;
+  background:rgba(0,0,0,0.5);
+  justify-content:center;
+  align-items:center;
+  z-index:9999;
+">
+  <div id="moonmap-modal" style="
+    background:black;
+    width:90%;
+    height:90%;
+    border-radius:12px;
+    padding:0;
+    position:relative;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    color:white;
   ">
-    <div id="moonmap-modal" style="
-      background:black;
-      width:90%;
-      height:90%;
-      border-radius:12px;
-      padding:0;
+
+    <div style="
+      height:40px;
+      padding:8px 12px;
+      font-size:14px;
+      border-bottom:1px solid #333;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      flex-shrink:0;
+    ">
+      <div>Moon Map</div>
+      <button id="moonmap-close" style="
+        font-size:20px;
+        background:none;
+        border:none;
+        cursor:pointer;
+        color:white;
+      ">×</button>
+    </div>
+
+    <div id="moonmap-canvas-wrapper" style="
+      flex:1;
       position:relative;
       overflow:hidden;
-      display:flex;
-      flex-direction:column;
-      color:white;
     ">
+      <canvas id="moonCanvas" style="
+        width:100%;
+        height:100%;
+        display:block;
+        cursor:grab;
+        background:black;
+      "></canvas>
 
-      <div style="
-        height:40px;
-        padding:8px 12px;
-        font-size:14px;
-        border-bottom:1px solid #333;
+      <div id="moonmap-controls" style="
+        position:absolute;
+        right:10px;
+        bottom:10px;
         display:flex;
-        justify-content:space-between;
-        align-items:center;
-        flex-shrink:0;
+        flex-direction:column;
+        gap:6px;
+        align-items:flex-end;
       ">
-        <div>Moon Map</div>
-        <button id="moonmap-close" style="
-          font-size:20px;
-          background:none;
-          border:none;
-          cursor:pointer;
-          color:white;
-        ">×</button>
-      </div>
 
-      <div id="moonmap-canvas-wrapper" style="
-        flex:1;
-        position:relative;
-        overflow:hidden;
-      ">
-        <canvas id="moonCanvas" style="
-          width:100%;
-          height:100%;
-          display:block;
-          cursor:grab;
-          background:black;
-        "></canvas>
+        <input id="moonmap-zoom-slider" type="range"
+          min="0.1" max="25" step="0.01" value="1"
+          style="width:140px; accent-color:white;">
 
-        <div id="moonmap-controls" style="
-          position:absolute;
-          right:10px;
-          bottom:10px;
-          display:flex;
-          flex-direction:column;
-          gap:6px;
-          align-items:flex-end;
-        ">
-
-          <input id="moonmap-zoom-slider" type="range"
-            min="0.1" max="25" step="0.01" value="1"
-            style="
-              width:140px;
-              accent-color:white;
-            ">
-
-          <div style="display:flex; gap:6px;">
-            <button class="moon-btn" id="moonmap-reset">Reset</button>
-            <button class="moon-btn" id="moonmap-flip">Flip N/S</button>
-          </div>
-
+        <div style="display:flex; gap:6px;">
+          <button class="moon-btn" id="moonmap-reset">Reset</button>
+          <button class="moon-btn" id="moonmap-flip">Flip N/S</button>
         </div>
-      </div>
 
+      </div>
     </div>
+
   </div>
 </div>
+
 
 <!-- External scripts -->
 <script src="videotool.js"></script>
