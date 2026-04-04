@@ -4,40 +4,50 @@ const MoonMap = (() => {
   const HIGH_RES_SRC =
     "https://github.com/astronomystuff/Zenith-Sky/releases/download/moonmap-v1/moonmap.png";
 
-  // --- CAPABILITY CHECK ---
+  const MED_RES_SRC =
+    "https://github.com/astronomystuff/Zenith-Sky/releases/download/medMoonMap/medMoonMap.png";
+
+  // --- GPU / CAPABILITY HELPERS ---
+  function getGPUInfo() {
+    const gl = document.createElement("canvas").getContext("webgl");
+    if (!gl) return { renderer: "", vendor: "", maxTex: 0 };
+
+    return {
+      renderer: gl.getParameter(gl.RENDERER) || "",
+      vendor: gl.getParameter(gl.VENDOR) || "",
+      maxTex: gl.getParameter(gl.MAX_TEXTURE_SIZE)
+    };
+  }
+
+  // Tier 1: Strong → auto high-res
   function canHandleHighRes() {
-  const mem = navigator.deviceMemory || 2;
-  if (mem < 6) return false;
-  const gl = document.createElement("canvas").getContext("webgl");
-  if (!gl) return false;
-  const maxTex = gl.getParameter(gl.MAX_TEXTURE_SIZE);
-  if (maxTex < 8192) return false;
-  const renderer = gl.getParameter(gl.RENDERER) || "";
-  const vendor = gl.getParameter(gl.VENDOR) || "";
-  const lowEndGPU =
-    /mali|powervr|adreno [1-5]|intel hd|apple a(8|9|10)/i;
-  if (lowEndGPU.test(renderer) || lowEndGPU.test(vendor)) {
+    const { renderer, maxTex } = getGPUInfo();
+
+    if (/apple a1[4-9]/i.test(renderer)) return true;
+    if (/apple m[1-9]/i.test(renderer)) return true;
+
+    if (maxTex >= 8192 && !/intel hd/i.test(renderer)) return true;
+
     return false;
   }
 
-  return true;
-}
+  // Tier 2: Medium → auto med-res + allow override
+  function canHandleMedRes() {
+    const { renderer, maxTex } = getGPUInfo();
 
-function canMaybeHandleHighRes() {
-  const mem = navigator.deviceMemory || 2;
-  if (mem < 4) return false;
-  if (mem >= 6) return false;
-  const gl = document.createElement("canvas").getContext("webgl");
-  if (!gl) return false;
-  const maxTex = gl.getParameter(gl.MAX_TEXTURE_SIZE);
-  return maxTex >= 4096;
-}
+    if (/apple a1[1-3]/i.test(renderer)) return true;
+
+    if (maxTex >= 4096) return true;
+
+    return false;
+  }
 
   // --- DOM ---
   const overlay = document.getElementById("moonmap-modal-overlay");
   const modal = document.getElementById("moonmap-modal");
   const canvas = document.getElementById("moonCanvas");
   const ctx = canvas.getContext("2d");
+
   const btnForceHighRes = document.getElementById("moonmap-force-highres");
   const btnOpen = document.getElementById("moonmap-open");
   const btnClose = document.getElementById("moonmap-close");
@@ -48,42 +58,43 @@ function canMaybeHandleHighRes() {
   // --- STATE ---
   const img = new Image();
   let loaded = false;
+
   let scale = 1;
   const minScale = 0.1;
   const maxScale = 25;
+
   let offsetX = 0;
   let offsetY = 0;
+
   let dragging = false;
   let flipped = false;
   let needsRender = false;
 
-  // --- LOAD IMAGE (HIGH OR LOW RES) ---
- function loadImage() {
-  if (canHandleHighRes()) {
-    img.src = HIGH_RES_SRC;
-    return;
-  }
+  // --- LOAD IMAGE (3 TIERS) ---
+  function loadImage() {
+    // Tier 1: Strong → auto high-res
+    if (canHandleHighRes()) {
+      btnForceHighRes.style.display = "none";
+      img.src = HIGH_RES_SRC;
+      return;
+    }
 
-  if (canMaybeHandleHighRes()) {
-    btnForceHighRes.style.display = "inline-block";
+    // Tier 2: Medium → auto med-res + allow override
+    if (canHandleMedRes()) {
+      btnForceHighRes.style.display = "inline-block";
+      img.src = MED_RES_SRC;
+      return;
+    }
+
+    // Tier 3: Weak → low-res only, no override
+    btnForceHighRes.style.display = "none";
 
     fetch("moonmap_lowres.txt")
       .then(r => r.text())
       .then(base64 => {
         img.src = "data:image/png;base64," + base64;
       });
-
-    return;
   }
-
-  btnForceHighRes.style.display = "none";
-
-  fetch("moonmap_lowres.txt")
-    .then(r => r.text())
-    .then(base64 => {
-      img.src = "data:image/png;base64," + base64;
-    });
-}
 
   // --- RENDER LOOP ---
   function requestRender() {
@@ -137,7 +148,7 @@ function canMaybeHandleHighRes() {
   function resizeCanvas() {
     const rect = modal.getBoundingClientRect();
     canvas.width = rect.width;
-    canvas.height = rect.height - 40;
+    canvas.height = rect.height - 40; // header height
     requestRender();
   }
 
@@ -177,7 +188,7 @@ function canMaybeHandleHighRes() {
 
   // --- OPEN / CLOSE ---
   function open() {
-    overlay.style.display = "flex";
+    overlay.style.display = "flex"; // flex → centers modal
     setTimeout(() => {
       resizeCanvas();
       resetView();
@@ -190,9 +201,9 @@ function canMaybeHandleHighRes() {
 
   // --- FORCE HIGH RESOLUTION ---
   btnForceHighRes.addEventListener("click", () => {
-  btnForceHighRes.style.display = "none"; // hide after use
-  img.src = HIGH_RES_SRC;
-});
+    btnForceHighRes.style.display = "none";
+    img.src = HIGH_RES_SRC;
+  });
 
   // --- INIT ---
   function init() {
