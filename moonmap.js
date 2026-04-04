@@ -26,7 +26,6 @@ const MoonMap = (() => {
   const btnClose = document.getElementById("moonmap-close");
   const btnReset = document.getElementById("moonmap-reset");
   const btnFlip = document.getElementById("moonmap-flip");
-
   const zoomSlider = document.getElementById("moonmap-zoom-slider");
 
   // --- STATE ---
@@ -58,7 +57,7 @@ const MoonMap = (() => {
     .then(base64 => {
       img.src = "data:image/png;base64," + base64;
     });
-  }
+}
 
   // --- RENDER LOOP ---
   function requestRender() {
