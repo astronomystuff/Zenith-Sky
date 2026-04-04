@@ -1,5 +1,5 @@
 // --- CONFIG ---
-const MOON_IMAGE_SRC = "https://drive.usercontent.google.com/download?id=1-PM1jMF8KHUJk_bIMPcObKhBqkoXWyHq&export=download&authuser=1&confirm=t&uuid=de34b6ba-49af-48d7-9661-d98d99f4cf4e&at=AGN2oQ3QoN6gjnzAEHCH9KSBPQZ0%3A1775243726410";
+const MOON_IMAGE_SRC = "https://github.com/astronomystuff/Zenith-Sky/releases/download/moonmap-v1/moonmap.png";
 
 // --- DOM ELEMENTS ---
 const moonMapModal = document.getElementById("moonmap-modal");
