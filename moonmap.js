@@ -21,15 +21,22 @@ const MoonMap = (() => {
 
   // Tier 1: Strong → auto high-res
   function canHandleHighRes() {
-    const { renderer, maxTex } = getGPUInfo();
+  const { renderer, maxTex } = getGPUInfo();
 
-    if (/apple a1[4-9]/i.test(renderer)) return true;
-    if (/apple m[1-9]/i.test(renderer)) return true;
+  if (/apple a1[4-9]/i.test(renderer)) return true;
+  if (/apple m[1-9]/i.test(renderer)) return true;
 
-    if (maxTex >= 8192 && !/intel hd/i.test(renderer)) return true;
+  if (maxTex >= 16384) {
+    if (/intel/i.test(renderer)) return false;
+    if (/radeon.*m/i.test(renderer)) return false;
+    if (/geforce.*m/i.test(renderer)) return false;
 
-    return false;
+    return true;
   }
+
+  return false;
+}
+
 
   // Tier 2: Medium → auto med-res + allow override
   function canHandleMedRes() {
