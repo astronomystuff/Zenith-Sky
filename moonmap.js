@@ -7,12 +7,24 @@ const MoonMap = (() => {
   const MED_RES_SRC =
     "https://github.com/astronomystuff/Zenith-Sky/releases/download/medMoonMap/medMoonMap.png";
 
+  const LOW_RES_TXT = "moonmap_lowres.txt"; // base64 text file
+
+  // --- TILE SIZES ---
+  function getTileSizeForTier(tier) {
+    if (tier === "high") return 1024;
+    if (tier === "med") return 512;
+    return 256; // low
+  }
+
   // --- SHARED WEBGL CONTEXT ---
   let sharedGL = null;
   function getGL() {
     if (sharedGL) return sharedGL;
     const canvas = document.createElement("canvas");
-    sharedGL = canvas.getContext("webgl", { antialias: false, preserveDrawingBuffer: false });
+    sharedGL = canvas.getContext("webgl", {
+      antialias: false,
+      preserveDrawingBuffer: false
+    });
     return sharedGL;
   }
 
@@ -28,14 +40,12 @@ const MoonMap = (() => {
     };
   }
 
-  // Tier 1: Strong → candidate for high-res (but must pass real test)
   function canHandleHighRes() {
     const { maxTex } = getGPUInfo();
     if (!maxTex || maxTex <= 0) return false;
     return maxTex >= 8192;
   }
 
-  // Tier 2: Medium → auto med-res + allow override
   function canHandleMedRes() {
     const { maxTex } = getGPUInfo();
     if (!maxTex || maxTex <= 0) return false;
@@ -100,6 +110,7 @@ const MoonMap = (() => {
   // --- STATE ---
   const img = new Image();
   let loaded = false;
+  let tilesReady = false;
 
   let scale = 1;
   const minScale = 0.1;
@@ -115,6 +126,89 @@ const MoonMap = (() => {
   let currentSrcTier = "none"; // "high" | "med" | "low"
   let loadToken = 0;
 
+  // map dimensions
+  let mapWidth = 0;
+  let mapHeight = 0;
+
+  // tiling
+  let tiles = [];
+  let tilesX = 0;
+  let tilesY = 0;
+  let tileSize = 0;
+
+  // --- BUILD TILES FROM FULL IMAGE (STRIP-BASED) ---
+  function buildTilesFromImage(image, tier) {
+    tiles = [];
+    tilesReady = false;
+
+    mapWidth = image.width;
+    mapHeight = image.height;
+    tileSize = getTileSizeForTier(tier);
+
+    if (!mapWidth || !mapHeight || !tileSize) return;
+
+    tilesX = Math.ceil(mapWidth / tileSize);
+    tilesY = Math.ceil(mapHeight / tileSize);
+
+    const stripCanvas = document.createElement("canvas");
+    stripCanvas.width = mapWidth;
+    stripCanvas.height = tileSize;
+    const stripCtx = stripCanvas.getContext("2d", { alpha: false });
+
+    for (let sy = 0; sy < mapHeight; sy += tileSize) {
+      const stripHeight = Math.min(tileSize, mapHeight - sy);
+      stripCanvas.height = stripHeight;
+
+      stripCtx.clearRect(0, 0, stripCanvas.width, stripCanvas.height);
+
+      stripCtx.drawImage(
+        image,
+        0,
+        sy,
+        mapWidth,
+        stripHeight,
+        0,
+        0,
+        mapWidth,
+        stripHeight
+      );
+
+      for (let tx = 0; tx < tilesX; tx++) {
+        const tw = Math.min(tileSize, mapWidth - tx * tileSize);
+        const th = stripHeight;
+
+        const tCanvas = document.createElement("canvas");
+        tCanvas.width = tw;
+        tCanvas.height = th;
+        const tCtx = tCanvas.getContext("2d", { alpha: false });
+
+        tCtx.drawImage(
+          stripCanvas,
+          tx * tileSize,
+          0,
+          tw,
+          th,
+          0,
+          0,
+          tw,
+          th
+        );
+
+        tiles.push({
+          x: tx * tileSize,
+          y: sy,
+          w: tw,
+          h: th,
+          canvas: tCanvas
+        });
+      }
+    }
+
+    // discard original image content
+    image.src = "";
+    tilesReady = true;
+  }
+
   // --- LOAD IMAGE (3 TIERS + REAL-WORLD SAFETY TEST) ---
   function loadImage() {
     const token = ++loadToken;
@@ -128,21 +222,24 @@ const MoonMap = (() => {
           currentSrcTier = "high";
           btnForceHighRes.style.display = "none";
           loaded = false;
+          tilesReady = false;
           img.src = HIGH_RES_SRC;
         } else {
           if (canHandleMedRes()) {
             currentSrcTier = "med";
             btnForceHighRes.style.display = "inline-block";
             loaded = false;
+            tilesReady = false;
             img.src = MED_RES_SRC;
           } else {
             currentSrcTier = "low";
             btnForceHighRes.style.display = "none";
-            fetch("moonmap_lowres.txt")
+            fetch(LOW_RES_TXT)
               .then(r => r.text())
               .then(base64 => {
                 if (token !== loadToken) return;
                 loaded = false;
+                tilesReady = false;
                 img.src = "data:image/png;base64," + base64;
               });
           }
@@ -156,6 +253,7 @@ const MoonMap = (() => {
       currentSrcTier = "med";
       btnForceHighRes.style.display = "inline-block";
       loaded = false;
+      tilesReady = false;
       img.src = MED_RES_SRC;
       return;
     }
@@ -164,11 +262,12 @@ const MoonMap = (() => {
     currentSrcTier = "low";
     btnForceHighRes.style.display = "none";
 
-    fetch("moonmap_lowres.txt")
+    fetch(LOW_RES_TXT)
       .then(r => r.text())
       .then(base64 => {
         if (token !== loadToken) return;
         loaded = false;
+        tilesReady = false;
         img.src = "data:image/png;base64," + base64;
       });
   }
@@ -183,12 +282,13 @@ const MoonMap = (() => {
     });
   }
 
-  // --- DRAW ---
+  // --- DRAW USING TILES ---
   function draw() {
-    if (!loaded) return;
+    if (!loaded || !tilesReady) return;
 
     ctx.imageSmoothingEnabled = false;
     ctx.webkitImageSmoothingEnabled = false;
+    ctx.globalCompositeOperation = "copy";
 
     ctx.fillStyle = "#808080";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -199,25 +299,50 @@ const MoonMap = (() => {
 
     if (flipped) {
       ctx.scale(1, -1);
-      ctx.translate(0, -img.height);
+      ctx.translate(0, -mapHeight);
     }
 
-    ctx.drawImage(img, 0, 0);
+    const invScale = 1 / scale;
+
+    const viewLeft = -offsetX * invScale;
+    const viewTop = -offsetY * invScale;
+    const viewRight = viewLeft + canvas.width * invScale;
+    const viewBottom = viewTop + canvas.height * invScale;
+
+    const startTileX = Math.max(0, Math.floor(viewLeft / tileSize));
+    const endTileX = Math.min(tilesX - 1, Math.floor(viewRight / tileSize));
+    const startTileY = Math.max(0, Math.floor(viewTop / tileSize));
+    const endTileY = Math.min(tilesY - 1, Math.floor(viewBottom / tileSize));
+
+    for (let ty = startTileY; ty <= endTileY; ty++) {
+      for (let tx = startTileX; tx <= endTileX; tx++) {
+        const idx = ty * tilesX + tx;
+        const tile = tiles[idx];
+        if (!tile) continue;
+
+        ctx.drawImage(
+          tile.canvas,
+          tile.x,
+          tile.y
+        );
+      }
+    }
+
     ctx.restore();
   }
 
   // --- RESET VIEW ---
   function resetView() {
-    if (!img.width || !img.height) return;
+    if (!mapWidth || !mapHeight) return;
 
     const rect = canvas.getBoundingClientRect();
-    const sx = rect.width / img.width;
-    const sy = rect.height / img.height;
+    const sx = rect.width / mapWidth;
+    const sy = rect.height / mapHeight;
 
     scale = Math.min(sx, sy);
 
-    offsetX = (rect.width - img.width * scale) / 2;
-    offsetY = (rect.height - img.height * scale) / 2;
+    offsetX = (rect.width - mapWidth * scale) / 2;
+    offsetY = (rect.height - mapHeight * scale) / 2;
 
     zoomSlider.value = String(scale);
     requestRender();
@@ -251,7 +376,8 @@ const MoonMap = (() => {
     requestRender();
   });
 
-  // --- PAN ---
+  // --- PAN (throttled) ---
+  let lastPan = 0;
   canvas.addEventListener("mousedown", () => {
     dragging = true;
     canvas.style.cursor = "grabbing";
@@ -266,6 +392,10 @@ const MoonMap = (() => {
 
   window.addEventListener("mousemove", (e) => {
     if (!dragging) return;
+    const now = performance.now();
+    if (now - lastPan < 16) return;
+    lastPan = now;
+
     offsetX += e.movementX;
     offsetY += e.movementY;
     requestRender();
@@ -289,6 +419,7 @@ const MoonMap = (() => {
     currentSrcTier = "high";
     btnForceHighRes.style.display = "none";
     loaded = false;
+    tilesReady = false;
     img.src = HIGH_RES_SRC;
   });
 
@@ -296,6 +427,7 @@ const MoonMap = (() => {
   function init() {
     img.onload = () => {
       loaded = true;
+      buildTilesFromImage(img, currentSrcTier);
       resizeCanvas();
       resetView();
       requestRender();
@@ -307,24 +439,27 @@ const MoonMap = (() => {
           currentSrcTier = "med";
           btnForceHighRes.style.display = "inline-block";
           loaded = false;
+          tilesReady = false;
           img.src = MED_RES_SRC;
         } else {
           currentSrcTier = "low";
           btnForceHighRes.style.display = "none";
-          fetch("moonmap_lowres.txt")
+          fetch(LOW_RES_TXT)
             .then(r => r.text())
             .then(base64 => {
               loaded = false;
+              tilesReady = false;
               img.src = "data:image/png;base64," + base64;
             });
         }
       } else if (currentSrcTier === "med") {
         currentSrcTier = "low";
         btnForceHighRes.style.display = "none";
-        fetch("moonmap_lowres.txt")
+        fetch(LOW_RES_TXT)
           .then(r => r.text())
           .then(base64 => {
             loaded = false;
+            tilesReady = false;
             img.src = "data:image/png;base64," + base64;
           });
       }
