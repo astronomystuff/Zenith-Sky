@@ -7,9 +7,18 @@ const MoonMap = (() => {
   const MED_RES_SRC =
     "https://github.com/astronomystuff/Zenith-Sky/releases/download/medMoonMap/medMoonMap.png";
 
+  // --- SHARED WEBGL CONTEXT ---
+  let sharedGL = null;
+  function getGL() {
+    if (sharedGL) return sharedGL;
+    const canvas = document.createElement("canvas");
+    sharedGL = canvas.getContext("webgl");
+    return sharedGL;
+  }
+
   // --- GPU / CAPABILITY HELPERS ---
   function getGPUInfo() {
-    const gl = document.createElement("canvas").getContext("webgl");
+    const gl = getGL();
     if (!gl) return { renderer: "", vendor: "", maxTex: 0 };
 
     return {
@@ -19,34 +28,61 @@ const MoonMap = (() => {
     };
   }
 
-  // Tier 1: Strong → auto high-res
+  // Tier 1: Strong → candidate for high-res (but must pass real test)
   function canHandleHighRes() {
-  const { renderer, maxTex } = getGPUInfo();
-
-  if (/apple a1[4-9]/i.test(renderer)) return true;
-  if (/apple m[1-9]/i.test(renderer)) return true;
-
-  if (maxTex >= 16384) {
-    if (/intel/i.test(renderer)) return false;
-    if (/radeon.*m/i.test(renderer)) return false;
-    if (/geforce.*m/i.test(renderer)) return false;
-
-    return true;
+    const { maxTex } = getGPUInfo();
+    if (!maxTex || maxTex <= 0) return false;
+    return maxTex >= 8192;
   }
-
-  return false;
-}
-
 
   // Tier 2: Medium → auto med-res + allow override
   function canHandleMedRes() {
-    const { renderer, maxTex } = getGPUInfo();
+    const { maxTex } = getGPUInfo();
+    if (!maxTex || maxTex <= 0) return false;
+    return maxTex >= 4096;
+  }
 
-    if (/apple a1[1-3]/i.test(renderer)) return true;
+  // --- REAL-WORLD HIGH-RES SAFETY TEST ---
+  function verifyHighResIsSafe() {
+    return new Promise(resolve => {
+      const gl = getGL();
+      if (!gl) return resolve(false);
 
-    if (maxTex >= 4096) return true;
+      try {
+        const maxTex = gl.getParameter(gl.MAX_TEXTURE_SIZE) || 0;
+        if (!maxTex || maxTex < 4096) return resolve(false);
 
-    return false;
+        const testSize = Math.min(8192, maxTex);
+
+        const tex = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+
+        const start = performance.now();
+        gl.texImage2D(
+          gl.TEXTURE_2D,
+          0,
+          gl.RGBA,
+          testSize,
+          testSize,
+          0,
+          gl.RGBA,
+          gl.UNSIGNED_BYTE,
+          null
+        );
+        const err = gl.getError();
+        const end = performance.now();
+
+        gl.deleteTexture(tex);
+
+        if (err !== gl.NO_ERROR) return resolve(false);
+
+        if (end - start > 150) return resolve(false);
+
+        resolve(true);
+      } catch (e) {
+        resolve(false);
+      }
+    });
   }
 
   // --- DOM ---
@@ -77,28 +113,59 @@ const MoonMap = (() => {
   let flipped = false;
   let needsRender = false;
 
-  // --- LOAD IMAGE (3 TIERS) ---
+  let currentSrcTier = "none";
+  let loadToken = 0;
+
+  // --- LOAD IMAGE (3 TIERS + REAL-WORLD SAFETY TEST) ---
   function loadImage() {
-    // Tier 1: Strong → auto high-res
+    const token = ++loadToken;
+
+    // TIER 1: Strong candidate → verify with real-world test
     if (canHandleHighRes()) {
-      btnForceHighRes.style.display = "none";
-      img.src = HIGH_RES_SRC;
+      verifyHighResIsSafe().then(safe => {
+
+        if (token !== loadToken) return;
+
+        if (safe) {
+          currentSrcTier = "high";
+          btnForceHighRes.style.display = "none";
+          img.src = HIGH_RES_SRC;
+        } else {
+          if (canHandleMedRes()) {
+            currentSrcTier = "med";
+            btnForceHighRes.style.display = "inline-block";
+            img.src = MED_RES_SRC;
+          } else {
+            currentSrcTier = "low";
+            btnForceHighRes.style.display = "none";
+            fetch("moonmap_lowres.txt")
+              .then(r => r.text())
+              .then(base64 => {
+                if (token !== loadToken) return;
+                img.src = "data:image/png;base64," + base64;
+              });
+          }
+        }
+      });
       return;
     }
 
-    // Tier 2: Medium → auto med-res + allow override
+    // TIER 2: Medium → auto med-res + allow override
     if (canHandleMedRes()) {
+      currentSrcTier = "med";
       btnForceHighRes.style.display = "inline-block";
       img.src = MED_RES_SRC;
       return;
     }
 
-    // Tier 3: Weak → low-res only, no override
+    // TIER 3: Weak → low-res only, no override
+    currentSrcTier = "low";
     btnForceHighRes.style.display = "none";
 
     fetch("moonmap_lowres.txt")
       .then(r => r.text())
       .then(base64 => {
+        if (token !== loadToken) return;
         img.src = "data:image/png;base64," + base64;
       });
   }
@@ -155,7 +222,7 @@ const MoonMap = (() => {
   function resizeCanvas() {
     const rect = modal.getBoundingClientRect();
     canvas.width = rect.width;
-    canvas.height = rect.height - 40; // header height
+    canvas.height = rect.height - 40;
     requestRender();
   }
 
@@ -195,7 +262,7 @@ const MoonMap = (() => {
 
   // --- OPEN / CLOSE ---
   function open() {
-    overlay.style.display = "flex"; // flex → centers modal
+    overlay.style.display = "flex";
     setTimeout(() => {
       resizeCanvas();
       resetView();
@@ -208,6 +275,7 @@ const MoonMap = (() => {
 
   // --- FORCE HIGH RESOLUTION ---
   btnForceHighRes.addEventListener("click", () => {
+    currentSrcTier = "high";
     btnForceHighRes.style.display = "none";
     img.src = HIGH_RES_SRC;
   });
@@ -219,6 +287,32 @@ const MoonMap = (() => {
       resizeCanvas();
       resetView();
       requestRender();
+    };
+
+    img.onerror = () => {
+      if (currentSrcTier === "high") {
+        if (canHandleMedRes()) {
+          currentSrcTier = "med";
+          btnForceHighRes.style.display = "inline-block";
+          img.src = MED_RES_SRC;
+        } else {
+          currentSrcTier = "low";
+          btnForceHighRes.style.display = "none";
+          fetch("moonmap_lowres.txt")
+            .then(r => r.text())
+            .then(base64 => {
+              img.src = "data:image/png;base64," + base64;
+            });
+        }
+      } else if (currentSrcTier === "med") {
+        currentSrcTier = "low";
+        btnForceHighRes.style.display = "none";
+        fetch("moonmap_lowres.txt")
+          .then(r => r.text())
+          .then(base64 => {
+            img.src = "data:image/png;base64," + base64;
+          });
+      }
     };
 
     loadImage();
