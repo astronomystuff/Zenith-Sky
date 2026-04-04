@@ -121,10 +121,11 @@ const MoonMap = (() => {
 
   function onMouseMove(e) {
     if (!dragging) return;
-    offsetX = e.clientX - dragStartX;
-    offsetY = e.clientY - dragStartY;
+    offsetX += e.movementX;
+    offsetY += e.movementY;
     requestRender();
   }
+
 
   // --- OPEN / CLOSE ---
   function open() {
