@@ -7,5 +7,21 @@ Video Stacking <br>
 What Object Is This? <br>
 Observation Planner <br>
 <br>
-This project is licensed under the Creative Commons Attribution–NonCommercial 4.0 International License. <br>
-Commercial use requires written permission from the author.
+<br>
+## Licensing<br>
+<br>
+Zenith Sky uses a hybrid licensing model designed to allow open access while<br>
+preventing commercial exploitation.<br>
+<br>
+### Code<br>
+Licensed under the **Zenith Sky Non‑Commercial Software License (ZSNCSL‑1.1)**.<br>
+Non‑commercial use only.<br>
+Commercial use requires permission.<br>
+<br>
+### Non‑Code Materials<br>
+Licensed under **CC BY‑NC 4.0**.<br>
+Commercial use is prohibited.<br>
+<br>
+### Commercial Licensing<br>
+For commercial use of any component, contact the project maintainers.<br>
+
