@@ -13,15 +13,15 @@ Observation Planner <br>
 Zenith Sky uses a hybrid licensing model designed to allow open access while<br>
 preventing commercial exploitation.<br>
 <br>
-### Code<br>
+Code<br>
 Licensed under the **Zenith Sky Non‑Commercial Software License (ZSNCSL‑1.1)**.<br>
 Non‑commercial use only.<br>
 Commercial use requires permission.<br>
 <br>
-### Non‑Code Materials<br>
+Non‑Code Materials<br>
 Licensed under **CC BY‑NC 4.0**.<br>
 Commercial use is prohibited.<br>
 <br>
-### Commercial Licensing<br>
+Commercial Licensing<br>
 For commercial use of any component, contact the project maintainers.<br>
 
