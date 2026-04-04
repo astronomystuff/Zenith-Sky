@@ -14,23 +14,38 @@ const moonMapFlipBtn = document.getElementById("moonmap-flip");
 
 // --- STATE ---
 let moonImg = new Image();
+let imgLoaded = false;
 let scale = 1;
 let minScale = 0.1;
-let maxScale = 50;
+let maxScale = 25; // capped for performance
 let offsetX = 0;
 let offsetY = 0;
 let isDragging = false;
 let dragStartX = 0;
 let dragStartY = 0;
 let flipped = false;
+let needsRender = false;
+
+// ===============================
+// RENDER LOOP (PERF-FRIENDLY)
+// ===============================
+function requestRender() {
+  if (needsRender) return;
+  needsRender = true;
+  requestAnimationFrame(() => {
+    needsRender = false;
+    drawMoonMap();
+  });
+}
 
 // ===============================
 // LOAD IMAGE
 // ===============================
 moonImg.onload = () => {
+  imgLoaded = true;
   resizeMoonMapCanvas();
   resetMoonMapView();
-  drawMoonMap();
+  requestRender();
 };
 
 moonImg.src = MOON_IMAGE_SRC;
@@ -39,56 +54,73 @@ moonImg.src = MOON_IMAGE_SRC;
 // DRAW FUNCTION
 // ===============================
 function drawMoonMap() {
-  moonMapCtx.imageSmoothingEnabled = false;
-  moonMapCtx.fillStyle = "#363636";
+  if (!imgLoaded) return;
+  
+  moonMapCtx.fillStyle = "#808080";
   moonMapCtx.fillRect(0, 0, moonMapCanvas.width, moonMapCanvas.height);
+  moonMapCtx.imageSmoothingEnabled = false;
   moonMapCtx.save();
   moonMapCtx.translate(offsetX, offsetY);
   moonMapCtx.scale(scale, scale);
-  
+
   if (flipped) {
     moonMapCtx.scale(1, -1);
     moonMapCtx.translate(0, -moonImg.height);
   }
 
   moonMapCtx.drawImage(moonImg, 0, 0);
-
   moonMapCtx.restore();
 }
 
 // ===============================
-// RESET VIEW (AUTO-FIT TO SCREEN)
+// RESET VIEW (AUTO-FIT)
 // ===============================
 function resetMoonMapView() {
-  const scaleX = moonMapCanvas.width / moonImg.width;
-  const scaleY = moonMapCanvas.height / moonImg.height;
+  if (!imgLoaded) return;
+
+  const rect = moonMapCanvas.getBoundingClientRect();
+  const scaleX = rect.width / moonImg.width;
+  const scaleY = rect.height / moonImg.height;
 
   scale = Math.min(scaleX, scaleY);
 
-  offsetX = (moonMapCanvas.width - moonImg.width * scale) / 2;
-  offsetY = (moonMapCanvas.height - moonImg.height * scale) / 2;
+  offsetX = (rect.width - moonImg.width * scale) / 2;
+  offsetY = (rect.height - moonImg.height * scale) / 2;
 
-  drawMoonMap();
+  requestRender();
 }
 
 // ===============================
 // RESIZE HANDLER
 // ===============================
 function resizeMoonMapCanvas() {
-  moonMapCanvas.width = moonMapModal.clientWidth;
-  moonMapCanvas.height = moonMapModal.clientHeight;
-  drawMoonMap();
+  const rect = moonMapModal.getBoundingClientRect();
+  moonMapCanvas.width = rect.width;
+  moonMapCanvas.height = rect.height;
+  requestRender();
 }
 
-window.addEventListener("resize", resizeMoonMapCanvas);
+window.addEventListener("resize", () => {
+  if (moonMapOverlay.style.display !== "block") return;
+  resizeMoonMapCanvas();
+  resetMoonMapView();
+});
 
 // ===============================
-// ZOOM (MOUSE WHEEL)
+// ZOOM (MOUSE WHEEL, THROTTLED)
 // ===============================
+let lastWheelTime = 0;
+
 moonMapCanvas.addEventListener("wheel", (e) => {
   e.preventDefault();
 
-  const zoomIntensity = 0.1;
+  const now = performance.now();
+  if (now - lastWheelTime < 16) return; // ~60fps throttle
+  lastWheelTime = now;
+
+  if (!imgLoaded) return;
+
+  const zoomIntensity = 0.12;
   const mouseX = e.offsetX;
   const mouseY = e.offsetY;
 
@@ -98,17 +130,19 @@ moonMapCanvas.addEventListener("wheel", (e) => {
   const newScale = scale * zoom;
   if (newScale < minScale || newScale > maxScale) return;
 
+  // Zoom around cursor
   offsetX = mouseX - (mouseX - offsetX) * zoom;
   offsetY = mouseY - (mouseY - offsetY) * zoom;
 
   scale = newScale;
-  drawMoonMap();
+  requestRender();
 });
 
 // ===============================
 // PAN (DRAG)
 // ===============================
 moonMapCanvas.addEventListener("mousedown", (e) => {
+  if (!imgLoaded) return;
   isDragging = true;
   dragStartX = e.clientX - offsetX;
   dragStartY = e.clientY - offsetY;
@@ -121,21 +155,24 @@ window.addEventListener("mouseup", () => {
 });
 
 window.addEventListener("mousemove", (e) => {
-  if (!isDragging) return;
+  if (!isDragging || !imgLoaded) return;
 
   offsetX = e.clientX - dragStartX;
   offsetY = e.clientY - dragStartY;
 
-  drawMoonMap();
+  requestRender();
 });
 
 // ===============================
 // BUTTONS
 // ===============================
 moonMapOpenBtn.addEventListener("click", () => {
-  moonMapOverlay.style.display = "flex"; // show full-screen overlay
-  resizeMoonMapCanvas();
-  resetMoonMapView();
+  moonMapOverlay.style.display = "block";
+
+  setTimeout(() => {
+    resizeMoonMapCanvas();
+    resetMoonMapView();
+  }, 30);
 });
 
 moonMapCloseBtn.addEventListener("click", () => {
@@ -148,6 +185,6 @@ moonMapResetBtn.addEventListener("click", () => {
 
 moonMapFlipBtn.addEventListener("click", () => {
   flipped = !flipped;
-  drawMoonMap();
+  requestRender();
 });
 
