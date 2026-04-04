@@ -6,15 +6,32 @@ const MoonMap = (() => {
 
   // --- CAPABILITY CHECK ---
   function canHandleHighRes() {
-    const mem = navigator.deviceMemory || 2;
-
-    const gl = document.createElement("canvas").getContext("webgl");
-    if (!gl) return false;
-
-    const maxTex = gl.getParameter(gl.MAX_TEXTURE_SIZE);
-
-    return mem >= 4 && maxTex >= 8192;
+  const mem = navigator.deviceMemory || 2;
+  if (mem < 6) return false;
+  const gl = document.createElement("canvas").getContext("webgl");
+  if (!gl) return false;
+  const maxTex = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+  if (maxTex < 8192) return false;
+  const renderer = gl.getParameter(gl.RENDERER) || "";
+  const vendor = gl.getParameter(gl.VENDOR) || "";
+  const lowEndGPU =
+    /mali|powervr|adreno [1-5]|intel hd|apple a(8|9|10)/i;
+  if (lowEndGPU.test(renderer) || lowEndGPU.test(vendor)) {
+    return false;
   }
+
+  return true;
+}
+
+function canMaybeHandleHighRes() {
+  const mem = navigator.deviceMemory || 2;
+  if (mem < 4) return false;
+  if (mem >= 6) return false;
+  const gl = document.createElement("canvas").getContext("webgl");
+  if (!gl) return false;
+  const maxTex = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+  return maxTex >= 4096;
+}
 
   // --- DOM ---
   const overlay = document.getElementById("moonmap-modal-overlay");
@@ -31,14 +48,11 @@ const MoonMap = (() => {
   // --- STATE ---
   const img = new Image();
   let loaded = false;
-
   let scale = 1;
   const minScale = 0.1;
   const maxScale = 25;
-
   let offsetX = 0;
   let offsetY = 0;
-
   let dragging = false;
   let flipped = false;
   let needsRender = false;
@@ -50,7 +64,19 @@ const MoonMap = (() => {
     return;
   }
 
-  btnForceHighRes.style.display = "inline-block";
+  if (canMaybeHandleHighRes()) {
+    btnForceHighRes.style.display = "inline-block";
+
+    fetch("moonmap_lowres.txt")
+      .then(r => r.text())
+      .then(base64 => {
+        img.src = "data:image/png;base64," + base64;
+      });
+
+    return;
+  }
+
+  btnForceHighRes.style.display = "none";
 
   fetch("moonmap_lowres.txt")
     .then(r => r.text())
