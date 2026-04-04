@@ -3,7 +3,7 @@ const MOON_IMAGE_SRC =
   "https://github.com/astronomystuff/Zenith-Sky/releases/download/moonmap-v1/moonmap.png";
 
 // --- DOM ELEMENTS ---
-const overlay = document.getElementById("moonmap-modal-overlay");
+const moonOverlay = document.getElementById("moonmap-modal-overlay");
 const modal = document.getElementById("moonmap-modal");
 const canvas = document.getElementById("moonCanvas");
 const ctx = canvas.getContext("2d");
@@ -132,7 +132,7 @@ window.addEventListener("mousemove", (e) => {
 
 // Buttons
 btnOpen.addEventListener("click", () => {
-  overlay.style.display = "block";
+  moonOverlay.style.display = "block";
   setTimeout(() => {
     resizeCanvas();
     resetView();
@@ -140,7 +140,7 @@ btnOpen.addEventListener("click", () => {
 });
 
 btnClose.addEventListener("click", () => {
-  overlay.style.display = "none";
+  moonOverlay.style.display = "none";
 });
 
 btnReset.addEventListener("click", resetView);
