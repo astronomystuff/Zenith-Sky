@@ -3,6 +3,7 @@ const MOON_IMAGE_SRC = "https://github.com/astronomystuff/Zenith-Sky/releases/do
 
 // --- DOM ELEMENTS ---
 const moonMapModal = document.getElementById("moonmap-modal");
+const moonMapOverlay = document.getElementById("moonmap-modal-overlay");
 const moonMapCanvas = document.getElementById("moonCanvas");
 const moonMapCtx = moonMapCanvas.getContext("2d");
 const moonMapOpenBtn = document.getElementById("moonmap-open");
@@ -10,19 +11,27 @@ const moonMapCloseBtn = document.getElementById("moonmap-close");
 const moonMapResetBtn = document.getElementById("moonmap-reset");
 const moonMapFlipBtn = document.getElementById("moonmap-flip");
 
+// --- OPEN / CLOSE ---
+moonMapOpenBtn.addEventListener("click", () => {
+  moonMapOverlay.style.display = "flex";
+  resizeMoonMapCanvas();
+  resetMoonMapView();
+});
+
+moonMapCloseBtn.addEventListener("click", () => {
+  moonMapOverlay.style.display = "none";
+});
+
 // --- STATE ---
 let moonImg = new Image();
 let scale = 1;
 let minScale = 0.2;
 let maxScale = 8;
-
 let offsetX = 0;
 let offsetY = 0;
-
 let isDragging = false;
 let dragStartX = 0;
 let dragStartY = 0;
-
 let flipped = false;
 
 // ===============================
