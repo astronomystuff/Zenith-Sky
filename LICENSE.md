@@ -39,4 +39,15 @@ are licensed separately under a Creative Commons Non‑Commercial license.<br>
 <br>
 ## 6. Commercial Licensing<br>
 For commercial licensing inquiries, contact the project maintainers.<br>
-
+<br>
+<br>
+# Asset License — CC BY‑NC 4.0<br>
+<br>
+All non‑code materials in this directory, including but not limited to imagery,<br>
+textures, datasets, and graphical resources, are licensed under the<br>
+**Creative Commons Attribution–NonCommercial 4.0 International License (CC BY‑NC 4.0)**.<br>
+<br>
+You may not use these assets for commercial purposes.<br>
+<br>
+Full license text:<br>
+https://creativecommons.org/licenses/by-nc/4.0/<br>
