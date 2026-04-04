@@ -474,3 +474,28 @@ body {
 }
 `;
 win.document.head.appendChild(style);
+
+
+/* =============================== */
+/* MOON MAP MODAL OVERRIDES       */
+/* =============================== */
+
+#moonmap-modal-overlay {
+  display: block !important;
+  justify-content: unset !important;
+  align-items: unset !important;
+}
+
+#moonmap-modal {
+  position: absolute !important;
+  top: 5% !important;
+  left: 5% !important;
+  width: 90% !important;
+  height: 90% !important;
+  background: #808080 !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
