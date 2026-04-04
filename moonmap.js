@@ -1,9 +1,10 @@
 // --- CONFIG ---
-const MOON_IMAGE_SRC = "https://github.com/astronomystuff/Zenith-Sky/releases/download/moonmap-v1/moonmap.png";
+const MOON_IMAGE_SRC =
+  "https://github.com/astronomystuff/Zenith-Sky/releases/download/moonmap-v1/moonmap.png";
 
-// --- DOM ELEMENTS ---
-const moonMapModal = document.getElementById("moonmap-modal");
+// --- DOM ELEMENTS (MATCH YOUR HTML) ---
 const moonMapOverlay = document.getElementById("moonmap-modal-overlay");
+const moonMapModal = document.getElementById("moonmap-modal");
 const moonMapCanvas = document.getElementById("moonCanvas");
 const moonMapCtx = moonMapCanvas.getContext("2d");
 const moonMapOpenBtn = document.getElementById("moonmap-open");
@@ -11,22 +12,11 @@ const moonMapCloseBtn = document.getElementById("moonmap-close");
 const moonMapResetBtn = document.getElementById("moonmap-reset");
 const moonMapFlipBtn = document.getElementById("moonmap-flip");
 
-// --- OPEN / CLOSE ---
-moonMapOpenBtn.addEventListener("click", () => {
-  moonMapOverlay.style.display = "flex";
-  resizeMoonMapCanvas();
-  resetMoonMapView();
-});
-
-moonMapCloseBtn.addEventListener("click", () => {
-  moonMapOverlay.style.display = "none";
-});
-
 // --- STATE ---
 let moonImg = new Image();
 let scale = 1;
-let minScale = 0.2;
-let maxScale = 8;
+let minScale = 0.1;
+let maxScale = 50;
 let offsetX = 0;
 let offsetY = 0;
 let isDragging = false;
@@ -38,6 +28,7 @@ let flipped = false;
 // LOAD IMAGE
 // ===============================
 moonImg.onload = () => {
+  resizeMoonMapCanvas();
   resetMoonMapView();
   drawMoonMap();
 };
@@ -48,37 +39,34 @@ moonImg.src = MOON_IMAGE_SRC;
 // DRAW FUNCTION
 // ===============================
 function drawMoonMap() {
-  moonMapCtx.clearRect(0, 0, moonMapCanvas.width, moonMapCanvas.height);
-
+  moonMapCtx.imageSmoothingEnabled = false;
+  moonMapCtx.fillStyle = "#363636";
+  moonMapCtx.fillRect(0, 0, moonMapCanvas.width, moonMapCanvas.height);
   moonMapCtx.save();
-
-  // Apply pan
   moonMapCtx.translate(offsetX, offsetY);
-
-  // Apply zoom
   moonMapCtx.scale(scale, scale);
-
-  // Flip vertically if needed
+  
   if (flipped) {
     moonMapCtx.scale(1, -1);
     moonMapCtx.translate(0, -moonImg.height);
   }
 
-  // Draw the image
   moonMapCtx.drawImage(moonImg, 0, 0);
 
   moonMapCtx.restore();
 }
 
 // ===============================
-// RESET VIEW
+// RESET VIEW (AUTO-FIT TO SCREEN)
 // ===============================
 function resetMoonMapView() {
-  scale = 1;
+  const scaleX = moonMapCanvas.width / moonImg.width;
+  const scaleY = moonMapCanvas.height / moonImg.height;
 
-  // Center the image
-  offsetX = (moonMapCanvas.width - moonImg.width) / 2;
-  offsetY = (moonMapCanvas.height - moonImg.height) / 2;
+  scale = Math.min(scaleX, scaleY);
+
+  offsetX = (moonMapCanvas.width - moonImg.width * scale) / 2;
+  offsetY = (moonMapCanvas.height - moonImg.height * scale) / 2;
 
   drawMoonMap();
 }
@@ -108,10 +96,8 @@ moonMapCanvas.addEventListener("wheel", (e) => {
   const zoom = Math.exp(wheel * zoomIntensity);
 
   const newScale = scale * zoom;
-
   if (newScale < minScale || newScale > maxScale) return;
 
-  // Adjust offset so zoom is centered on cursor
   offsetX = mouseX - (mouseX - offsetX) * zoom;
   offsetY = mouseY - (mouseY - offsetY) * zoom;
 
@@ -126,10 +112,12 @@ moonMapCanvas.addEventListener("mousedown", (e) => {
   isDragging = true;
   dragStartX = e.clientX - offsetX;
   dragStartY = e.clientY - offsetY;
+  moonMapCanvas.style.cursor = "grabbing";
 });
 
 window.addEventListener("mouseup", () => {
   isDragging = false;
+  moonMapCanvas.style.cursor = "grab";
 });
 
 window.addEventListener("mousemove", (e) => {
@@ -145,13 +133,13 @@ window.addEventListener("mousemove", (e) => {
 // BUTTONS
 // ===============================
 moonMapOpenBtn.addEventListener("click", () => {
-  moonMapModal.style.display = "block";
+  moonMapOverlay.style.display = "flex"; // show full-screen overlay
   resizeMoonMapCanvas();
   resetMoonMapView();
 });
 
 moonMapCloseBtn.addEventListener("click", () => {
-  moonMapModal.style.display = "none";
+  moonMapOverlay.style.display = "none";
 });
 
 moonMapResetBtn.addEventListener("click", () => {
@@ -162,3 +150,4 @@ moonMapFlipBtn.addEventListener("click", () => {
   flipped = !flipped;
   drawMoonMap();
 });
+
