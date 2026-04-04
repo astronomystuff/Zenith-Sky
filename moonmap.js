@@ -26,24 +26,6 @@ let dragStartX = 0;
 let dragStartY = 0;
 let flipped = false;
 let needsRender = false;
-// State
-let img = new Image();
-let loaded = false;
-
-let scale = 1;
-let minScale = 0.1;
-let maxScale = 25;
-
-let offsetX = 0;
-let offsetY = 0;
-
-let dragging = false;
-let dragStartX = 0;
-let dragStartY = 0;
-
-let flipped = false;
-
-let needsRender = false;
 
 // Render loop
 function requestRender() {
