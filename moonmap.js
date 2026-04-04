@@ -21,7 +21,7 @@ const MoonMap = (() => {
   const modal = document.getElementById("moonmap-modal");
   const canvas = document.getElementById("moonCanvas");
   const ctx = canvas.getContext("2d");
-
+  const btnForceHighRes = document.getElementById("moonmap-force-highres");
   const btnOpen = document.getElementById("moonmap-open");
   const btnClose = document.getElementById("moonmap-close");
   const btnReset = document.getElementById("moonmap-reset");
@@ -45,19 +45,19 @@ const MoonMap = (() => {
   let needsRender = false;
 
   // --- LOAD IMAGE (HIGH OR LOW RES) ---
-  function loadImage() {
-    if (canHandleHighRes()) {
-      // Load high-res immediately
-      img.src = HIGH_RES_SRC;
-      return;
-    }
+ function loadImage() {
+  if (canHandleHighRes()) {
+    img.src = HIGH_RES_SRC;
+    return;
+  }
 
-    // Otherwise load low-res from external file
-    fetch("moonmap_lowres.txt")
-      .then(r => r.text())
-      .then(base64 => {
-        img.src = "data:image/png;base64," + base64;
-      });
+  btnForceHighRes.style.display = "inline-block";
+
+  fetch("moonmap_lowres.txt")
+    .then(r => r.text())
+    .then(base64 => {
+      img.src = "data:image/png;base64," + base64;
+    });
   }
 
   // --- RENDER LOOP ---
@@ -152,7 +152,7 @@ const MoonMap = (() => {
 
   // --- OPEN / CLOSE ---
   function open() {
-    overlay.style.display = "block";
+    overlay.style.display = "flex";
     setTimeout(() => {
       resizeCanvas();
       resetView();
@@ -162,6 +162,12 @@ const MoonMap = (() => {
   function close() {
     overlay.style.display = "none";
   }
+
+  // --- FORCE HIGH RESOLUTION ---
+  btnForceHighRes.addEventListener("click", () => {
+  btnForceHighRes.style.display = "none"; // hide after use
+  img.src = HIGH_RES_SRC;
+});
 
   // --- INIT ---
   function init() {
