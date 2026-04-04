@@ -4,13 +4,6 @@ const MoonMap = (() => {
   const HIGH_RES_SRC =
     "https://github.com/astronomystuff/Zenith-Sky/releases/download/moonmap-v1/moonmap.png";
 
-  fetch("moonmap_lowres.txt")
-  .then(r => r.text())
-  .then(base64 => {
-    img.src = "data:image/png;base64," + base64;
-  });
-
-
   // --- CAPABILITY CHECK ---
   function canHandleHighRes() {
     const mem = navigator.deviceMemory || 2;
@@ -23,8 +16,6 @@ const MoonMap = (() => {
     return mem >= 4 && maxTex >= 8192;
   }
 
-  const IMAGE_SRC = canHandleHighRes() ? HIGH_RES_SRC : LOW_RES_SRC;
-
   // --- DOM ---
   const overlay = document.getElementById("moonmap-modal-overlay");
   const modal = document.getElementById("moonmap-modal");
@@ -36,7 +27,6 @@ const MoonMap = (() => {
   const btnReset = document.getElementById("moonmap-reset");
   const btnFlip = document.getElementById("moonmap-flip");
 
-  // NEW: Zoom slider
   const zoomSlider = document.getElementById("moonmap-zoom-slider");
 
   // --- STATE ---
@@ -51,9 +41,24 @@ const MoonMap = (() => {
   let offsetY = 0;
 
   let dragging = false;
-
   let flipped = false;
   let needsRender = false;
+
+  // --- LOAD IMAGE (HIGH OR LOW RES) ---
+  function loadImage() {
+    if (canHandleHighRes()) {
+      // Load high-res immediately
+      img.src = HIGH_RES_SRC;
+      return;
+    }
+
+    // Otherwise load low-res from external file
+    fetch("moonmap_lowres.txt")
+      .then(r => r.text())
+      .then(base64 => {
+        img.src = "data:image/png;base64," + base64;
+      });
+  }
 
   // --- RENDER LOOP ---
   function requestRender() {
@@ -115,7 +120,6 @@ const MoonMap = (() => {
   zoomSlider.addEventListener("input", () => {
     const newScale = parseFloat(zoomSlider.value);
 
-    // Zoom relative to center
     const cx = canvas.width / 2;
     const cy = canvas.height / 2;
 
@@ -126,7 +130,7 @@ const MoonMap = (() => {
     requestRender();
   });
 
-  // --- PAN (movementX/movementY = no jitter) ---
+  // --- PAN ---
   canvas.addEventListener("mousedown", () => {
     dragging = true;
     canvas.style.cursor = "grabbing";
@@ -167,7 +171,8 @@ const MoonMap = (() => {
       resetView();
       requestRender();
     };
-    img.src = IMAGE_SRC;
+
+    loadImage();
 
     btnOpen.addEventListener("click", open);
     btnClose.addEventListener("click", close);
