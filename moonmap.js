@@ -431,6 +431,7 @@ const MoonMap = (() => {
       resizeCanvas();
       resetView();
       requestRender();
+      console.log("Decoded image size:", img.width, img.height);
     };
 
     img.onerror = () => {
