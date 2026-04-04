@@ -1,107 +1,42 @@
-# Creative Commons Attribution–NonCommercial 4.0 International<br>
+# Zenith Sky Non‑Commercial Software License (ZSNCSL‑1.0)<br>
 
-Creative Commons Corporation (“Creative Commons”) is not a law firm and does not provide legal services.<br>
-Distribution of this license does not create an attorney‑client relationship.<br>
-Creative Commons provides this information on an “as‑is” basis and makes no warranties regarding the information provided.<br>
-
+Copyright (c) 2026 Zenith Sky <br>
 <br>
-
-## License<br>
-
-THE WORK (AS DEFINED BELOW) IS PROVIDED UNDER THE TERMS OF THIS CREATIVE COMMONS PUBLIC LICENSE (“CCPL” OR “LICENSE”).<br>
-THE WORK IS PROTECTED BY COPYRIGHT AND/OR OTHER APPLICABLE LAW.<br>
-ANY USE OF THE WORK OTHER THAN AS AUTHORIZED UNDER THIS LICENSE OR COPYRIGHT LAW IS PROHIBITED.<br>
-
-BY EXERCISING ANY RIGHTS TO THE WORK PROVIDED HERE, YOU ACCEPT AND AGREE TO BE BOUND BY THE TERMS OF THIS LICENSE.<br>
-
+Permission is hereby granted to any person obtaining a copy of this software<br>
+and associated documentation files (the “Software”) to use, copy, modify,<br>
+merge, publish, and distribute the software, subject to the following conditions:<br>
 <br>
-
-## Section 1 — Definitions<br>
-
-**Adapted Material** — material derived from or based upon the Licensed Material that has been modified, transformed, or built upon.<br>
-**Attribution** — giving appropriate credit, providing a link to the license, and indicating if changes were made.<br>
-**Licensed Material** — the artistic or literary work offered under this License.<br>
-**NonCommercial** — not primarily intended for or directed toward commercial advantage or monetary compensation.<br>
-**Share** — to provide material to the public by any means or process.<br>
-
+## 1. Non‑Commercial Use Only<br>
+The Software may not be used, in whole or in part, in any product, service,<br>
+application, website, system, or environment that generates revenue, directly<br>
+or indirectly, without prior written permission from the copyright holder.<br>
+This includes but is not limited to:<br>
+- paid applications<br>
+- ad‑supported applications or websites<br>
+- subscription services<br>
+- donation‑funded or patron‑funded projects<br>
+- commercial research<br>
+- monetized videos or tutorials<br>
+- any system used in a commercial setting<br>
 <br>
-
-## Section 2 — Scope<br>
-
-### 2(a) License Grant<br>
-
-You are granted a worldwide, royalty‑free, non‑sublicensable, non‑exclusive, irrevocable license to:<br>
-• **Share** the Licensed Material<br>
-• **Adapt** the Licensed Material<br>
-…for **NonCommercial purposes only**.<br>
-
+## 2. Attribution<br>
+Any permitted use must include clear attribution to the original project:<br>
+“Zenith Sky — Non‑Commercial Software License (ZSNCSL‑1.0)”.<br>
 <br>
-
-### 2(b) Conditions<br>
-
-You must:<br>
-• **Attribution** — Give appropriate credit, provide a link to the original project, and indicate if changes were made.<br>
-• **NonCommercial** — You may not use the material for commercial purposes.<br>
-• **No additional restrictions** — You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.<br>
-
+## 3. No Warranty<br>
+The Software is provided “as is”, without warranty of any kind, express or<br>
+implied, including but not limited to the warranties of merchantability,<br>
+fitness for a particular purpose, and non‑infringement.<br>
 <br>
-
-## Section 3 — License Conditions<br>
-
-### Attribution<br>
-
-You must include:<br>
-• The creator’s username (astronomystuff)<br>
-• A link to the original repository<br>
-• A notice that the work is licensed under CC BY‑NC 4.0<br>
-• A notice of any modifications made<br>
-
+## 4. No Liability<br>
+In no event shall the authors or copyright holders be liable for any claim,<br>
+damages, or other liability arising from the use of the Software.<br>
 <br>
-
-### Non-Commercial<br>
-
-You **may not**:<br>
-• Sell the Licensed Material<br>
-• Sell Adapted Material<br>
-• Use the Licensed Material in any product, service, or application that generates revenue<br>
-• Use the Licensed Material in any commercial context without explicit permission from the Licensor<br>
-
-Commercial permission may be granted separately by the Licensor.<br>
-
+## 5. Asset Exclusion<br>
+This license applies only to the Software (code).<br>
+All non‑code materials, including imagery, datasets, and graphical resources,<br>
+are licensed separately under a Creative Commons Non‑Commercial license.<br>
 <br>
+## 6. Commercial Licensing<br>
+For commercial licensing inquiries, contact the project maintainers.<br>
 
-## Section 4 — Disclaimer of Warranties and Limitation of Liability<br>
-
-THE LICENSED MATERIAL IS PROVIDED “AS‑IS” AND “AS AVAILABLE.”<br>
-THE LICENSOR MAKES NO WARRANTIES AND DISCLAIMS ALL LIABILITY FOR DAMAGES ARISING FROM ITS USE.<br>
-
-<br>
-
-## Section 5 — Term and Termination<br>
-
-This License applies for the full term of copyright.<br>
-If you violate the terms, your rights under this License terminate automatically.<br>
-
-<br>
-
-## Section 6 — Other Terms<br>
-
-No endorsement is implied by attribution.<br>
-Creative Commons is not a party to this License.<br>
-
-<br>
-
-## Full Legal Text<br>
-
-The complete legal code is available at:<br>
-https://creativecommons.org/licenses/by-nc/4.0/legalcode<br>
-
-<br>
-
-## Attribution Notice<br>
-
-This project is licensed under the Creative Commons<br>
-**Attribution–NonCommercial 4.0 International License (CC BY‑NC 4.0)**.<br>
-You are free to share and adapt the material for non‑commercial purposes,<br>
-as long as you give appropriate credit and provide a link to the original.<br>
-Commercial use requires written permission from the author.<br>
