@@ -1,151 +1,175 @@
-// --- CONFIG ---
-const MOON_IMAGE_SRC =
-  "https://github.com/astronomystuff/Zenith-Sky/releases/download/moonmap-v1/moonmap.png";
+const MoonMap = (() => {
 
-// --- DOM ELEMENTS ---
-const moonOverlay = document.getElementById("moonmap-modal-overlay");
-const modal = document.getElementById("moonmap-modal");
-const canvas = document.getElementById("moonCanvas");
-const ctx = canvas.getContext("2d");
+  // --- CONFIG ---
+  const IMAGE_SRC =
+    "https://github.com/astronomystuff/Zenith-Sky/releases/download/moonmap-v1/moonmap.png";
 
-const btnOpen = document.getElementById("moonmap-open");
-const btnClose = document.getElementById("moonmap-close");
-const btnReset = document.getElementById("moonmap-reset");
-const btnFlip = document.getElementById("moonmap-flip");
+  // --- DOM ---
+  const overlay = document.getElementById("moonmap-modal-overlay");
+  const modal = document.getElementById("moonmap-modal");
+  const canvas = document.getElementById("moonCanvas");
+  const ctx = canvas.getContext("2d");
 
-// --- STATE ---
-let img = new Image();
-let loaded = false;
-let scale = 1;
-let minScale = 0.1;
-let maxScale = 25;
-let offsetX = 0;
-let offsetY = 0;
-let dragging = false;
-let dragStartX = 0;
-let dragStartY = 0;
-let flipped = false;
-let needsRender = false;
+  const btnOpen = document.getElementById("moonmap-open");
+  const btnClose = document.getElementById("moonmap-close");
+  const btnReset = document.getElementById("moonmap-reset");
+  const btnFlip = document.getElementById("moonmap-flip");
 
-// Render loop
-function requestRender() {
-  if (needsRender) return;
-  needsRender = true;
-  requestAnimationFrame(() => {
-    needsRender = false;
-    draw();
-  });
-}
+  // --- STATE ---
+  const img = new Image();
+  let loaded = false;
 
-// Load image
-img.onload = () => {
-  loaded = true;
-  resizeCanvas();
-  resetView();
-  requestRender();
-};
-img.src = MOON_IMAGE_SRC;
+  let scale = 1;
+  const minScale = 0.1;
+  const maxScale = 25;
 
-// Draw
-function draw() {
-  if (!loaded) return;
+  let offsetX = 0;
+  let offsetY = 0;
 
-  ctx.imageSmoothingEnabled = false;
+  let dragging = false;
+  let dragStartX = 0;
+  let dragStartY = 0;
 
-  ctx.fillStyle = "#808080";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  let flipped = false;
+  let needsRender = false;
 
-  ctx.save();
-  ctx.translate(offsetX, offsetY);
-  ctx.scale(scale, scale);
-
-  if (flipped) {
-    ctx.scale(1, -1);
-    ctx.translate(0, -img.height);
+  // --- RENDER LOOP ---
+  function requestRender() {
+    if (needsRender) return;
+    needsRender = true;
+    requestAnimationFrame(() => {
+      needsRender = false;
+      draw();
+    });
   }
 
-  ctx.drawImage(img, 0, 0);
-  ctx.restore();
-}
+  // --- DRAW ---
+  function draw() {
+    if (!loaded) return;
 
-// Reset view
-function resetView() {
-  const rect = canvas.getBoundingClientRect();
-  const sx = rect.width / img.width;
-  const sy = rect.height / img.height;
+    ctx.imageSmoothingEnabled = false;
 
-  scale = Math.min(sx, sy);
+    ctx.fillStyle = "#808080";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  offsetX = (rect.width - img.width * scale) / 2;
-  offsetY = (rect.height - img.height * scale) / 2;
+    ctx.save();
+    ctx.translate(offsetX, offsetY);
+    ctx.scale(scale, scale);
 
-  requestRender();
-}
+    if (flipped) {
+      ctx.scale(1, -1);
+      ctx.translate(0, -img.height);
+    }
 
-// Resize canvas
-function resizeCanvas() {
-  const rect = modal.getBoundingClientRect();
-  canvas.width = rect.width;
-  canvas.height = rect.height - 40; // header height
-  requestRender();
-}
+    ctx.drawImage(img, 0, 0);
+    ctx.restore();
+  }
 
-// Zoom
-canvas.addEventListener("wheel", (e) => {
-  e.preventDefault();
-  if (!loaded) return;
+  // --- RESET VIEW ---
+  function resetView() {
+    const rect = canvas.getBoundingClientRect();
+    const sx = rect.width / img.width;
+    const sy = rect.height / img.height;
 
-  const zoom = Math.exp((e.deltaY < 0 ? 1 : -1) * 0.12);
-  const newScale = scale * zoom;
+    scale = Math.min(sx, sy);
 
-  if (newScale < minScale || newScale > maxScale) return;
+    offsetX = (rect.width - img.width * scale) / 2;
+    offsetY = (rect.height - img.height * scale) / 2;
 
-  const mx = e.offsetX;
-  const my = e.offsetY;
+    requestRender();
+  }
 
-  offsetX = mx - (mx - offsetX) * zoom;
-  offsetY = my - (my - offsetY) * zoom;
+  // --- RESIZE CANVAS ---
+  function resizeCanvas() {
+    const rect = modal.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height - 40; // header height
+    requestRender();
+  }
 
-  scale = newScale;
-  requestRender();
-});
+  // --- EVENT HANDLERS ---
+  function onWheel(e) {
+    e.preventDefault();
+    if (!loaded) return;
 
-// Pan
-canvas.addEventListener("mousedown", (e) => {
-  dragging = true;
-  dragStartX = e.clientX - offsetX;
-  dragStartY = e.clientY - offsetY;
-  canvas.style.cursor = "grabbing";
-});
+    const zoom = Math.exp((e.deltaY < 0 ? 1 : -1) * 0.12);
+    const newScale = scale * zoom;
 
-window.addEventListener("mouseup", () => {
-  dragging = false;
-  canvas.style.cursor = "grab";
-});
+    if (newScale < minScale || newScale > maxScale) return;
 
-window.addEventListener("mousemove", (e) => {
-  if (!dragging) return;
-  offsetX = e.clientX - dragStartX;
-  offsetY = e.clientY - dragStartY;
-  requestRender();
-});
+    const mx = e.offsetX;
+    const my = e.offsetY;
 
-// Buttons
-btnOpen.addEventListener("click", () => {
-  moonOverlay.style.display = "block";
-  setTimeout(() => {
-    resizeCanvas();
-    resetView();
-  }, 30);
-});
+    offsetX = mx - (mx - offsetX) * zoom;
+    offsetY = my - (my - offsetY) * zoom;
 
-btnClose.addEventListener("click", () => {
-  moonOverlay.style.display = "none";
-});
+    scale = newScale;
+    requestRender();
+  }
 
-btnReset.addEventListener("click", resetView);
+  function onMouseDown(e) {
+    dragging = true;
+    dragStartX = e.clientX - offsetX;
+    dragStartY = e.clientY - offsetY;
+    canvas.style.cursor = "grabbing";
+  }
 
-btnFlip.addEventListener("click", () => {
-  flipped = !flipped;
-  requestRender();
-});
+  function onMouseUp() {
+    dragging = false;
+    canvas.style.cursor = "grab";
+  }
+
+  function onMouseMove(e) {
+    if (!dragging) return;
+    offsetX = e.clientX - dragStartX;
+    offsetY = e.clientY - dragStartY;
+    requestRender();
+  }
+
+  // --- OPEN / CLOSE ---
+  function open() {
+    overlay.style.display = "block";
+    setTimeout(() => {
+      resizeCanvas();
+      resetView();
+    }, 30);
+  }
+
+  function close() {
+    overlay.style.display = "none";
+  }
+
+  // --- INIT ---
+  function init() {
+    img.onload = () => {
+      loaded = true;
+      resizeCanvas();
+      resetView();
+      requestRender();
+    };
+    img.src = IMAGE_SRC;
+
+    canvas.addEventListener("wheel", onWheel);
+    canvas.addEventListener("mousedown", onMouseDown);
+    window.addEventListener("mouseup", onMouseUp);
+    window.addEventListener("mousemove", onMouseMove);
+
+    btnOpen.addEventListener("click", open);
+    btnClose.addEventListener("click", close);
+    btnReset.addEventListener("click", resetView);
+    btnFlip.addEventListener("click", () => {
+      flipped = !flipped;
+      requestRender();
+    });
+  }
+
+  return {
+    init,
+    open,
+    close,
+    resetView
+  };
+
+})();
+
+MoonMap.init();
