@@ -143,10 +143,13 @@ const MoonMap = (() => {
 
     mapWidth = image.width;
     mapHeight = image.height;
+
+    if (!mapWidth || !mapHeight) {
+      console.warn("MoonMap: decoded image has zero size:", mapWidth, mapHeight);
+      return;
+    }
+
     tileSize = getTileSizeForTier(tier);
-
-    if (!mapWidth || !mapHeight || !tileSize) return;
-
     tilesX = Math.ceil(mapWidth / tileSize);
     tilesY = Math.ceil(mapHeight / tileSize);
 
@@ -204,8 +207,6 @@ const MoonMap = (() => {
       }
     }
 
-    // discard original image content
-    image.src = "";
     tilesReady = true;
   }
 
@@ -426,12 +427,12 @@ const MoonMap = (() => {
   // --- INIT ---
   function init() {
     img.onload = () => {
+      console.log("Decoded image size:", img.width, img.height);
       loaded = true;
       buildTilesFromImage(img, currentSrcTier);
       resizeCanvas();
       resetView();
       requestRender();
-      console.log("Decoded image size:", img.width, img.height);
     };
 
     img.onerror = () => {
@@ -484,3 +485,4 @@ const MoonMap = (() => {
 
 // Initialize
 MoonMap.init();
+
