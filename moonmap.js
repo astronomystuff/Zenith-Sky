@@ -9,7 +9,7 @@ const MoonMap = (() => {
 
   const LOW_RES_TXT = "moonmap_lowres.txt";
 
-  // --- SHARED WEBGL CONTEXT ---
+  // --- SHARED WEBGL CONTEXT (for capability checks only) ---
   let sharedGL = null;
   function getGL() {
     if (sharedGL) return sharedGL;
@@ -125,10 +125,10 @@ const MoonMap = (() => {
   // Render dedupe
   let lastDrawOffsetX = 0;
   let lastDrawOffsetY = 0;
- let lastDrawScale = 0;
+  let lastDrawScale = 0;
   let lastDrawFlip = false;
 
-  // --- LOAD IMAGE ---
+  // --- LOAD IMAGE (3 TIERS + SAFETY TEST) ---
   function loadImage() {
     const token = ++loadToken;
 
@@ -190,9 +190,8 @@ const MoonMap = (() => {
 
   // --- DRAW ---
   function draw() {
-    if (!loaded) return;
+    if (!loaded || !off) return;
 
-    // Dedupe
     if (
       offsetX === lastDrawOffsetX &&
       offsetY === lastDrawOffsetY &&
@@ -266,6 +265,7 @@ const MoonMap = (() => {
     if (!isFinite(newScale)) return;
 
     const clamped = Math.min(Math.max(newScale, minScale), maxScale);
+    if (Math.abs(clamped - scale) < 0.0001) return;
 
     const cx = canvas.width / 2;
     const cy = canvas.height / 2;
@@ -325,15 +325,18 @@ const MoonMap = (() => {
 
     if (!touchQueued) {
       touchQueued = true;
+      const t0 = e.touches[0];
+      const startX = t0.clientX;
+      const startY = t0.clientY;
+
       requestAnimationFrame(() => {
         touchQueued = false;
 
-        const t = e.touches[0];
-        const dx = t.clientX - lastTouchX;
-        const dy = t.clientY - lastTouchY;
+        const dx = startX - lastTouchX;
+        const dy = startY - lastTouchY;
 
-        lastTouchX = t.clientX;
-        lastTouchY = t.clientY;
+        lastTouchX = startX;
+        lastTouchY = startY;
 
         offsetX += dx;
         offsetY += dy;
@@ -374,19 +377,30 @@ const MoonMap = (() => {
 
   // --- INIT ---
   function init() {
-    img.onload = () => {
+    img.onload = async () => {
+      try {
+        if (img.decode) {
+          await img.decode(); // wait for actual decode → no black frame
+        }
+      } catch {
+        // Safari can throw here even when decode succeeds; ignore
+      }
+
       loaded = true;
 
-      // Offscreen canvas for GPU caching
       off = document.createElement("canvas");
       offCtx = off.getContext("2d", { alpha: false });
 
       off.width = img.width;
       off.height = img.height;
 
+      offCtx.imageSmoothingEnabled = false;
+      offCtx.webkitImageSmoothingEnabled = false;
+      offCtx.msImageSmoothingEnabled = false;
+      offCtx.mozImageSmoothingEnabled = false;
+
       offCtx.drawImage(img, 0, 0);
 
-      // Free original image memory
       img.src = "";
       img.onload = null;
       img.onerror = null;
@@ -439,5 +453,3 @@ const MoonMap = (() => {
 
 // Initialize
 MoonMap.init();
-
-
