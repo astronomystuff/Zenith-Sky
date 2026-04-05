@@ -1,4 +1,5 @@
 const MoonMap = (() => {
+
   // --- CONFIG ---
   const HIGH_RES_SRC =
     "https://github.com/astronomystuff/Zenith-Sky/releases/download/moonmap-v1/moonmap.png";
@@ -6,25 +7,24 @@ const MoonMap = (() => {
   const MED_RES_SRC =
     "https://github.com/astronomystuff/Zenith-Sky/releases/download/medMoonMap/medMoonMap.png";
 
-  const LOW_RES_TXT = "moonmap_lowres.txt"; // base64 text file
+  const LOW_RES_TXT = "moonmap_lowres.txt";
 
   // --- SHARED WEBGL CONTEXT ---
   let sharedGL = null;
   function getGL() {
     if (sharedGL) return sharedGL;
-    const canvas = document.createElement("canvas");
-    sharedGL = canvas.getContext("webgl", {
+    const c = document.createElement("canvas");
+    sharedGL = c.getContext("webgl", {
       antialias: false,
       preserveDrawingBuffer: false
     });
     return sharedGL;
   }
 
-  // --- GPU / CAPABILITY HELPERS ---
+  // --- GPU INFO ---
   function getGPUInfo() {
     const gl = getGL();
     if (!gl) return { renderer: "", vendor: "", maxTex: 0 };
-
     return {
       renderer: gl.getParameter(gl.RENDERER) || "",
       vendor: gl.getParameter(gl.VENDOR) || "",
@@ -32,29 +32,22 @@ const MoonMap = (() => {
     };
   }
 
-  // Tier 1: Strong → candidate for high-res
+  // --- TIER LOGIC ---
   function canHandleHighRes() {
     const { renderer, maxTex } = getGPUInfo();
-
     if (/apple a1[4-9]/i.test(renderer)) return true;
     if (/apple m[1-9]/i.test(renderer)) return true;
-
     if (maxTex >= 8192 && !/intel hd/i.test(renderer)) return true;
-
     return false;
   }
 
-  // Tier 2: Medium → auto med-res + allow override
   function canHandleMedRes() {
     const { renderer, maxTex } = getGPUInfo();
-
     if (/apple a1[1-3]/i.test(renderer)) return true;
     if (maxTex >= 4096) return true;
-
     return false;
   }
 
-  // Real-world high-res safety test
   function verifyHighResIsSafe() {
     return new Promise(resolve => {
       const gl = getGL();
@@ -111,7 +104,12 @@ const MoonMap = (() => {
 
   // --- STATE ---
   const img = new Image();
+  let off = null;
+  let offCtx = null;
+
   let loaded = false;
+  let currentTier = "none";
+  let loadToken = 0;
 
   let scale = 1;
   const minScale = 0.1;
@@ -124,10 +122,13 @@ const MoonMap = (() => {
   let flipped = false;
   let needsRender = false;
 
-  let currentTier = "none"; // "high" | "med" | "low"
-  let loadToken = 0;
+  // Render dedupe
+  let lastDrawOffsetX = 0;
+  let lastDrawOffsetY = 0;
+ let lastDrawScale = 0;
+  let lastDrawFlip = false;
 
-  // --- LOAD IMAGE (3 TIERS + SAFETY TEST) ---
+  // --- LOAD IMAGE ---
   function loadImage() {
     const token = ++loadToken;
 
@@ -191,8 +192,26 @@ const MoonMap = (() => {
   function draw() {
     if (!loaded) return;
 
+    // Dedupe
+    if (
+      offsetX === lastDrawOffsetX &&
+      offsetY === lastDrawOffsetY &&
+      scale === lastDrawScale &&
+      flipped === lastDrawFlip
+    ) {
+      return;
+    }
+
+    lastDrawOffsetX = offsetX;
+    lastDrawOffsetY = offsetY;
+    lastDrawScale = scale;
+    lastDrawFlip = flipped;
+
+    ctx.globalCompositeOperation = "copy";
     ctx.imageSmoothingEnabled = false;
     ctx.webkitImageSmoothingEnabled = false;
+    ctx.msImageSmoothingEnabled = false;
+    ctx.mozImageSmoothingEnabled = false;
 
     ctx.fillStyle = "#808080";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -203,26 +222,26 @@ const MoonMap = (() => {
 
     if (flipped) {
       ctx.scale(1, -1);
-      ctx.translate(0, -img.height);
+      ctx.translate(0, -off.height);
     }
 
-    ctx.drawImage(img, 0, 0);
+    ctx.drawImage(off, 0, 0);
     ctx.restore();
   }
 
   // --- RESET VIEW ---
   function resetView() {
-    if (!img.width || !img.height) return;
+    if (!off) return;
 
     const rect = canvas.getBoundingClientRect();
-    const sx = rect.width / img.width;
-    const sy = rect.height / img.height;
+    const sx = rect.width / off.width;
+    const sy = rect.height / off.height;
 
     scale = Math.min(sx, sy);
     scale = Math.min(Math.max(scale, minScale), maxScale);
 
-    offsetX = (rect.width - img.width * scale) / 2;
-    offsetY = (rect.height - img.height * scale) / 2;
+    offsetX = (rect.width - off.width * scale) / 2;
+    offsetY = (rect.height - off.height * scale) / 2;
 
     zoomSlider.value = String(scale);
     requestRender();
@@ -241,7 +260,7 @@ const MoonMap = (() => {
     }
   }
 
-  // --- ZOOM (Slider) ---
+  // --- ZOOM ---
   zoomSlider.addEventListener("input", () => {
     const newScale = parseFloat(zoomSlider.value);
     if (!isFinite(newScale)) return;
@@ -259,83 +278,94 @@ const MoonMap = (() => {
   });
 
   // --- PAN (mouse) ---
-let lastPan = 0;
-canvas.addEventListener("mousedown", () => {
-  dragging = true;
-  canvas.style.cursor = "grabbing";
-  document.body.style.userSelect = "none";
-});
+  let lastPan = 0;
+  canvas.addEventListener("mousedown", () => {
+    dragging = true;
+    canvas.style.cursor = "grabbing";
+    document.body.style.userSelect = "none";
+  });
 
-window.addEventListener("mouseup", () => {
-  dragging = false;
-  canvas.style.cursor = "grab";
-  document.body.style.userSelect = "";
-});
+  window.addEventListener("mouseup", () => {
+    dragging = false;
+    canvas.style.cursor = "grab";
+    document.body.style.userSelect = "";
+  });
 
-window.addEventListener("mousemove", (e) => {
-  if (!dragging) return;
-  const now = performance.now();
-  if (now - lastPan < 16) return;
-  lastPan = now;
+  window.addEventListener("mousemove", (e) => {
+    if (!dragging) return;
+    const now = performance.now();
+    if (now - lastPan < 24) return;
+    lastPan = now;
 
-  offsetX += e.movementX;
-  offsetY += e.movementY;
-  requestRender();
-});
+    offsetX += e.movementX;
+    offsetY += e.movementY;
+    requestRender();
+  });
 
-// --- TOUCH PAN (mobile) ---
-let lastTouchX = 0;
-let lastTouchY = 0;
-let touchDragging = false;
+  // --- TOUCH PAN ---
+  let lastTouchX = 0;
+  let lastTouchY = 0;
+  let touchDragging = false;
+  let touchQueued = false;
 
-canvas.addEventListener("touchstart", (e) => {
-  if (e.touches.length !== 1) return;
-  touchDragging = true;
+  canvas.addEventListener("touchstart", (e) => {
+    if (e.touches.length !== 1) return;
+    touchDragging = true;
 
-  const t = e.touches[0];
-  lastTouchX = t.clientX;
-  lastTouchY = t.clientY;
+    const t = e.touches[0];
+    lastTouchX = t.clientX;
+    lastTouchY = t.clientY;
 
-  canvas.style.cursor = "grabbing";
-  document.body.style.userSelect = "none";
-}, { passive: true });
+    canvas.style.cursor = "grabbing";
+    document.body.style.userSelect = "none";
+  }, { passive: true });
 
-canvas.addEventListener("touchmove", (e) => {
-  if (!touchDragging || e.touches.length !== 1) return;
+  canvas.addEventListener("touchmove", (e) => {
+    if (!touchDragging || e.touches.length !== 1) return;
 
-  const t = e.touches[0];
-  const dx = t.clientX - lastTouchX;
-  const dy = t.clientY - lastTouchY;
+    if (!touchQueued) {
+      touchQueued = true;
+      requestAnimationFrame(() => {
+        touchQueued = false;
 
-  lastTouchX = t.clientX;
-  lastTouchY = t.clientY;
+        const t = e.touches[0];
+        const dx = t.clientX - lastTouchX;
+        const dy = t.clientY - lastTouchY;
 
-  offsetX += dx;
-  offsetY += dy;
+        lastTouchX = t.clientX;
+        lastTouchY = t.clientY;
 
-  requestRender();
-}, { passive: true });
+        offsetX += dx;
+        offsetY += dy;
 
-canvas.addEventListener("touchend", () => {
-  touchDragging = false;
-  canvas.style.cursor = "grab";
-  document.body.style.userSelect = "";
-}, { passive: true });
+        requestRender();
+      });
+    }
+  }, { passive: true });
+
+  canvas.addEventListener("touchend", () => {
+    touchDragging = false;
+    canvas.style.cursor = "grab";
+    document.body.style.userSelect = "";
+  }, { passive: true });
 
   // --- OPEN / CLOSE ---
   function open() {
     overlay.style.display = "flex";
-    setTimeout(() => {
-      resizeCanvas();
-      resetView();
-    }, 30);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        resizeCanvas();
+        resetView();
+      });
+    });
   }
 
   function close() {
     overlay.style.display = "none";
   }
 
-  // --- FORCE HIGH RESOLUTION ---
+  // --- FORCE HIGH RES ---
   btnForceHighRes.addEventListener("click", () => {
     currentTier = "high";
     btnForceHighRes.style.display = "none";
@@ -346,6 +376,21 @@ canvas.addEventListener("touchend", () => {
   function init() {
     img.onload = () => {
       loaded = true;
+
+      // Offscreen canvas for GPU caching
+      off = document.createElement("canvas");
+      offCtx = off.getContext("2d", { alpha: false });
+
+      off.width = img.width;
+      off.height = img.height;
+
+      offCtx.drawImage(img, 0, 0);
+
+      // Free original image memory
+      img.src = "";
+      img.onload = null;
+      img.onerror = null;
+
       resizeCanvas();
       resetView();
       requestRender();
@@ -394,4 +439,5 @@ canvas.addEventListener("touchend", () => {
 
 // Initialize
 MoonMap.init();
+
 
