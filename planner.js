@@ -1873,7 +1873,7 @@ if (detailsDiv) {
   `;
 
 if (analyzeSpecialCoords(lat, lon)) {
-    detailsDiv.innerHTML += goldenRatioMessage();
+    detailsDiv.insertAdjacentHTML("beforeend", goldenRatioMessage());
   }
 }
   
