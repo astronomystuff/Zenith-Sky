@@ -32,11 +32,86 @@ const MoonMap = (() => {
   let needsRender = false;
   let flipped = false;
 
+  // Apollo Mode
+  let apolloMode = false;
+  let bHoldTimer = null;
+
   // Render dedupe
   let lastDrawOffsetX = 0;
   let lastDrawOffsetY = 0;
   let lastDrawScale = 0;
   let lastDrawFlip = false;
+  let lastDrawApollo = false;
+
+  // --- APOLLO PALETTE ---
+  function applyApolloPalette(ctx, w, h) {
+    const imgData = ctx.getImageData(0, 0, w, h);
+    const d = imgData.data;
+
+    for (let i = 0; i < d.length; i += 4) {
+      let r = d[i];
+      let g = d[i + 1];
+      let b = d[i + 2];
+
+      // Warm tint
+      r *= 1.08;
+      g *= 1.03;
+      b *= 0.92;
+
+      // Slight film fade
+      r = r * 0.92 + 12;
+      g = g * 0.92 + 10;
+      b = b * 0.92 + 8;
+
+      d[i] = Math.min(255, r);
+      d[i + 1] = Math.min(255, g);
+      d[i + 2] = Math.min(255, b);
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+  }
+
+  // --- TOAST ---
+  function showToast(msg) {
+    const t = document.createElement("div");
+    t.textContent = msg;
+    t.style.position = "absolute";
+    t.style.top = "10px";
+    t.style.left = "50%";
+    t.style.transform = "translateX(-50%)";
+    t.style.padding = "6px 12px";
+    t.style.background = "rgba(0,0,0,0.6)";
+    t.style.color = "white";
+    t.style.borderRadius = "6px";
+    t.style.fontSize = "12px";
+    t.style.opacity = "0";
+    t.style.transition = "opacity 0.4s ease";
+    modal.appendChild(t);
+
+    requestAnimationFrame(() => (t.style.opacity = "1"));
+    setTimeout(() => {
+      t.style.opacity = "0";
+      setTimeout(() => t.remove(), 400);
+    }, 1200);
+  }
+
+  // --- APOLLO MODE TRIGGER (Hold B for 2 seconds) ---
+  window.addEventListener("keydown", (e) => {
+    if (e.key.toLowerCase() === "b" && !bHoldTimer) {
+      bHoldTimer = setTimeout(() => {
+        apolloMode = !apolloMode;
+        showToast(apolloMode ? "Apollo Mode Enabled" : "Apollo Mode Disabled");
+        requestRender();
+      }, 2000);
+    }
+  });
+
+  window.addEventListener("keyup", (e) => {
+    if (e.key.toLowerCase() === "b") {
+      clearTimeout(bHoldTimer);
+      bHoldTimer = null;
+    }
+  });
 
   // --- LOAD LOW-RES IMAGE ONLY ---
   function loadImage() {
@@ -65,7 +140,8 @@ const MoonMap = (() => {
       offsetX === lastDrawOffsetX &&
       offsetY === lastDrawOffsetY &&
       scale === lastDrawScale &&
-      flipped === lastDrawFlip
+      flipped === lastDrawFlip &&
+      apolloMode === lastDrawApollo
     ) {
       return;
     }
@@ -74,12 +150,10 @@ const MoonMap = (() => {
     lastDrawOffsetY = offsetY;
     lastDrawScale = scale;
     lastDrawFlip = flipped;
+    lastDrawApollo = apolloMode;
 
     ctx.globalCompositeOperation = "copy";
     ctx.imageSmoothingEnabled = false;
-    ctx.webkitImageSmoothingEnabled = false;
-    ctx.msImageSmoothingEnabled = false;
-    ctx.mozImageSmoothingEnabled = false;
 
     ctx.fillStyle = "#808080";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -93,7 +167,14 @@ const MoonMap = (() => {
       ctx.translate(0, -img.height);
     }
 
-    ctx.drawImage(img, 0, 0);
+    // --- BORDER CROP (remove 1px border) ---
+    ctx.drawImage(img, 1, 1, img.width - 2, img.height - 2, 0, 0, img.width, img.height);
+
+    // --- APOLLO MODE ---
+    if (apolloMode) {
+      applyApolloPalette(ctx, canvas.width, canvas.height);
+    }
+
     ctx.restore();
   }
 
@@ -111,6 +192,9 @@ const MoonMap = (() => {
     offsetX = (rect.width - img.width * scale) / 2;
     offsetY = (rect.height - img.height * scale) / 2;
 
+    // --- VISUAL CENTERING FIX (shift down slightly) ---
+    offsetY += 12;
+
     zoomSlider.value = String(scale);
     requestRender();
   }
@@ -119,7 +203,7 @@ const MoonMap = (() => {
   function resizeCanvas() {
     const rect = modal.getBoundingClientRect();
     const newWidth = rect.width;
-    const newHeight = rect.height - 40; // header
+    const newHeight = rect.height - 40;
 
     if (canvas.width !== newWidth || canvas.height !== newHeight) {
       canvas.width = newWidth;
@@ -128,7 +212,7 @@ const MoonMap = (() => {
     }
   }
 
-  // --- ZOOM (slider) ---
+  // --- ZOOM ---
   zoomSlider.addEventListener("input", () => {
     const newScale = parseFloat(zoomSlider.value);
     if (!isFinite(newScale)) return;
@@ -246,12 +330,8 @@ const MoonMap = (() => {
   function init() {
     img.onload = async () => {
       try {
-        if (img.decode) {
-          await img.decode();
-        }
-      } catch {
-        // ignore decode quirks
-      }
+        if (img.decode) await img.decode();
+      } catch {}
 
       loaded = true;
       resizeCanvas();
