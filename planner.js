@@ -71,6 +71,20 @@ async function fetchAstroWeather(lat, lon, targetDate) {
   }
 }
 
+function analyzeSpecialCoords(lat, lon) {
+  const phi = 1.6180339887;
+  const epsilon = 0.0001;
+  return Math.abs(lat - phi) < epsilon && Math.abs(lon - phi) < epsilon;
+}
+
+function goldenRatioMessage() {
+  return `
+    <p style="margin-top:8px; font-style:italic; color:#404040;">
+      Golden Ratio detected – the cosmos aligns perfectly.
+    </p>
+  `;
+}
+
 function deg2rad(d) { return d * Math.PI / 180; }
 function rad2deg(r) { return r * 180 / Math.PI; }
 function toJulianDate(date) { return date.getTime() / 86400000 + 2440587.5; }
@@ -737,6 +751,7 @@ async function loadObjects() {
   const timeStr = document.getElementById("planner-time").value;
   const lat = parseFloat(document.getElementById("planner-lat").value);
   const lon = parseFloat(document.getElementById("planner-lon").value);
+
 
   if (!dateStr || !timeStr || isNaN(lat) || isNaN(lon)) {
     alert("Please enter date, time, latitude, and longitude.");
@@ -1856,8 +1871,12 @@ if (detailsDiv) {
     <p>Rise: ${moonRS.rise}</p>
     <p>Set: ${moonRS.set}</p>
   `;
-}
 
+if (analyzeSpecialCoords(lat, lon)) {
+    detailsDiv.innerHTML += goldenRatioMessage();
+  }
+}
+  
 drawOnScreenMap(lat, lon, dt);
 }
 
@@ -1967,6 +1986,11 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, w
     <p style="margin:4px 0; line-height:1.6;">Rise: ${moonRS.rise}</p>
     <p style="margin:4px 0; line-height:1.6;">Set: ${moonRS.set}</p>
   `;
+
+    if (analyzeSpecialCoords(lat, lon)) {
+    d.innerHTML += goldenRatioMessage();
+  }
+    
   return d;
 }
 
