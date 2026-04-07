@@ -11,7 +11,7 @@ The Software may only be used for non‑commercial purposes.<br>
 “Non‑commercial” means use that is not primarily intended for or directed toward<br>
 commercial advantage or monetary compensation.<br>
 <br>
-This includes a prohibition on use in:<br>
+This includes but not limited to a prohibition on use in:<br>
 - paid applications<br>
 - ad‑supported applications or websites<br>
 - subscription services<br>
@@ -44,7 +44,7 @@ All non‑code materials are licensed separately under a Creative Commons<br>
 Non‑Commercial license.<br>
 <br>
 ## 7. Commercial Licensing<br>
-For commercial use, contact the project maintainers.<br>
+For commercial use, contact the project maintainers for permission, if given.<br>
 <br>
 <br>
 # Asset License — CC BY‑NC 4.0<br>
@@ -52,7 +52,7 @@ For commercial use, contact the project maintainers.<br>
 All non‑code materials in this directory are licensed under the<br>
 Creative Commons Attribution–NonCommercial 4.0 International License.<br>
 <br>
-Commercial use is prohibited.<br>
+Commercial use is prohibited without given consent by the project maintainers.<br>
 <br>
 Full license text:<br>
 https://creativecommons.org/licenses/by-nc/4.0/<br>
