@@ -89,7 +89,9 @@ const MoonMap = (() => {
       bHoldTimer = setTimeout(() => {
         apolloMode = !apolloMode;
         showToast(apolloMode ? "Apollo Mode Enabled" : "Apollo Mode Disabled");
-        requestRender();
+        modal.style.background = apolloMode ? "#3f3b34" : "black";
+requestRender();
+
       }, 2000);
     }
   });
@@ -143,7 +145,7 @@ const MoonMap = (() => {
     ctx.globalCompositeOperation = "copy";
     ctx.imageSmoothingEnabled = false;
 
-    ctx.fillStyle = "#808080";
+    ctx.fillStyle = apolloMode ? "#787161" : "#808080";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.save();
