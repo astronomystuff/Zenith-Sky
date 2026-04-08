@@ -20,30 +20,22 @@ const MoonMap = (() => {
   // --- STATE ---
   const img = new Image();
   let loaded = false;
-
   let scale = 1;
   const minScale = 0.1;
   const maxScale = 25;
-
   let offsetX = 0;
   let offsetY = 0;
-
   let dragging = false;
   let needsRender = false;
   let flipped = false;
-
-  // Apollo Mode
   let apolloMode = false;
   let bHoldTimer = null;
-
-  // Render dedupe
   let lastDrawOffsetX = 0;
   let lastDrawOffsetY = 0;
   let lastDrawScale = 0;
   let lastDrawFlip = false;
   let lastDrawApollo = false;
 
-  // --- APOLLO PALETTE ---
   function applyApolloPalette(ctx, w, h) {
     const imgData = ctx.getImageData(0, 0, w, h);
     const d = imgData.data;
@@ -53,12 +45,10 @@ const MoonMap = (() => {
       let g = d[i + 1];
       let b = d[i + 2];
 
-      // Warm tint
       r *= 1.08;
       g *= 1.03;
       b *= 0.92;
 
-      // Slight film fade
       r = r * 0.92 + 12;
       g = g * 0.92 + 10;
       b = b * 0.92 + 8;
@@ -71,7 +61,6 @@ const MoonMap = (() => {
     ctx.putImageData(imgData, 0, 0);
   }
 
-  // --- TOAST ---
   function showToast(msg) {
     const t = document.createElement("div");
     t.textContent = msg;
@@ -95,7 +84,6 @@ const MoonMap = (() => {
     }, 1200);
   }
 
-  // --- APOLLO MODE TRIGGER (Hold B for 2 seconds) ---
   window.addEventListener("keydown", (e) => {
     if (e.key.toLowerCase() === "b" && !bHoldTimer) {
       bHoldTimer = setTimeout(() => {
@@ -167,10 +155,9 @@ const MoonMap = (() => {
       ctx.translate(0, -img.height);
     }
 
-    // --- BORDER CROP (remove 1px border) ---
+    // --- BORDER CROP ---
     ctx.drawImage(img, 1, 1, img.width - 2, img.height - 2, 0, 0, img.width, img.height);
 
-    // --- APOLLO MODE ---
     if (apolloMode) {
       applyApolloPalette(ctx, canvas.width, canvas.height);
     }
@@ -191,8 +178,6 @@ const MoonMap = (() => {
 
     offsetX = (rect.width - img.width * scale) / 2;
     offsetY = (rect.height - img.height * scale) / 2;
-
-    // --- VISUAL CENTERING FIX (shift down slightly) ---
     offsetY += 12;
 
     zoomSlider.value = String(scale);
