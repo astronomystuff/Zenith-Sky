@@ -1,7 +1,6 @@
-
-    /* -------------------------------------------------------
-    BUILD HOME UI
-    ------------------------------------------------------- */
+/* -------------------------------------------------------
+BUILD HOME UI
+------------------------------------------------------- */
 const root = document.getElementById("video-tool-root");
 
 root.innerHTML = `
@@ -379,7 +378,7 @@ function debounceAdjustments() {
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
     applyAdjustments();
-  }, 120); // delay in ms
+  }, 120);
 }
 
 function applyAdjustments() {
@@ -485,7 +484,26 @@ function nebulaStretch(ctx, w, h) {
 }
 
 /* -------------------------------------------------------
-   MAIN PROCESSING FUNCTION
+   MEDIAN FRAME (for chunked median stacking)
+------------------------------------------------------- */
+function medianFrame(frames, w, h) {
+  const count = frames.length;
+  const out = new Uint8ClampedArray(w * h * 4);
+
+  for (let i = 0; i < out.length; i++) {
+    const vals = new Array(count);
+    for (let f = 0; f < count; f++) {
+      vals[f] = frames[f][i];
+    }
+    vals.sort((a, b) => a - b);
+    out[i] = vals[Math.floor(count / 2)];
+  }
+
+  return out;
+}
+
+/* -------------------------------------------------------
+   MAIN PROCESSING FUNCTION (Median Stacking)
 ------------------------------------------------------- */
 async function processVideo(file) {
   if (!file) return;
@@ -517,37 +535,50 @@ async function processVideo(file) {
   canvas.height = h;
 
   const ctx = canvas.getContext("2d");
-  const accumulator = new Float32Array(w * h * 4);
 
   let interval;
   if (video.duration < 5) interval = 1 / 30;
   else if (video.duration < 15) interval = 0.1;
   else interval = 0.2;
 
-  const totalFrames = Math.max(1, Math.floor(video.duration / interval));
-  let frameIndex = 0;
+  const estimatedFrames = Math.max(1, Math.floor(video.duration / interval));
 
   status.textContent = "Extracting frames…";
 
+  const batchSize = 7; // tuned for Safari / memory
+  let batch = [];
+  let batchesUsed = 0;
+  let framesSeen = 0;
+
+  const accumulator = new Float32Array(w * h * 4);
+
   let nebulaDetected = false;
+  let firstFrameChecked = false;
 
   while (video.currentTime < video.duration) {
     ctx.drawImage(video, 0, 0, w, h);
-    const frame = ctx.getImageData(0, 0, w, h).data;
+    const frameData = ctx.getImageData(0, 0, w, h).data;
 
-    if (frameIndex === 0) {
-      nebulaDetected = detectNebula(frame, w, h);
+    if (!firstFrameChecked) {
+      nebulaDetected = detectNebula(frameData, w, h);
+      firstFrameChecked = true;
     }
 
-    for (let i = 0; i < frame.length; i++) {
-      accumulator[i] += frame[i];
-    }
+    batch.push(frameData);
+    framesSeen++;
 
-    frameIndex++;
+    if (batch.length === batchSize) {
+      const med = medianFrame(batch, w, h);
+      for (let i = 0; i < med.length; i++) {
+        accumulator[i] += med[i];
+      }
+      batchesUsed++;
+      batch = [];
+    }
 
     const percent = Math.min(
       100,
-      Math.floor((frameIndex / totalFrames) * 100)
+      Math.floor((framesSeen / estimatedFrames) * 100)
     );
     progressBar.style.width = percent + "%";
     progressPercent.textContent = percent + "%";
@@ -556,11 +587,20 @@ async function processVideo(file) {
     await new Promise((r) => setTimeout(r, 20));
   }
 
+  // Handle remaining frames in last partial batch
+  if (batch.length > 0) {
+    const med = medianFrame(batch, w, h);
+    for (let i = 0; i < med.length; i++) {
+      accumulator[i] += med[i];
+    }
+    batchesUsed++;
+  }
+
   status.textContent = "Stacking frames…";
 
   const output = ctx.createImageData(w, h);
   for (let i = 0; i < accumulator.length; i++) {
-    output.data[i] = accumulator[i] / frameIndex;
+    output.data[i] = accumulator[i] / batchesUsed;
   }
 
   ctx.putImageData(output, 0, 0);
@@ -591,7 +631,7 @@ async function processVideo(file) {
   downloadLink.textContent = "Download Stacked Image";
   downloadLink.style.display = "none";
 
-  status.textContent = `Done! Stacked ${frameIndex} frames.`;
+  status.textContent = `Done! Median-stacked ${framesSeen} frames in ${batchesUsed} batches.`;
   isProcessing = false;
 }
 
