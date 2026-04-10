@@ -18,6 +18,8 @@ This includes but not limited to a prohibition on use in:<br>
 - donation‑funded or patron‑funded projects<br>
 - commercial research or internal corporate tools<br>
 - monetized videos, tutorials, or educational content<br>
+- use by employees in the course of their employment, or on corporate infrastructure<br>
+- offering the Software as an SaaS or a cloud service <br>
 - any environment that generates revenue, directly or indirectly<br>
 <br>
 ## 2. Allowed Uses<br>
@@ -27,6 +29,7 @@ The following uses are permitted:<br>
 - non‑commercial research<br>
 - hobbyist and community projects<br>
 - open‑source forks that remain non‑commercial<br>
+- nonprofit organizations if part of the organization's core mission<br>
 <br>
 ## 3. Attribution<br>
 Attribution must be included in any permitted distribution:<br>
@@ -45,7 +48,15 @@ Non‑Commercial license.<br>
 <br>
 ## 7. Commercial Licensing<br>
 For commercial use, contact the project maintainers for permission, if given.<br>
+## 8. Forks<br>
+Forks are permitted, as long as they remain open-source and any modifications, adaptations, <br>
+or derivative works of the Software must be licensed<br>
+under this same ZSNCSL-1.1 license, and all restrictions in Section 1 continue to<br>
+apply to the derivative work.<br>
 <br>
+<br>
+<br>
+Any violation of this license results in immediate, automatic termination of rights to use the Software.<br>
 <br>
 # Asset License — CC BY‑NC 4.0<br>
 <br>
