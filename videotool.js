@@ -253,13 +253,11 @@ function updateHistogram(imageData) {
 }
 
 /* -------------------------------------------------------
-   SOFT BACKGROUND DENOISER (Option A)
+   SOFT BACKGROUND PULL-TO-BLACK
 ------------------------------------------------------- */
 function backgroundDenoise(imageData, strength) {
   if (strength <= 0) return imageData;
 
-  const w = imageData.width;
-  const h = imageData.height;
   const d = imageData.data;
 
   const targetBg = 0;
@@ -299,74 +297,83 @@ function backgroundDenoise(imageData, strength) {
 }
 
 /* -------------------------------------------------------
-   ADAPTIVE NEBULA SMOOTHER (Median-based)
+   NEBULA MASK (for targeted denoise)
 ------------------------------------------------------- */
-function medianNebulaSmooth(imageData, strength) {
-  if (strength <= 0) return imageData;
+function makeNebulaMask(imageData, width, height) {
+  const src = imageData.data;
+  const mask = new Uint8ClampedArray(src.length);
 
-  const w = imageData.width;
-  const h = imageData.height;
-  const d = imageData.data;
-
-  const out = new Uint8ClampedArray(d);
-
-  let radius = 1;
-  if (strength > 33 && strength <= 66) radius = 2;
-  if (strength > 66) radius = 3;
-
-  const mask = new Float32Array(w * h);
-  for (let i = 0; i < d.length; i += 4) {
-    const r = d[i];
-    const g = d[i + 1];
-    const b = d[i + 2];
-    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-
-    const m = Math.max(0, Math.min(1, (lum - 5) / 60));
-    mask[i / 4] = m;
+  for (let i = 0; i < src.length; i += 4) {
+    const lum = (0.299 * src[i] + 0.587 * src[i + 1] + 0.114 * src[i + 2]);
+    const m = lum > 10 ? 255 : 0;
+    mask[i] = mask[i + 1] = mask[i + 2] = m;
+    mask[i + 3] = 255;
   }
 
-  const window = [];
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const idx = (y * w + x) * 4;
-      const m = mask[y * w + x];
-      if (m <= 0.05) continue;
+  return mask;
+}
 
-      window.length = 0;
+/* -------------------------------------------------------
+   ADAPTIVE MEDIAN NEBULA DENOISE (M3)
+------------------------------------------------------- */
+function adaptiveMedianDenoise(imageData, width, height, nebulaMask, strength) {
+  if (strength <= 0) return imageData;
 
-      for (let dy = -radius; dy <= radius; dy++) {
-        for (let dx = -radius; dx <= radius; dx++) {
-          const xx = x + dx;
-          const yy = y + dy;
-          if (xx < 0 || xx >= w || yy < 0 || yy >= h) continue;
+  const src = imageData.data;
+  const out = new Uint8ClampedArray(src.length);
 
-          const ii = (yy * w + xx) * 4;
-          const lum =
-            0.299 * d[ii] +
-            0.587 * d[ii + 1] +
-            0.114 * d[ii + 2];
-          window.push(lum);
+  const idx = (x, y) => (y * width + x) * 4;
+
+  const median = arr => {
+    const s = arr.slice().sort((a, b) => a - b);
+    return s[Math.floor(s.length / 2)];
+  };
+
+  const mix = strength / 100;
+
+  for (let y = 1; y < height - 1; y++) {
+    for (let x = 1; x < width - 1; x++) {
+
+      const i = idx(x, y);
+
+      // Stars + background untouched
+      if (nebulaMask[i] < 128) {
+        out[i]     = src[i];
+        out[i + 1] = src[i + 1];
+        out[i + 2] = src[i + 2];
+        out[i + 3] = 255;
+        continue;
+      }
+
+      const brightness = (src[i] + src[i + 1] + src[i + 2]) / 3;
+      const kernel = brightness > 80 ? 1 : 2; // 3×3 or 5×5
+
+      const rVals = [];
+      const gVals = [];
+      const bVals = [];
+
+      for (let ky = -kernel; ky <= kernel; ky++) {
+        for (let kx = -kernel; kx <= kernel; kx++) {
+          const ii = idx(x + kx, y + ky);
+          rVals.push(src[ii]);
+          gVals.push(src[ii + 1]);
+          bVals.push(src[ii + 2]);
         }
       }
 
-      window.sort((a, b) => a - b);
-      const med = window[Math.floor(window.length / 2)];
+      const rMed = median(rVals);
+      const gMed = median(gVals);
+      const bMed = median(bVals);
 
-      const r = d[idx];
-      const g = d[idx + 1];
-      const b = d[idx + 2];
-      const oldLum =
-        0.299 * r + 0.587 * g + 0.114 * b || 1;
-
-      const scale = med / oldLum;
-
-      out[idx]     = Math.max(0, Math.min(255, r * scale));
-      out[idx + 1] = Math.max(0, Math.min(255, g * scale));
-      out[idx + 2] = Math.max(0, Math.min(255, b * scale));
+      // Blend original with median based on strength
+      out[i]     = src[i]     + (rMed - src[i])     * mix;
+      out[i + 1] = src[i + 1] + (gMed - src[i + 1]) * mix;
+      out[i + 2] = src[i + 2] + (bMed - src[i + 2]) * mix;
+      out[i + 3] = 255;
     }
   }
 
-  return new ImageData(out, w, h);
+  return new ImageData(out, width, height);
 }
 
 /* -------------------------------------------------------
@@ -425,8 +432,14 @@ function applyAdjustments() {
     d[i + 2] = Math.max(0, Math.min(255, b));
   }
 
-  let denoised = backgroundDenoise(img, denoiseStrength);
-  denoised = medianNebulaSmooth(denoised, denoiseStrength);
+  // 1) Pull background toward black
+  let bgCrushed = backgroundDenoise(img, denoiseStrength);
+
+  // 2) Build nebula mask from the crushed image
+  const nebulaMask = makeNebulaMask(bgCrushed, w, h);
+
+  // 3) Adaptive median denoise only in nebula regions
+  const denoised = adaptiveMedianDenoise(bgCrushed, w, h, nebulaMask, denoiseStrength);
 
   resultCtx.putImageData(denoised, 0, 0);
   updateHistogram(denoised);
