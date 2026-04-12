@@ -295,8 +295,8 @@ button:active,
 /* MODAL PANEL */
 
 #result-modal {
-  width: 100%;
-  max-width: min(95vw, 1400px);
+  width: auto;
+  max-width: 95vw;
   height: 85vh;
   background: rgba(15, 15, 20, 0.85);
   border-radius: 28px 28px 0 0;
