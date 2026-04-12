@@ -296,7 +296,7 @@ button:active,
 
 #result-modal {
   width: 100%;
-  max-width: 900px;
+  max-width: min(95vw, 1400px);
   height: 85vh;
   background: rgba(15, 15, 20, 0.85);
   border-radius: 28px 28px 0 0;
