@@ -351,6 +351,13 @@ button:active,
   padding: 10px 0;
 }
 
+#result-image-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 /* CONTROLS AREA */
 
 #result-controls {
