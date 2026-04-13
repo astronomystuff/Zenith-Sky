@@ -497,7 +497,7 @@ th, td {
   width: 100vw !important;
   height: 100vh !important;
   background: rgba(0,0,0,0.5) !important;
-  display: flex !important;
+  display: none !important;
   justify-content: center !important;
   align-items: center !important;
   z-index: 9999 !important;
