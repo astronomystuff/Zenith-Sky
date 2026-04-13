@@ -59,11 +59,11 @@ apply to the derivative work.<br>
 <br>
 <br>
 Permission terminates automatically if the project becomes monetized, forcing the <br>
-entity to immediately cease use or obtain a commercial license.
+entity to immediately cease use or obtain a commercial license.<br>
 <br>
 Any breach of this License by the Licensee will result in automatic and immediate termination of all rights granted under this License<br>
 Violation of this license constitutes copyright infringement <br>
-Upon termination, you must cease all use and destroy all copies of the Software
+Upon termination, you must cease all use and destroy all copies of the Software <br>
 <br>
 # Asset License — CC BY‑NC 4.0<br>
 <br>
