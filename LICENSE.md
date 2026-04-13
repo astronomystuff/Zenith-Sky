@@ -8,10 +8,10 @@ software (the “Software”), subject to the following conditions:<br>
 ## 1. Non‑Commercial Use<br>
 The Software may only be used for non‑commercial purposes.<br>
 <br>
-Any use by a for-profit entity, or any use that generates direct or indirect cost savings <br>
-or efficiency gains for a commercial entity, is considered commercial use<br>
+Any use by a for-profit entity, or any use that generates direct or indirect cost savings, <br>
+efficiency gains, or competitive advantage for a commercial entity, is considered commercial use.<br>
 <br>
-This includes but not limited to a prohibition on use in:<br>
+This includes, but is not limited to, use in:<br>
 - paid applications<br>
 - ad‑supported applications or websites<br>
 - subscription services<br>
@@ -62,8 +62,11 @@ Permission terminates automatically if the project becomes monetized, forcing th
 entity to immediately cease use or obtain a commercial license.<br>
 <br>
 Any breach of this License by the Licensee will result in automatic and immediate termination of all rights granted under this License<br>
+<br>
 Violation of this license constitutes copyright infringement <br>
+<br>
 Upon termination, you must cease all use and destroy all copies of the Software <br>
+<br>
 <br>
 # Asset License — CC BY‑NC 4.0<br>
 <br>
