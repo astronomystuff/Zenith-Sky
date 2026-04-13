@@ -970,7 +970,7 @@ function computeEphemerisForNight(lat, lon, dt, target) {
 // ------------------------------------------------------------
 // STAR MAP
 // ------------------------------------------------------------
-function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date) {
+function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date, printMode = false) {
   if (!canvas) return;
 
   // Clamp latitude at poles
@@ -1207,7 +1207,12 @@ const moon = computeMoon(date, latDeg, lonDeg);
   });
   
 // --- Stars & Planets ---
-const scale = canvas.width / 1050; // 1050px = 3.5 inches @ 300 DPI
+let scale;
+if (printMode) {
+  scale = 2.5;
+} else {
+  scale = canvas.width / 1050;
+}
 
 projectedStars.forEach((s) => {
   if (s.altDeg <= 0) return;
@@ -1217,7 +1222,7 @@ const lonRad = deg2rad(lonDeg);
   
 // --- MOON ---
 if (s.isMoon) {
-  const R = 8 * scale;
+  const R = printMode ? 20 : 8 * scale;
 
   const sunPos = computeSun(date, latDeg, lonDeg);
   const sunRaRad = deg2rad(sunPos.raHours * 15);
@@ -1273,8 +1278,14 @@ if (s.isMoon) {
   if (s.isPlanet) {
     ctx.fillStyle = "#000000";
 
-    const planetPx = (12 - s.mag * 0.8) * scale;
-    const finalSize = Math.max(8 * scale, planetPx);
+    let finalSize;
+     if (printMode) {
+       finalSize = 14; // fixed, readable
+     } else {
+       const planetPx = (12 - s.mag * 0.8) * scale;
+       finalSize = Math.max(8 * scale, planetPx);
+     }
+
 
     ctx.font = finalSize + "px serif";
     ctx.textAlign = "center";
@@ -1283,9 +1294,19 @@ if (s.isMoon) {
     return;
   }
 
-  // STARS
+// STARS
+let size;
+if (printMode) {
+  if (s.mag <= 1) size = 8;
+  else if (s.mag <= 2) size = 6;
+  else if (s.mag <= 3) size = 5;
+  else if (s.mag <= 4) size = 4;
+  else size = 3;
+} else {
   const starPx = (2.2 - s.mag * 0.25) * scale;
-  const size = Math.max(0.4 * scale, starPx);
+  size = Math.max(0.4 * scale, starPx);
+}
+
 
   ctx.fillStyle = "#000000";
   ctx.beginPath();
@@ -1917,7 +1938,7 @@ function renderMapImageForPrint(lat, lon, dt) {
   off.width = px;
   off.height = px;
 
-  drawAzimuthalStarMap(off, lat, lon, dt);
+  drawAzimuthalStarMap(off, lat, lon, dt, true);
 
   const img = document.createElement("img");
   img.src = off.toDataURL("image/png");
