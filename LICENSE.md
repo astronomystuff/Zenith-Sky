@@ -27,7 +27,7 @@ make the source code of their modifications available to the user under this sam
 ## 2. Allowed Uses<br>
 The following uses are permitted:<br>
 - personal use<br>
-- educational use (non‑funded)<br>
+- for use by students or instructors within an accredited academic institution for classroom purposes only <br>
 - non‑commercial research<br>
 - hobbyist and community projects<br>
 - open‑source forks that remain non‑commercial<br>
