@@ -970,7 +970,8 @@ function computeEphemerisForNight(lat, lon, dt, target) {
 // ------------------------------------------------------------
 // STAR MAP
 // ------------------------------------------------------------
-function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date, printMode = false) {
+function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date, printMode) {
+  if (printMode === undefined) printMode = false;
   if (!canvas) return;
 
   // Clamp latitude at poles
