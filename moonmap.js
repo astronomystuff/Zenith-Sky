@@ -1,21 +1,12 @@
 const MoonMap = (() => {
   // --- CONFIG ---
-  const LOW_RES_TXT = "moonmap_lowres.txt"; // base64 text file
+  const LOW_RES_TXT = "moonmap_lowres.txt";
   const HIGH_RES_SRC =
     "https://github.com/astronomystuff/Zenith-Sky/releases/download/moonmap-v1/moonmap.png";
 
-  // --- DOM ---
-  const overlay = document.getElementById("moonmap-modal-overlay");
-  const modal = document.getElementById("moonmap-modal");
-  const canvas = document.getElementById("moonCanvas");
-  const ctx = canvas.getContext("2d", { alpha: false });
-
-  const btnOpen = document.getElementById("moonmap-open");
-  const btnClose = document.getElementById("moonmap-close");
-  const btnReset = document.getElementById("moonmap-reset");
-  const btnFlip = document.getElementById("moonmap-flip");
-  const btnDownloadHighRes = document.getElementById("moonmap-download-highres");
-  const zoomSlider = document.getElementById("moonmap-zoom-slider");
+  // --- DOM (lazy-loaded in init) ---
+  let overlay, modal, canvas, ctx;
+  let btnOpen, btnClose, btnReset, btnFlip, btnDownloadHighRes, zoomSlider;
 
   // --- STATE ---
   const img = new Image();
@@ -36,6 +27,9 @@ const MoonMap = (() => {
   let lastDrawFlip = false;
   let lastDrawApollo = false;
 
+  // ------------------------------------------------------------
+  // APOLLO PALETTE
+  // ------------------------------------------------------------
   function applyApolloPalette(ctx, w, h) {
     const imgData = ctx.getImageData(0, 0, w, h);
     const d = imgData.data;
@@ -61,6 +55,9 @@ const MoonMap = (() => {
     ctx.putImageData(imgData, 0, 0);
   }
 
+  // ------------------------------------------------------------
+  // TOAST
+  // ------------------------------------------------------------
   function showToast(msg) {
     const t = document.createElement("div");
     t.textContent = msg;
@@ -84,14 +81,16 @@ const MoonMap = (() => {
     }, 1200);
   }
 
+  // ------------------------------------------------------------
+  // APOLLO MODE KEYBIND
+  // ------------------------------------------------------------
   window.addEventListener("keydown", (e) => {
     if (e.key.toLowerCase() === "b" && !bHoldTimer) {
       bHoldTimer = setTimeout(() => {
         apolloMode = !apolloMode;
         showToast(apolloMode ? "Apollo Mode Enabled" : "Apollo Mode Disabled");
         modal.style.background = apolloMode ? "#3f3b34" : "black";
-requestRender();
-
+        requestRender();
       }, 2000);
     }
   });
@@ -103,7 +102,9 @@ requestRender();
     }
   });
 
-  // --- LOAD LOW-RES IMAGE ONLY ---
+  // ------------------------------------------------------------
+  // LOAD LOW-RES IMAGE
+  // ------------------------------------------------------------
   function loadImage() {
     fetch(LOW_RES_TXT)
       .then(r => r.text())
@@ -112,7 +113,9 @@ requestRender();
       });
   }
 
-  // --- RENDER LOOP ---
+  // ------------------------------------------------------------
+  // RENDER LOOP
+  // ------------------------------------------------------------
   function requestRender() {
     if (needsRender) return;
     needsRender = true;
@@ -122,7 +125,9 @@ requestRender();
     });
   }
 
-  // --- DRAW ---
+  // ------------------------------------------------------------
+  // DRAW
+  // ------------------------------------------------------------
   function draw() {
     if (!loaded) return;
 
@@ -157,7 +162,6 @@ requestRender();
       ctx.translate(0, -img.height);
     }
 
-    // --- BORDER CROP ---
     ctx.drawImage(img, 1, 1, img.width - 2, img.height - 2, 0, 0, img.width, img.height);
 
     if (apolloMode) {
@@ -167,7 +171,9 @@ requestRender();
     ctx.restore();
   }
 
-  // --- RESET VIEW ---
+  // ------------------------------------------------------------
+  // RESET VIEW
+  // ------------------------------------------------------------
   function resetView() {
     if (!loaded) return;
 
@@ -186,7 +192,9 @@ requestRender();
     requestRender();
   }
 
-  // --- RESIZE CANVAS ---
+  // ------------------------------------------------------------
+  // RESIZE CANVAS
+  // ------------------------------------------------------------
   function resizeCanvas() {
     const rect = modal.getBoundingClientRect();
     const newWidth = rect.width;
@@ -199,100 +207,9 @@ requestRender();
     }
   }
 
-  // --- ZOOM ---
-  zoomSlider.addEventListener("input", () => {
-    const newScale = parseFloat(zoomSlider.value);
-    if (!isFinite(newScale)) return;
-
-    const clamped = Math.min(Math.max(newScale, minScale), maxScale);
-    if (Math.abs(clamped - scale) < 0.0001) return;
-
-    const cx = canvas.width / 2;
-    const cy = canvas.height / 2;
-
-    offsetX = cx - (cx - offsetX) * (clamped / scale);
-    offsetY = cy - (cy - offsetY) * (clamped / scale);
-
-    scale = clamped;
-    requestRender();
-  });
-
-  // --- PAN (mouse) ---
-  let lastPan = 0;
-  canvas.addEventListener("mousedown", () => {
-    dragging = true;
-    canvas.style.cursor = "grabbing";
-    document.body.style.userSelect = "none";
-  });
-
-  window.addEventListener("mouseup", () => {
-    dragging = false;
-    canvas.style.cursor = "grab";
-    document.body.style.userSelect = "";
-  });
-
-  window.addEventListener("mousemove", (e) => {
-    if (!dragging) return;
-    const now = performance.now();
-    if (now - lastPan < 24) return;
-    lastPan = now;
-
-    offsetX += e.movementX;
-    offsetY += e.movementY;
-    requestRender();
-  });
-
-  // --- PAN (touch) ---
-  let lastTouchX = 0;
-  let lastTouchY = 0;
-  let touchDragging = false;
-  let touchQueued = false;
-
-  canvas.addEventListener("touchstart", (e) => {
-    if (e.touches.length !== 1) return;
-    touchDragging = true;
-
-    const t = e.touches[0];
-    lastTouchX = t.clientX;
-    lastTouchY = t.clientY;
-
-    canvas.style.cursor = "grabbing";
-    document.body.style.userSelect = "none";
-  }, { passive: true });
-
-  canvas.addEventListener("touchmove", (e) => {
-    if (!touchDragging || e.touches.length !== 1) return;
-
-    if (!touchQueued) {
-      touchQueued = true;
-      const t0 = e.touches[0];
-      const startX = t0.clientX;
-      const startY = t0.clientY;
-
-      requestAnimationFrame(() => {
-        touchQueued = false;
-
-        const dx = startX - lastTouchX;
-        const dy = startY - lastTouchY;
-
-        lastTouchX = startX;
-        lastTouchY = startY;
-
-        offsetX += dx;
-        offsetY += dy;
-
-        requestRender();
-      });
-    }
-  }, { passive: true });
-
-  canvas.addEventListener("touchend", () => {
-    touchDragging = false;
-    canvas.style.cursor = "grab";
-    document.body.style.userSelect = "";
-  }, { passive: true });
-
-  // --- OPEN / CLOSE ---
+  // ------------------------------------------------------------
+  // OPEN / CLOSE
+  // ------------------------------------------------------------
   function open() {
     overlay.style.display = "flex";
 
@@ -308,18 +225,30 @@ requestRender();
     overlay.style.display = "none";
   }
 
-  // --- DOWNLOAD HIGH-RES ---
-  btnDownloadHighRes.addEventListener("click", () => {
-    window.open(HIGH_RES_SRC, "_blank", "noopener");
-  });
-
-  // --- INIT ---
+  // ------------------------------------------------------------
+  // INIT (DOM SAFE)
+  // ------------------------------------------------------------
   function init() {
+    // DOM LOOKUPS NOW SAFE
+    overlay = document.getElementById("moonmap-modal-overlay");
+    modal   = document.getElementById("moonmap-modal");
+    canvas  = document.getElementById("moonCanvas");
+    ctx     = canvas.getContext("2d", { alpha: false });
+
+    btnOpen  = document.getElementById("moonmap-open");
+    btnClose = document.getElementById("moonmap-close");
+    btnReset = document.getElementById("moonmap-reset");
+    btnFlip  = document.getElementById("moonmap-flip");
+    btnDownloadHighRes = document.getElementById("moonmap-download-highres");
+    zoomSlider = document.getElementById("moonmap-zoom-slider");
+
+    // ALWAYS START CLOSED
+    overlay.style.display = "none";
+
     img.onload = async () => {
       try {
         if (img.decode) await img.decode();
       } catch {}
-
       loaded = true;
       resizeCanvas();
       resetView();
@@ -328,6 +257,7 @@ requestRender();
 
     loadImage();
 
+    // BUTTONS
     btnOpen.addEventListener("click", open);
     btnClose.addEventListener("click", close);
     btnReset.addEventListener("click", resetView);
@@ -336,10 +266,111 @@ requestRender();
       flipped = !flipped;
       requestRender();
     });
+
+    btnDownloadHighRes.addEventListener("click", () => {
+      window.open(HIGH_RES_SRC, "_blank", "noopener");
+    });
+
+    // ZOOM
+    zoomSlider.addEventListener("input", () => {
+      const newScale = parseFloat(zoomSlider.value);
+      if (!isFinite(newScale)) return;
+
+      const clamped = Math.min(Math.max(newScale, minScale), maxScale);
+      if (Math.abs(clamped - scale) < 0.0001) return;
+
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+
+      offsetX = cx - (cx - offsetX) * (clamped / scale);
+      offsetY = cy - (cy - offsetY) * (clamped / scale);
+
+      scale = clamped;
+      requestRender();
+    });
+
+    // PAN (mouse)
+    let lastPan = 0;
+    canvas.addEventListener("mousedown", () => {
+      dragging = true;
+      canvas.style.cursor = "grabbing";
+      document.body.style.userSelect = "none";
+    });
+
+    window.addEventListener("mouseup", () => {
+      dragging = false;
+      canvas.style.cursor = "grab";
+      document.body.style.userSelect = "";
+    });
+
+    window.addEventListener("mousemove", (e) => {
+      if (!dragging) return;
+      const now = performance.now();
+      if (now - lastPan < 24) return;
+      lastPan = now;
+
+      offsetX += e.movementX;
+      offsetY += e.movementY;
+      requestRender();
+    });
+
+    // PAN (touch)
+    let lastTouchX = 0;
+    let lastTouchY = 0;
+    let touchDragging = false;
+    let touchQueued = false;
+
+    canvas.addEventListener("touchstart", (e) => {
+      if (e.touches.length !== 1) return;
+      touchDragging = true;
+
+      const t = e.touches[0];
+      lastTouchX = t.clientX;
+      lastTouchY = t.clientY;
+
+      canvas.style.cursor = "grabbing";
+      document.body.style.userSelect = "none";
+    }, { passive: true });
+
+    canvas.addEventListener("touchmove", (e) => {
+      if (!touchDragging || e.touches.length !== 1) return;
+
+      if (!touchQueued) {
+        touchQueued = true;
+        const t0 = e.touches[0];
+        const startX = t0.clientX;
+        const startY = t0.clientY;
+
+        requestAnimationFrame(() => {
+          touchQueued = false;
+
+          const dx = startX - lastTouchX;
+          const dy = startY - lastTouchY;
+
+          lastTouchX = startX;
+          lastTouchY = startY;
+
+          offsetX += dx;
+          offsetY += dy;
+
+          requestRender();
+        });
+      }
+    }, { passive: true });
+
+    canvas.addEventListener("touchend", () => {
+      touchDragging = false;
+      canvas.style.cursor = "grab";
+      document.body.style.userSelect = "";
+    }, { passive: true });
   }
 
   return { init, open, close, resetView };
 })();
 
-// Initialize
-MoonMap.init();
+// ------------------------------------------------------------
+// SAFE INITIALIZATION
+// ------------------------------------------------------------
+document.addEventListener("DOMContentLoaded", () => {
+  MoonMap.init();
+});
