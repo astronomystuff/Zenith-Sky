@@ -473,15 +473,30 @@ style.textContent = `
     display: block;
   }
 
+.planner-pdf-map {
+  width: 3.5in !important;
+  height: 3.5in !important;
+  max-width: none !important;
+  max-height: none !important;
+  display: block;
+}
+
 .planner-pdf-details > h3 {
   font-size: 12pt !important;
   line-height: 1.1;
   margin: 0 0 4px 0;
 }
 
-body {
-  margin-left: 12px; 
+.planner-pdf-left {
+  width: 3.5in;
+  min-width: 3.5in;
 }
+
+body {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
 `;
 win.document.head.appendChild(style);
 
