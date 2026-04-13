@@ -20,8 +20,8 @@ This includes, but is not limited to, use in:<br>
 - monetized videos, tutorials, or educational content<br>
 - for internal productivity tools, administrative tasks, or workflow automation in a <br>
 for-profit environment<br>
-- if the Software is modified or used to provide a service that users interact <br>
-with over a network (including but not limited to SaaS, cloud services, or web APIs)<br>
+- If the Software is used to provide a service over a network, the entity providing the service must<br>
+make the source code of their modifications available to the user under this same license<br>
 - any environment that generates revenue, directly or indirectly<br>
 <br>
 ## 2. Allowed Uses<br>
@@ -49,7 +49,8 @@ All non‑code materials are licensed separately under a Creative Commons<br>
 Non‑Commercial license.<br>
 <br>
 ## 7. Commercial Licensing<br>
-For commercial use, contact the project maintainers for permission, if given.<br>
+For any commercial use defined above, contact the project maintainers before such <br>
+use begins. Continued use without a license is a breach of copyright<br>
 <br>
 ## 8. Forks<br>
 Forks are permitted, as long as they remain open-source and any modifications, <br>
