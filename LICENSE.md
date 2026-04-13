@@ -8,8 +8,8 @@ software (the “Software”), subject to the following conditions:<br>
 ## 1. Non‑Commercial Use<br>
 The Software may only be used for non‑commercial purposes.<br>
 <br>
-“Non‑commercial” means use that is not primarily intended for or directed toward<br>
-commercial advantage or monetary compensation.<br>
+Any use by a for-profit entity, or any use that generates direct or indirect cost savings <br>
+or efficiency gains for a commercial entity, is considered commercial use<br>
 <br>
 This includes but not limited to a prohibition on use in:<br>
 - paid applications<br>
@@ -18,9 +18,10 @@ This includes but not limited to a prohibition on use in:<br>
 - donation‑funded or patron‑funded projects<br>
 - commercial research or internal corporate tools<br>
 - monetized videos, tutorials, or educational content<br>
-- use by employees in the course of their employment or on corporate infrastructure<br>
-- if the Software is modified or used to provide a service that users interact with over a <br>
-network (including but not limited to SaaS, cloud services, or web APIs)<br>
+- for internal productivity tools, administrative tasks, or workflow automation in a <br>
+for-profit environment<br>
+- if the Software is modified or used to provide a service that users interact <br>
+with over a network (including but not limited to SaaS, cloud services, or web APIs)<br>
 - any environment that generates revenue, directly or indirectly<br>
 <br>
 ## 2. Allowed Uses<br>
@@ -57,8 +58,12 @@ under this same ZSNCSL-1.1 license, and all restrictions in Section 1 continue t
 apply to the derivative work.<br>
 <br>
 <br>
+Permission terminates automatically if the project becomes monetized, forcing the <br>
+entity to immediately cease use or obtain a commercial license.
 <br>
-Any violation of this license results in immediate, automatic termination of rights to use the Software.<br>
+Any breach of this License by the Licensee will result in automatic and immediate termination of all rights granted under this License<br>
+Violation of this license constitutes copyright infringement <br>
+Upon termination, you must cease all use and destroy all copies of the Software
 <br>
 # Asset License — CC BY‑NC 4.0<br>
 <br>
