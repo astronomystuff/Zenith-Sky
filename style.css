@@ -469,12 +469,12 @@ th, td {
 }
 
 .planner-pdf-map {
+  aspect-ratio: 1 / 1 !important;
   width: 3.5in !important;
-  height: 3.5in !important;
-  max-width: none !important;
-  max-height: none !important;
+  height: auto !important;
   object-fit: contain !important;
   display: block;
+  flex-shrink: 0 !important;
 }
 
 #planner-map-canvas,
