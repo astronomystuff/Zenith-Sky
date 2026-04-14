@@ -468,13 +468,22 @@ th, td {
   text-align: left;
 }
 
-/* STAR MAP — FIXED SIZE, NO SHRINKING */
 .planner-pdf-map {
   width: 3.5in !important;
   height: 3.5in !important;
   max-width: none !important;
   max-height: none !important;
   object-fit: contain !important;
+  display: block;
+}
+
+#planner-map-canvas,
+.planner-pdf-map {
+  aspect-ratio: 1 / 1 !important;
+  width: 3.5in !important;
+  height: auto !important;
+  max-width: none !important;
+  max-height: none !important;
   display: block;
 }
 
