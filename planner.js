@@ -994,6 +994,7 @@ canvas.height = Math.round(cssSize * dpr);
 const ctx = canvas.getContext("2d");
 ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 const size = cssSize;
+const scale = size / 1050;
 const w = size;
 const h = size;
 const cx = w / 2;
@@ -1215,13 +1216,6 @@ const moon = computeMoon(date, latDeg, lonDeg);
   });
   
 // --- Stars & Planets ---
-let scale;
-if (printMode) {
-  scale = 2.5;
-} else {
-  scale = canvas.width / 1050;
-}
-
 projectedStars.forEach((s) => {
   if (s.altDeg <= 0) return;
 
@@ -1302,7 +1296,7 @@ if (s.isMoon) {
     return;
   }
 
-// STARS
+// --- STARS ---
 let size;
 if (printMode) {
   if (s.mag <= 1) size = 8;
