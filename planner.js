@@ -994,7 +994,7 @@ canvas.height = Math.round(cssSize * dpr);
 const ctx = canvas.getContext("2d");
 ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 const size = cssSize;
-const scale = size / 1050;
+const scale = radius / 525;
 const w = size;
 const h = size;
 const cx = w / 2;
