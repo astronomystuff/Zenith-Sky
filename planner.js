@@ -980,6 +980,7 @@ function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date, printMode) {
 
 const dpr = window.devicePixelRatio || 1;
 let cssSize;
+
 if (printMode) {
   cssSize = 336;
 } else {
@@ -988,19 +989,19 @@ if (printMode) {
   const hBox = rect.height || canvas.clientHeight || wBox;
   cssSize = Math.min(wBox, hBox);
 }
-
 canvas.width  = Math.round(cssSize * dpr);
 canvas.height = Math.round(cssSize * dpr);
 const ctx = canvas.getContext("2d");
-ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+if (printMode) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+} else {
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
 const size = cssSize;
-const w = size;
-const h = size;
-const cx = w / 2;
-const cy = h / 2;
 const padding = 40;
 const radius = size / 2 - padding;
 const scale = Math.pow(radius / 525, 1.25);
+
 
   // Background
   ctx.fillStyle = "#ffffff";
