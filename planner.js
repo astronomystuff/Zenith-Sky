@@ -1000,6 +1000,8 @@ if (printMode) {
 const size = cssSize;
 const w = size;
 const h = size;
+const cx = w / 2;
+const cy = h / 2;
 const padding = 40;
 const radius = size / 2 - padding;
 const scale = Math.pow(radius / 525, 1.25);
