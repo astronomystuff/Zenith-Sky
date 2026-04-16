@@ -998,6 +998,8 @@ if (printMode) {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 const size = cssSize;
+const w = size;
+const h = size;
 const padding = 40;
 const radius = size / 2 - padding;
 const scale = Math.pow(radius / 525, 1.25);
