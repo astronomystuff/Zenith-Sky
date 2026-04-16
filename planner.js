@@ -1000,7 +1000,7 @@ const cx = w / 2;
 const cy = h / 2;
 const padding = 40;
 const radius = size / 2 - padding;
-const scale = radius / 525;
+const scale = size / 336;
 
   // Background
   ctx.fillStyle = "#ffffff";
