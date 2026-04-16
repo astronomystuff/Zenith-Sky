@@ -1932,7 +1932,8 @@ function drawOnScreenMap(lat, lon, dt) {
   const cssW = Math.max(200, Math.floor(rect.width));
   const cssH = Math.max(200, Math.floor(rect.height));
 
-  prepareCanvasForDrawing(canvas, cssW, cssH);
+  const cssSize = Math.min(cssW, cssH);
+  prepareCanvasForDrawing(canvas, cssSize, cssSize);
 
   drawAzimuthalStarMap(canvas, lat, lon, dt);
 }
