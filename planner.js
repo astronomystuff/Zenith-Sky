@@ -978,19 +978,21 @@ function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date, printMode) {
   if (latDeg > 89.9) latDeg = 89.9;
   if (latDeg < -89.9) latDeg = -89.9;
 
-  const dpr = window.devicePixelRatio || 1;
-const rect = canvas.getBoundingClientRect();
-let cssSize = Math.min(rect.width || 400, rect.height || rect.width || 400);
-
+const dpr = window.devicePixelRatio || 1;
+let cssSize;
 if (printMode) {
   cssSize = 336;
+} else {
+  const rect = canvas.getBoundingClientRect();
+  const wBox = rect.width  || canvas.clientWidth  || 400;
+  const hBox = rect.height || canvas.clientHeight || wBox;
+  cssSize = Math.min(wBox, hBox);
 }
 
 canvas.width  = Math.round(cssSize * dpr);
 canvas.height = Math.round(cssSize * dpr);
 const ctx = canvas.getContext("2d");
 ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
 const size = cssSize;
 const w = size;
 const h = size;
