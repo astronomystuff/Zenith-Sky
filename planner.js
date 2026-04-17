@@ -1002,7 +1002,7 @@ const w = size;
 const h = size;
 const cx = w / 2;
 const cy = h / 2;
-const padding = 0;
+const padding = 10;
 const radius = size / 2 - padding;
 const scale = (canvas.width * canvas.width) / 500000 + 0.25;
 
