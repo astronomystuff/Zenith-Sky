@@ -970,6 +970,7 @@ function computeEphemerisForNight(lat, lon, dt, target) {
 // ------------------------------------------------------------
 // STAR MAP
 // ------------------------------------------------------------
+try {
 function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date, printMode) {
   if (printMode === undefined) printMode = false;
   if (!canvas) return;
@@ -1301,6 +1302,10 @@ const size = Math.max(0.4 * scale, starPx);
   ctx.arc(s.x, s.y, size, 0, Math.PI * 2);
   ctx.fill();
 });
+}
+} catch (err) {
+    alert("Star map error: " + err.message);
+    console.error(err);
 }
 
 // ------------------------------------------------------------
