@@ -1004,7 +1004,7 @@ const cx = w / 2;
 const cy = h / 2;
 const padding = 40;
 const radius = size / 2 - padding;
-const scale = Math.pow(radius / 525, 1.25);
+const scale = (size * size) / 336000 - 0.1;
 
 
   // Background
