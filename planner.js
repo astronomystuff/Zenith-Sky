@@ -1004,7 +1004,7 @@ const cx = w / 2;
 const cy = h / 2;
 const padding = 40;
 const radius = size / 2 - padding;
-const scale = (radius * radius) / 500000 + 0.3;
+const scale = (canvas.width * canvas.width) / 500000 + 0.3;
 
 
   // Background
@@ -1285,14 +1285,8 @@ if (s.isMoon) {
   if (s.isPlanet) {
     ctx.fillStyle = "#000000";
 
-    let finalSize;
-     if (printMode) {
-       finalSize = 14; // fixed, readable
-     } else {
-       const planetPx = (12 - s.mag * 0.8) * scale;
-       finalSize = Math.max(8 * scale, planetPx);
-     }
-
+    const planetPx = (12 - s.mag * 0.8) * scale;
+    const finalSize = Math.max(8 * scale, planetPx);
 
     ctx.font = finalSize + "px serif";
     ctx.textAlign = "center";
@@ -1302,18 +1296,8 @@ if (s.isMoon) {
   }
 
 // --- STARS ---
-let size;
-if (printMode) {
-  if (s.mag <= 1) size = 8;
-  else if (s.mag <= 2) size = 6;
-  else if (s.mag <= 3) size = 5;
-  else if (s.mag <= 4) size = 4;
-  else size = 3;
-} else {
-  const starPx = (2.2 - s.mag * 0.25) * scale;
-  size = Math.max(0.4 * scale, starPx);
-}
-
+const starPx = (2.2 - s.mag * 0.25) * scale;
+const size = Math.max(0.4 * scale, starPx);
 
   ctx.fillStyle = "#000000";
   ctx.beginPath();
