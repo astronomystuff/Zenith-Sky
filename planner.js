@@ -1004,7 +1004,7 @@ const cx = w / 2;
 const cy = h / 2;
 const padding = 40;
 const radius = size / 2 - padding;
-const scale = (canvas.width * canvas.width) / 500000 + 0.3;
+const scale = (canvas.width * canvas.width) / 500000 + 0.25;
 
 
   // Background
