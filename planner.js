@@ -982,12 +982,9 @@ const dpr = window.devicePixelRatio || 1;
 let cssSize;
 
 if (printMode) {
-  cssSize = 336;
-} else {
-  const rect = canvas.getBoundingClientRect();
-  const wBox = rect.width  || canvas.clientWidth  || 400;
-  const hBox = rect.height || canvas.clientHeight || wBox;
-  cssSize = Math.min(wBox, hBox);
+  const parent = canvas.parentElement;
+  const rect = parent.getBoundingClientRect();
+  cssSize = Math.min(rect.width, rect.height);
 }
 canvas.width  = Math.round(cssSize * dpr);
 canvas.height = Math.round(cssSize * dpr);
