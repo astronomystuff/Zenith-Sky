@@ -1,3 +1,7 @@
+window.onerror = function (msg, url, line, col, error) {
+    console.log("GLOBAL ERROR:", msg, " @ ", line + ":" + col);
+};
+
 document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("toggle-inputs").addEventListener("click", () => {
