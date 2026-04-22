@@ -987,8 +987,13 @@ const dpr = window.devicePixelRatio || 1;
 let cssSize;
 
 const parent = canvas.parentElement;
-const rect = parent.getBoundingClientRect();
-cssSize = Math.min(rect.width, rect.height);
+let cssSize;
+if (parent) {
+  const rect = parent.getBoundingClientRect();
+  cssSize = Math.min(rect.width, rect.height);
+} else {
+  cssSize = 336;
+}
 
 canvas.width  = Math.round(cssSize * dpr);
 canvas.height = Math.round(cssSize * dpr);
@@ -1230,7 +1235,7 @@ const lonRad = deg2rad(lonDeg);
   
 // --- MOON ---
 if (s.isMoon) {
-  const R = printMode ? 20 : 8 * scale;
+  const R = printMode ? 15 : 6 * scale;
 
   const sunPos = computeSun(date, latDeg, lonDeg);
   const sunRaRad = deg2rad(sunPos.raHours * 15);
