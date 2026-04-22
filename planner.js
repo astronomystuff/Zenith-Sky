@@ -1320,10 +1320,15 @@ const size = Math.max(0.4 * scale, starPx);
 });
 
 } catch (err) {
-    const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "red";
-    ctx.font = "16px sans-serif";
-    ctx.fillText(err.message, 10, 20);
+  try {
+    const ctx = canvas?.getContext?.("2d");
+    if (ctx) {
+      ctx.fillStyle = "red";
+      ctx.font = "16px sans-serif";
+      ctx.fillText(err.message, 10, 20);
+    }
+  } catch (_) {
+  }
 }
 }
 
