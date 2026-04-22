@@ -984,25 +984,27 @@ try {
   if (latDeg < -89.9) latDeg = -89.9;
 
 const dpr = window.devicePixelRatio || 1;
-
-const parent = canvas.parentElement;
 let cssSize;
 
-if (parent) {
+if (printMode) {
+  const DPI = 300;
+  const INCHES = 3.5;
+  cssSize = INCHES * DPI;
+} else {
+  const parent = canvas.parentElement;
   const rect = parent.getBoundingClientRect();
   cssSize = Math.min(rect.width, rect.height);
-} else {
-  cssSize = 336;
 }
 
-canvas.width  = Math.round(cssSize * dpr);
-canvas.height = Math.round(cssSize * dpr);
+canvas.width  = Math.round(cssSize);
+canvas.height = Math.round(cssSize);
 const ctx = canvas.getContext("2d");
 if (printMode) {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
 } else {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
+
 const size = cssSize;
 const w = size;
 const h = size;
