@@ -984,10 +984,10 @@ try {
   if (latDeg < -89.9) latDeg = -89.9;
 
 const dpr = window.devicePixelRatio || 1;
-let cssSize;
 
 const parent = canvas.parentElement;
 let cssSize;
+
 if (parent) {
   const rect = parent.getBoundingClientRect();
   cssSize = Math.min(rect.width, rect.height);
