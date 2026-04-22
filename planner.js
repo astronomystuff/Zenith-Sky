@@ -988,22 +988,26 @@ let cssSize;
 
 if (printMode) {
   const DPI = 300;
-  const INCHES = 3.5;
-  cssSize = INCHES * DPI;
+  cssSize = 3.5 * DPI;
 } else {
-  const parent = canvas.parentElement;
-  const rect = parent.getBoundingClientRect();
-  cssSize = Math.min(rect.width, rect.height);
+const parent = canvas.parentElement;
+  if (parent) {
+    const rect = parent.getBoundingClientRect();
+    cssSize = Math.min(rect.width, rect.height);
+  } else {
+    cssSize = 350;
+  }
 }
 
 canvas.width  = Math.round(cssSize);
 canvas.height = Math.round(cssSize);
-const ctx = canvas.getContext("2d");
+
 if (printMode) {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
 } else {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
+
 
 const size = cssSize;
 const w = size;
