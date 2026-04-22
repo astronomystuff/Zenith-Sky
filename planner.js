@@ -1002,6 +1002,8 @@ const parent = canvas.parentElement;
 canvas.width  = Math.round(cssSize);
 canvas.height = Math.round(cssSize);
 
+const ctx = canvas.getContext("2d");
+
 if (printMode) {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
 } else {
