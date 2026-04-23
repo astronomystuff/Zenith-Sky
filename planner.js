@@ -975,8 +975,8 @@ function computeEphemerisForNight(lat, lon, dt, target) {
 // ------------------------------------------------------------
 // STAR MAP
 // ------------------------------------------------------------
-function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date, printMode, modalSize) {
-  if (printMode === undefined) printMode = false;
+function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date, , modalSize) {
+  if ( === undefined) printMode = false;
   if (modalSize === undefined) modalSize = 0;
   if (!canvas) return;
     
@@ -1008,9 +1008,10 @@ if (printMode) {
 }
 
 
-
 canvas.width  = Math.round(cssSize);
 canvas.height = Math.round(cssSize);
+canvas.style.width = cssSize + "px";
+canvas.style.height = cssSize + "px";
 
 const ctx = canvas.getContext("2d");
 
