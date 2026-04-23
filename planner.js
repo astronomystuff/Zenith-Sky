@@ -997,13 +997,16 @@ if (printMode) {
   } else {
     const parent = canvas.parentElement;
     if (parent) {
-      const rect = parent.getBoundingClientRect();
-      cssSize = Math.min(rect.width, rect.height);
+      const style = getComputedStyle(parent);
+      const width = parseFloat(style.width);
+      const height = parseFloat(style.height);
+      cssSize = Math.min(width, height);
     } else {
       cssSize = 350;
     }
   }
 }
+
 
 
 canvas.width  = Math.round(cssSize);
