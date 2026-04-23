@@ -810,7 +810,8 @@ window.lastPlannerTimeStr = timeStr;
 modalOverlay.style.display = "flex";
 
   const canvas = document.getElementById("planner-star-map");
-  drawAzimuthalStarMap(canvas, lat, lon, dt);
+  const modalSize =  Math.min(window.innerWidth, window.innerHeight) * 0.8;
+  drawAzimuthalStarMap(canvas, lat, lon, dt, false, modalSize);
 }
 
 // ------------------------------------------------------------
@@ -974,8 +975,9 @@ function computeEphemerisForNight(lat, lon, dt, target) {
 // ------------------------------------------------------------
 // STAR MAP
 // ------------------------------------------------------------
-function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date, printMode) {
+function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date, printMode, modalSize) {
   if (printMode === undefined) printMode = false;
+  if (modalSize === undefined) modalSize = 0;
   if (!canvas) return;
     
 try {
@@ -990,15 +992,7 @@ if (printMode) {
   const DPI = 300;
   cssSize = 3.5 * DPI;
 } else {
-const parent = canvas.parentElement;
-  if (parent) {
-const style = getComputedStyle(parent);
-const width = parseFloat(style.width);
-const height = parseFloat(style.height);
-cssSize = Math.min(width, height);
-  } else {
-    cssSize = 350;
-  }
+  cssSize = modalSize;
 }
 
 canvas.width  = Math.round(cssSize);
@@ -1945,8 +1939,8 @@ function drawOnScreenMap(lat, lon, dt) {
 
   const cssSize = Math.min(cssW, cssH);
   prepareCanvasForDrawing(canvas, cssSize, cssSize);
-
-  drawAzimuthalStarMap(canvas, lat, lon, dt);
+  const modalSize =  Math.min(window.innerWidth, window.innerHeight) * 0.8;
+  drawAzimuthalStarMap(canvas, lat, lon, dt, false, modalSize);
 }
 
 function renderMapImageForPrint(lat, lon, dt) {
