@@ -992,8 +992,19 @@ if (printMode) {
   const DPI = 300;
   cssSize = 3.5 * DPI;
 } else {
-  cssSize = modalSize;
+  if (modalSize > 0) {
+    cssSize = modalSize;
+  } else {
+    const parent = canvas.parentElement;
+    if (parent) {
+      const rect = parent.getBoundingClientRect();
+      cssSize = Math.min(rect.width, rect.height);
+    } else {
+      cssSize = 350;
+    }
+  }
 }
+
 
 canvas.width  = Math.round(cssSize);
 canvas.height = Math.round(cssSize);
