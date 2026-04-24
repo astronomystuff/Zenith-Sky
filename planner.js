@@ -975,7 +975,7 @@ function computeEphemerisForNight(lat, lon, dt, target) {
 // ------------------------------------------------------------
 // STAR MAP
 // ------------------------------------------------------------
-function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date, , modalSize) {
+function drawAzimuthalStarMap(canvas, latDeg, lonDeg, date, printMode, modalSize) {
   if ( === undefined) printMode = false;
   if (modalSize === undefined) modalSize = 0;
   if (!canvas) return;
@@ -1926,7 +1926,12 @@ if (analyzeSpecialCoords(lat, lon)) {
   }
 }
   
-drawOnScreenMap(lat, lon, dt);
+requestAnimationFrame(() => {
+  requestAnimationFrame(() => {
+    drawOnScreenMap(lat, lon, dt);
+  });
+});
+
 }
 
 function prepareCanvasForDrawing(canvas, cssWidth, cssHeight) {
@@ -1949,14 +1954,12 @@ function drawOnScreenMap(lat, lon, dt) {
   if (!canvas) return;
 
   const rect = canvas.getBoundingClientRect();
-  const cssW = Math.max(200, Math.floor(rect.width));
-  const cssH = Math.max(200, Math.floor(rect.height));
+  const modalSize = Math.min(rect.width, rect.height);
 
-  const cssSize = Math.min(cssW, cssH);
-  prepareCanvasForDrawing(canvas, cssSize, cssSize);
-  const modalSize =  Math.min(window.innerWidth, window.innerHeight) * 0.8;
+  prepareCanvasForDrawing(canvas, modalSize, modalSize);
   drawAzimuthalStarMap(canvas, lat, lon, dt, false, modalSize);
 }
+
 
 function renderMapImageForPrint(lat, lon, dt) {
   const inches = 3.5;
