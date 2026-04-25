@@ -349,9 +349,17 @@ document.addEventListener("DOMContentLoaded", () => {
       "Not Astro": 0
     };
 
-    // Base astro vs non-astro
-    if (entropy < 3.5) scores["Not Astro"] += 2.0;
-    if (colorVariance.rVar < 50 && colorVariance.gVar < 50 && colorVariance.bVar < 50) scores["Not Astro"] += 2.0;
+// Base astro vs non-astro
+if (entropy < 2.0) scores["Not Astro"] += 2.0;
+if (colorVariance.rVar < 10 && colorVariance.gVar < 10 && colorVariance.bVar < 10) {
+  scores["Not Astro"] += 2.0;
+}
+
+// Printed edges: strong edges + low nebulosity = not astro
+if (edgeComplexity > 0.25 && nebulosity < 0.05) {
+  scores["Not Astro"] += 1.5;
+}
+
 
     // Nebula-like
     if (nebulosity > 0.15 && starRoundness < 0.3) {
