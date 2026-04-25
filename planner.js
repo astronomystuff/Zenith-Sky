@@ -31,7 +31,11 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 async function fetchAstroWeather(lat, lon, targetDate) {
-  const url = `https://www.7timer.info/bin/api.pl?lon=${lon}&lat=${lat}&product=astro&output=json`;
+  // Original 7Timer URL
+  const target = `https://www.7timer.info/bin/api.pl?lon=${lon}&lat=${lat}&product=astro&output=json`;
+
+  // Cloudflare Worker
+  const proxyUrl = `https://astro-proxy.niamnbhakta.workers.dev/?url=${encodeURIComponent(target)}`;
 
   function getForecastBlockForDate(data, targetDate) {
     if (!data || !data.dataseries || !data.init) return null;
@@ -64,7 +68,7 @@ async function fetchAstroWeather(lat, lon, targetDate) {
   }
 
   try {
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetch(proxyUrl, { cache: "no-store" });
     if (!res.ok) return null;
 
     const data = await res.json();
