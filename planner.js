@@ -1012,18 +1012,12 @@ if (printMode) {
 }
 
 
-canvas.width  = Math.round(cssSize);
-canvas.height = Math.round(cssSize);
-canvas.style.width = cssSize + "px";
+canvas.style.width  = cssSize + "px";
 canvas.style.height = cssSize + "px";
-
+canvas.width  = Math.round(cssSize * dpr);
+canvas.height = Math.round(cssSize * dpr);
 const ctx = canvas.getContext("2d");
-
-if (printMode) {
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-} else {
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-}
+ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
 
 const size = cssSize;
