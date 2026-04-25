@@ -1019,12 +1019,7 @@ canvas.height = Math.round(cssSize * dpr);
 const ctx = canvas.getContext("2d");
 ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-console.log(
-  "[AZ MAP] cssSize:", cssSize,
-  "dpr:", dpr,
-  "canvas.width:", canvas.width,
-  "canvas.height:", canvas.height
-);
+console.log("Star Map Size:", cssSize);
     
 const size = cssSize;
 const w = size;
