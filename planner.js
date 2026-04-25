@@ -1951,14 +1951,14 @@ function prepareCanvasForDrawing(canvas, cssWidth, cssHeight) {
 
 function drawOnScreenMap(lat, lon, dt) {
   const canvas = document.getElementById("planner-star-map");
+    
   if (!canvas) return;
-
   const rect = canvas.getBoundingClientRect();
   const modalSize = Math.min(rect.width, rect.height);
-
-  prepareCanvasForDrawing(canvas, modalSize, modalSize);
+    
   drawAzimuthalStarMap(canvas, lat, lon, dt, false, modalSize);
 }
+
 
 
 function renderMapImageForPrint(lat, lon, dt) {
