@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
+
   // ------------------------------------------------------------
-  // DOM WIRING
+  // DOM ELEMENTS
   // ------------------------------------------------------------
   const input = document.getElementById("woit-input");
   const btn = document.getElementById("woit-btn");
@@ -19,112 +20,96 @@ document.addEventListener("DOMContentLoaded", () => {
   resetBtn.style.marginTop = "10px";
   result.insertAdjacentElement("afterend", resetBtn);
 
-  // Open / close modal
-  function runWOIT() {
-    if (!modal) return;
-    modal.style.display = "block";
-  }
-
+  // ------------------------------------------------------------
+  // MODAL OPEN/CLOSE
+  // ------------------------------------------------------------
   document.addEventListener("click", (e) => {
     if (e.target.id === "woit-identify") {
-      runWOIT();
+      modal.style.display = "block";
     }
     if (e.target.id === "woit-close") {
-      if (modal) modal.style.display = "none";
+      modal.style.display = "none";
     }
   });
 
-  // Button → file input
-  if (btn && input) {
-    btn.addEventListener("click", () => input.click());
-  }
+  // ------------------------------------------------------------
+  // FILE INPUT
+  // ------------------------------------------------------------
+  btn.addEventListener("click", () => input.click());
 
-  // Reset behavior
   resetBtn.addEventListener("click", () => {
-    if (!input) return;
     input.value = "";
-    if (fileName) fileName.textContent = "";
-    if (previewContainer) previewContainer.style.display = "none";
-    if (preview) preview.src = "";
-    if (status) status.textContent = "";
-    if (result) {
-      result.style.display = "none";
-      result.innerHTML = "";
-    }
+    fileName.textContent = "";
+    previewContainer.style.display = "none";
+    preview.src = "";
+    status.textContent = "";
+    result.style.display = "none";
+    result.innerHTML = "";
     resetBtn.style.display = "none";
   });
 
-  // ------------------------------------------------------------
-  // MAIN FLOW: IMAGE SELECTED
-  // ------------------------------------------------------------
-  if (input) {
-    input.addEventListener("change", async () => {
-      if (!input.files || !input.files.length) return;
+  input.addEventListener("change", async () => {
+    if (!input.files.length) return;
 
-      const file = input.files[0];
-      if (fileName) fileName.textContent = file.name;
+    const file = input.files[0];
+    fileName.textContent = file.name;
 
-      const url = URL.createObjectURL(file);
-      if (preview) preview.src = url;
-      if (previewContainer) previewContainer.style.display = "block";
+    const url = URL.createObjectURL(file);
+    preview.src = url;
+    previewContainer.style.display = "block";
 
-      if (result) {
-        result.style.display = "none";
-        result.innerHTML = "";
-      }
-      resetBtn.style.display = "none";
+    result.style.display = "none";
+    resetBtn.style.display = "none";
 
-      try {
-        setStatus("Analyzing image…");
+    try {
+      setStatus("Analyzing image…");
 
-        const analysis = await analyzeImage(preview);
+      const analysis = await analyzeImage(preview);
 
-        setStatus(`Detected object type: ${analysis.type} (${(analysis.typeConfidence * 100).toFixed(1)}% confidence)`);
+      setStatus(`Detected object type: ${analysis.type} (${(analysis.typeConfidence * 100).toFixed(1)}% confidence)`);
 
-        if (analysis.type === "Not Astro") {
-          showResult(analysis, null);
-          resetBtn.style.display = "inline-block";
-          return;
-        }
-
-        const catalog = await loadCatalogForType(analysis.type);
-
-        setStatus(`Matching against ${catalog.length} ${analysis.type} objects…`);
-
-        const match = matchObject(analysis, catalog);
-
-        setStatus("Identification complete.");
-        showResult(analysis, match);
+      if (analysis.type === "Not Astro") {
+        showResult(analysis, null);
         resetBtn.style.display = "inline-block";
-      } catch (err) {
-        console.error(err);
-        setStatus("Identification failed.");
-        if (result) {
-          result.style.display = "block";
-          result.innerHTML = `
-            <strong>Error:</strong><br>
-            ${err.message || "Unknown error."}<br><br>
-          `;
-        }
-        resetBtn.style.display = "inline-block";
+        return;
       }
-    });
-  }
+
+      // Load unified catalog
+      const catalog = await loadUnifiedCatalog();
+
+      // Filter by detected type
+      const filtered = catalog.filter(obj => obj.type === analysis.type);
+
+      setStatus(`Matching against ${filtered.length} ${analysis.type} objects…`);
+
+      const match = matchObject(analysis, filtered);
+
+      setStatus("Identification complete.");
+      showResult(analysis, match);
+      resetBtn.style.display = "inline-block";
+
+    } catch (err) {
+      console.error(err);
+      setStatus("Identification failed.");
+      result.style.display = "block";
+      result.innerHTML = `<strong>Error:</strong><br>${err.message || "Unknown error."}<br><br>`;
+      resetBtn.style.display = "inline-block";
+    }
+  });
 
   function setStatus(msg) {
-    if (status) status.textContent = msg;
+    status.textContent = msg;
   }
 
   // ------------------------------------------------------------
   // SHOW RESULT
   // ------------------------------------------------------------
   function showResult(analysis, match) {
-    if (!result) return;
     result.style.display = "block";
 
     if (analysis.type === "Not Astro") {
       result.innerHTML = `
-        <strong>This does not look like an astronomical object.</strong><br><br>
+        <strong>This does not appear to be an astronomical object.</strong><br><br>
         <em>Classifier confidence:</em> ${(analysis.typeConfidence * 100).toFixed(1)}%<br>
       `;
       return;
@@ -171,7 +156,7 @@ document.addEventListener("DOMContentLoaded", () => {
         canvas.height = img.height * scale;
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
         const starDensity = estimateStarDensity(data);
         const nebulosity = estimateNebulosity(data);
@@ -180,6 +165,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const colorVariance = estimateColorVariance(data);
         const starRoundness = estimateStarRoundness(data, canvas.width, canvas.height);
         const entropy = estimateEntropy(data);
+        const gradientSmoothness = estimateGradientSmoothness(data, canvas.width, canvas.height);
 
         const { type, confidence } = classifyObject({
           starDensity,
@@ -188,7 +174,8 @@ document.addEventListener("DOMContentLoaded", () => {
           edgeComplexity,
           colorVariance,
           starRoundness,
-          entropy
+          entropy,
+          gradientSmoothness
         });
 
         resolve({
@@ -201,6 +188,7 @@ document.addEventListener("DOMContentLoaded", () => {
           colorVariance,
           starRoundness,
           entropy,
+          gradientSmoothness,
           type,
           typeConfidence: confidence
         });
@@ -224,7 +212,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let smooth = 0;
     for (let i = 0; i < data.length; i += 4) {
       const r = data[i], g = data[i+1], b = data[i+2];
-      if (r > 80 && g > 40 && b > 40) smooth++;
+      if (r > 70 && g > 40 && b > 40) smooth++;
     }
     return smooth / (data.length / 4);
   }
@@ -246,17 +234,15 @@ document.addEventListener("DOMContentLoaded", () => {
     for (let y = 1; y < h - 1; y++) {
       for (let x = 1; x < w - 1; x++) {
         const i = (y * w + x) * 4;
-        const lum = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+        const lum = (data[i] + data[i+1] + data[i+2]) / 3;
         if (lum < 40 || lum > 220) continue;
         total++;
-        const iL = i - 4;
-        const iR = i + 4;
-        const iT = i - w * 4;
-        const iB = i + w * 4;
-        const lumL = 0.299 * data[iL] + 0.587 * data[iL+1] + 0.114 * data[iL+2];
-        const lumR = 0.299 * data[iR] + 0.587 * data[iR+1] + 0.114 * data[iR+2];
-        const lumT = 0.299 * data[iT] + 0.587 * data[iT+1] + 0.114 * data[iT+2];
-        const lumB = 0.299 * data[iB] + 0.587 * data[iB+1] + 0.114 * data[iB+2];
+
+        const lumL = (data[i-4] + data[i-3] + data[i-2]) / 3;
+        const lumR = (data[i+4] + data[i+5] + data[i+6]) / 3;
+        const lumT = (data[i - w*4] + data[i - w*4 + 1] + data[i - w*4 + 2]) / 3;
+        const lumB = (data[i + w*4] + data[i + w*4 + 1] + data[i + w*4 + 2]) / 3;
+
         const diff = Math.abs(lum - lumL) + Math.abs(lum - lumR) + Math.abs(lum - lumT) + Math.abs(lum - lumB);
         if (diff > 80) edges++;
       }
@@ -290,16 +276,16 @@ document.addEventListener("DOMContentLoaded", () => {
     for (let y = 1; y < h - 1; y++) {
       for (let x = 1; x < w - 1; x++) {
         const i = (y * w + x) * 4;
-        const lum = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+        const lum = (data[i] + data[i+1] + data[i+2]) / 3;
         if (lum < 200) continue;
 
         total++;
 
         const neighbors = [
-          data[i - 4],     // left R
-          data[i + 4],     // right R
-          data[i - w*4],   // top R
-          data[i + w*4]    // bottom R
+          data[i - 4],
+          data[i + 4],
+          data[i - w*4],
+          data[i + w*4]
         ];
         const avg = neighbors.reduce((a, b) => a + b, 0) / neighbors.length;
         if (Math.abs(avg - data[i]) < 40) roundish++;
@@ -325,10 +311,35 @@ document.addEventListener("DOMContentLoaded", () => {
     return H;
   }
 
+  function estimateGradientSmoothness(data, w, h) {
+    let total = 0;
+    let smooth = 0;
+
+    for (let y = 1; y < h - 1; y++) {
+      for (let x = 1; x < w - 1; x++) {
+        const i = (y * w + x) * 4;
+        const lum = (data[i] + data[i+1] + data[i+2]) / 3;
+
+        const lumR = (data[i+4] + data[i+5] + data[i+6]) / 3;
+        const lumB = (data[i + w*4] + data[i + w*4 + 1] + data[i + w*4 + 2]) / 3;
+
+        const dx = Math.abs(lum - lumR);
+        const dy = Math.abs(lum - lumB);
+
+        const grad = dx + dy;
+
+        total++;
+        if (grad < 25) smooth++;
+      }
+    }
+
+    return smooth / total;
+  }
+
   // ------------------------------------------------------------
-  // TYPE CLASSIFIER WITH REAL CONFIDENCE
+  // CLASSIFIER (C1 — Balanced Hybrid)
   // ------------------------------------------------------------
-  function classifyObject(features) {
+  function classifyObject(f) {
     const {
       starDensity,
       nebulosity,
@@ -336,8 +347,9 @@ document.addEventListener("DOMContentLoaded", () => {
       edgeComplexity,
       colorVariance,
       starRoundness,
-      entropy
-    } = features;
+      entropy,
+      gradientSmoothness
+    } = f;
 
     let scores = {
       "Emission Nebula": 0,
@@ -349,44 +361,54 @@ document.addEventListener("DOMContentLoaded", () => {
       "Not Astro": 0
     };
 
-// Base astro vs non-astro
-if (entropy < 2.0) scores["Not Astro"] += 2.0;
-if (colorVariance.rVar < 10 && colorVariance.gVar < 10 && colorVariance.bVar < 10) {
-  scores["Not Astro"] += 2.0;
-}
+    // ------------------------------------------------------------
+    // ASTRO vs NON-ASTRO GATE (C1)
+    // ------------------------------------------------------------
+    if (entropy < 1.8) scores["Not Astro"] += 2.0;
 
-// Printed edges: strong edges + low nebulosity = not astro
-if (edgeComplexity > 0.25 && nebulosity < 0.05) {
-  scores["Not Astro"] += 1.5;
-}
-
-
-    // Nebula-like
-    if (nebulosity > 0.15 && starRoundness < 0.3) {
-      scores["Nebula"] += 2.0;
-      if (colorTint.r > colorTint.g + 20) scores["Emission Nebula"] += 1.5;
-      if (colorTint.b > colorTint.r + 20) scores["Reflection Nebula"] += 1.5;
+    if (colorVariance.rVar < 5 && colorVariance.gVar < 5 && colorVariance.bVar < 5) {
+      scores["Not Astro"] += 2.0;
     }
 
-    // Cluster-like
+    if (edgeComplexity > 0.25 && nebulosity < 0.05) {
+      scores["Not Astro"] += 1.5;
+    }
+
+    if (gradientSmoothness > 0.95 && nebulosity < 0.05) {
+      scores["Not Astro"] += 1.5;
+    }
+
+    // ------------------------------------------------------------
+    // NEBULA CLASSIFICATION
+    // ------------------------------------------------------------
+    if (nebulosity > 0.10) {
+      scores["Nebula"] += 3.0;
+
+      if (colorTint.r > colorTint.g + 15) scores["Emission Nebula"] += 2.0;
+      if (colorTint.b > colorTint.r + 15) scores["Reflection Nebula"] += 2.0;
+    }
+
+    // ------------------------------------------------------------
+    // CLUSTERS
+    // ------------------------------------------------------------
     if (starDensity > 0.02 && starRoundness > 0.4) {
-      scores["Open Cluster"] += starDensity > 0.05 ? 2.0 : 1.0;
-      scores["Globular Cluster"] += starDensity <= 0.05 ? 2.0 : 1.0;
+      if (starDensity > 0.05) scores["Open Cluster"] += 2.0;
+      else scores["Globular Cluster"] += 2.0;
     }
 
-    // Galaxy-like
-    if (edgeComplexity > 0.15 && entropy > 4.5) {
+    // ------------------------------------------------------------
+    // GALAXIES
+    // ------------------------------------------------------------
+    if (edgeComplexity > 0.12 && entropy > 3.0) {
       scores["Galaxy"] += 2.0;
     }
 
-    // If nothing stands out, lean to Not Astro
-    const maxScore = Math.max(...Object.values(scores));
-    if (maxScore < 1.0) {
-      return { type: "Not Astro", confidence: 0.6 };
-    }
-
+    // ------------------------------------------------------------
+    // PICK BEST TYPE
+    // ------------------------------------------------------------
     let bestType = "Not Astro";
     let bestScore = -Infinity;
+
     for (const [type, score] of Object.entries(scores)) {
       if (score > bestScore) {
         bestScore = score;
@@ -394,32 +416,27 @@ if (edgeComplexity > 0.25 && nebulosity < 0.05) {
       }
     }
 
-    const sumPos = Object.values(scores).reduce((a, b) => a + Math.max(0, b), 0) || 1;
+    // Confidence: ratio of best score to total positive scores
+    const positiveScores = Object.entries(scores)
+      .filter(([t]) => t !== "Not Astro")
+      .map(([_, s]) => Math.max(0, s));
+
+    const sumPos = positiveScores.reduce((a, b) => a + b, 0) || 1;
     const confidence = Math.max(0.1, Math.min(0.99, bestScore / sumPos));
 
     return { type: bestType, confidence };
   }
 
   // ------------------------------------------------------------
-  // LOAD CATALOG BY TYPE
+  // UNIFIED CATALOG LOADING
   // ------------------------------------------------------------
-  async function loadCatalogForType(type) {
-    const map = {
-      "Emission Nebula": "nebulae.json",
-      "Reflection Nebula": "nebulae.json",
-      "Nebula": "nebulae.json",
-      "Open Cluster": "open_clusters.json",
-      "Globular Cluster": "globulars.json",
-      "Galaxy": "galaxies.json"
-    };
-
-    const file = map[type] || "galaxies.json";
-    const res = await fetch(`catalog/dso/${file}`);
+  async function loadUnifiedCatalog() {
+    const res = await fetch("objects.json");
     return res.json();
   }
 
   // ------------------------------------------------------------
-  // MATCH OBJECT WITHIN TYPE CATALOG
+  // CATALOG MATCHING
   // ------------------------------------------------------------
   function estimateFOV(analysis) {
     return Math.max(0.3, Math.min(3.0, 1 / (analysis.starDensity * 50 + 0.1)));
@@ -431,10 +448,13 @@ if (edgeComplexity > 0.25 && nebulosity < 0.05) {
 
     for (const obj of catalog) {
       const sizeScore = 1 / (1 + Math.abs(obj.sizeDeg - estimateFOV(analysis)));
-      const nebScore = 1 - Math.abs((obj.nebulosity || 0.5) - analysis.nebulosity);
-      const starScore = 1 - Math.abs((obj.starDensity || 0.03) - analysis.starDensity);
+      const nebScore = 1 - Math.abs((obj.nebulosity ?? 0.5) - analysis.nebulosity);
+      const starScore = 1 - Math.abs((obj.starDensity ?? 0.03) - analysis.starDensity);
 
-      const score = (sizeScore * 0.5) + (nebScore * 0.3) + (starScore * 0.2);
+      const score =
+        sizeScore * 0.5 +
+        nebScore * 0.3 +
+        starScore * 0.2;
 
       if (score > bestScore) {
         bestScore = score;
@@ -444,4 +464,5 @@ if (edgeComplexity > 0.25 && nebulosity < 0.05) {
 
     return bestScore > 0.2 ? best : null;
   }
+
 });
