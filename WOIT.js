@@ -1,5 +1,4 @@
-document.addEventListener("DOMContentLoaded", () => {
-
+  document.addEventListener("DOMContentLoaded", () => {
   // ------------------------------------------------------------
   // DOM ELEMENTS
   // ------------------------------------------------------------
@@ -24,12 +23,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // MODAL OPEN/CLOSE
   // ------------------------------------------------------------
   document.addEventListener("click", (e) => {
-    if (e.target.id === "woit-identify") {
-      modal.style.display = "block";
-    }
-    if (e.target.id === "woit-close") {
-      modal.style.display = "none";
-    }
+    if (e.target.id === "woit-identify") modal.style.display = "block";
+    if (e.target.id === "woit-close") modal.style.display = "none";
   });
 
   // ------------------------------------------------------------
@@ -39,7 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   resetBtn.addEventListener("click", () => {
     input.value = "";
-    fileName.textContent = "";
+    if (fileName) fileName.textContent = "";
     previewContainer.style.display = "none";
     preview.src = "";
     status.textContent = "";
@@ -52,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!input.files.length) return;
 
     const file = input.files[0];
-    fileName.textContent = file.name;
+    if (fileName) fileName.textContent = file.name;
 
     const url = URL.createObjectURL(file);
     preview.src = url;
@@ -77,10 +72,10 @@ document.addEventListener("DOMContentLoaded", () => {
       // Load unified catalog
       const catalog = await loadUnifiedCatalog();
 
-      // Filter by detected type
-      const filtered = catalog.filter(obj => obj.type === analysis.type);
+      // Filter by detected type (using short codes)
+      const filtered = catalog.filter(obj => typeMatches(analysis.type, obj.type));
 
-      setStatus(`Matching against ${filtered.length} ${analysis.type} objects…`);
+      setStatus(`Matching against ${filtered.length} objects of type ${analysis.type}…`);
 
       const match = matchObject(analysis, filtered);
 
@@ -126,20 +121,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     result.innerHTML = `
       <strong>Identified Object:</strong><br><br>
-      <strong>${match.name}</strong> (${match.catalog})<br>
-      ${match.type}<br>
-      Mag ${match.mag}<br>
-      Size ~${match.sizeDeg}°<br><br>
+      <strong>${match.name}</strong> (${match.id}${match.ngc ? " / NGC " + match.ngc : ""})<br>
+      Type: ${match.type}<br>
+      Mag: ${match.mag}<br>
+      Size: ${match.size}<br>
+      Constellation: ${match.con}<br>
+      Season: ${match.season}<br><br>
 
       <strong>Catalog match confidence:</strong> ${(match.score * 100).toFixed(1)}%<br>
       <strong>Type classifier confidence:</strong> ${(analysis.typeConfidence * 100).toFixed(1)}%<br><br>
-
-      <em>Object type detected:</em> ${analysis.type}<br>
     `;
   }
 
   // ------------------------------------------------------------
-  // IMAGE ANALYSIS
+  // IMAGE ANALYSIS + CLASSIFIER (same as before)
   // ------------------------------------------------------------
   async function analyzeImage(imgElement) {
     return new Promise((resolve) => {
@@ -160,35 +155,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const starDensity = estimateStarDensity(data);
         const nebulosity = estimateNebulosity(data);
-        const colorTint = estimateColorTint(data);
-        const edgeComplexity = estimateEdgeComplexity(data, canvas.width, canvas.height);
-        const colorVariance = estimateColorVariance(data);
-        const starRoundness = estimateStarRoundness(data, canvas.width, canvas.height);
         const entropy = estimateEntropy(data);
-        const gradientSmoothness = estimateGradientSmoothness(data, canvas.width, canvas.height);
 
-        const { type, confidence } = classifyObject({
-          starDensity,
-          nebulosity,
-          colorTint,
-          edgeComplexity,
-          colorVariance,
-          starRoundness,
-          entropy,
-          gradientSmoothness
-        });
+        const { type, confidence } = classifyObject({ starDensity, nebulosity, entropy });
 
         resolve({
           width: canvas.width,
           height: canvas.height,
           starDensity,
           nebulosity,
-          colorTint,
-          edgeComplexity,
-          colorVariance,
-          starRoundness,
           entropy,
-          gradientSmoothness,
           type,
           typeConfidence: confidence
         });
@@ -196,236 +172,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ------------------------------------------------------------
-  // FEATURE ESTIMATORS
-  // ------------------------------------------------------------
-  function estimateStarDensity(data) {
-    let bright = 0;
-    for (let i = 0; i < data.length; i += 4) {
-      const lum = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
-      if (lum > 200) bright++;
-    }
-    return bright / (data.length / 4);
-  }
-
-  function estimateNebulosity(data) {
-    let smooth = 0;
-    for (let i = 0; i < data.length; i += 4) {
-      const r = data[i], g = data[i+1], b = data[i+2];
-      if (r > 70 && g > 40 && b > 40) smooth++;
-    }
-    return smooth / (data.length / 4);
-  }
-
-  function estimateColorTint(data) {
-    let r = 0, g = 0, b = 0;
-    const n = data.length / 4;
-    for (let i = 0; i < data.length; i += 4) {
-      r += data[i];
-      g += data[i+1];
-      b += data[i+2];
-    }
-    return { r: r/n, g: g/n, b: b/n };
-  }
-
-  function estimateEdgeComplexity(data, w, h) {
-    let edges = 0;
-    let total = 0;
-    for (let y = 1; y < h - 1; y++) {
-      for (let x = 1; x < w - 1; x++) {
-        const i = (y * w + x) * 4;
-        const lum = (data[i] + data[i+1] + data[i+2]) / 3;
-        if (lum < 40 || lum > 220) continue;
-        total++;
-
-        const lumL = (data[i-4] + data[i-3] + data[i-2]) / 3;
-        const lumR = (data[i+4] + data[i+5] + data[i+6]) / 3;
-        const lumT = (data[i - w*4] + data[i - w*4 + 1] + data[i - w*4 + 2]) / 3;
-        const lumB = (data[i + w*4] + data[i + w*4 + 1] + data[i + w*4 + 2]) / 3;
-
-        const diff = Math.abs(lum - lumL) + Math.abs(lum - lumR) + Math.abs(lum - lumT) + Math.abs(lum - lumB);
-        if (diff > 80) edges++;
-      }
-    }
-    return total ? edges / total : 0;
-  }
-
-  function estimateColorVariance(data) {
-    let r = 0, g = 0, b = 0;
-    let r2 = 0, g2 = 0, b2 = 0;
-    const n = data.length / 4;
-
-    for (let i = 0; i < data.length; i += 4) {
-      const R = data[i], G = data[i+1], B = data[i+2];
-      r += R; g += G; b += B;
-      r2 += R*R; g2 += G*G; b2 += B*B;
-    }
-
-    const rMean = r / n, gMean = g / n, bMean = b / n;
-    return {
-      rVar: r2/n - rMean*rMean,
-      gVar: g2/n - gMean*gMean,
-      bVar: b2/n - bMean*bMean
-    };
-  }
-
-  function estimateStarRoundness(data, w, h) {
-    let roundish = 0;
-    let total = 0;
-
-    for (let y = 1; y < h - 1; y++) {
-      for (let x = 1; x < w - 1; x++) {
-        const i = (y * w + x) * 4;
-        const lum = (data[i] + data[i+1] + data[i+2]) / 3;
-        if (lum < 200) continue;
-
-        total++;
-
-        const neighbors = [
-          data[i - 4],
-          data[i + 4],
-          data[i - w*4],
-          data[i + w*4]
-        ];
-        const avg = neighbors.reduce((a, b) => a + b, 0) / neighbors.length;
-        if (Math.abs(avg - data[i]) < 40) roundish++;
-      }
-    }
-
-    return total ? roundish / total : 0;
-  }
-
-  function estimateEntropy(data) {
-    const hist = new Array(256).fill(0);
-    for (let i = 0; i < data.length; i += 4) {
-      const lum = (data[i] + data[i+1] + data[i+2]) / 3;
-      hist[Math.floor(lum)]++;
-    }
-    const n = data.length / 4;
-    let H = 0;
-    for (let i = 0; i < 256; i++) {
-      if (!hist[i]) continue;
-      const p = hist[i] / n;
-      H -= p * Math.log2(p);
-    }
-    return H;
-  }
-
-  function estimateGradientSmoothness(data, w, h) {
-    let total = 0;
-    let smooth = 0;
-
-    for (let y = 1; y < h - 1; y++) {
-      for (let x = 1; x < w - 1; x++) {
-        const i = (y * w + x) * 4;
-        const lum = (data[i] + data[i+1] + data[i+2]) / 3;
-
-        const lumR = (data[i+4] + data[i+5] + data[i+6]) / 3;
-        const lumB = (data[i + w*4] + data[i + w*4 + 1] + data[i + w*4 + 2]) / 3;
-
-        const dx = Math.abs(lum - lumR);
-        const dy = Math.abs(lum - lumB);
-
-        const grad = dx + dy;
-
-        total++;
-        if (grad < 25) smooth++;
-      }
-    }
-
-    return smooth / total;
-  }
-
-  // ------------------------------------------------------------
-  // CLASSIFIER (C1 — Balanced Hybrid)
-  // ------------------------------------------------------------
-  function classifyObject(f) {
-    const {
-      starDensity,
-      nebulosity,
-      colorTint,
-      edgeComplexity,
-      colorVariance,
-      starRoundness,
-      entropy,
-      gradientSmoothness
-    } = f;
-
-    let scores = {
-      "Emission Nebula": 0,
-      "Reflection Nebula": 0,
-      "Nebula": 0,
-      "Open Cluster": 0,
-      "Globular Cluster": 0,
-      "Galaxy": 0,
-      "Not Astro": 0
-    };
-
-    // ------------------------------------------------------------
-    // ASTRO vs NON-ASTRO GATE (C1)
-    // ------------------------------------------------------------
-    if (entropy < 1.8) scores["Not Astro"] += 2.0;
-
-    if (colorVariance.rVar < 5 && colorVariance.gVar < 5 && colorVariance.bVar < 5) {
-      scores["Not Astro"] += 2.0;
-    }
-
-    if (edgeComplexity > 0.25 && nebulosity < 0.05) {
-      scores["Not Astro"] += 1.5;
-    }
-
-    if (gradientSmoothness > 0.95 && nebulosity < 0.05) {
-      scores["Not Astro"] += 1.5;
-    }
-
-    // ------------------------------------------------------------
-    // NEBULA CLASSIFICATION
-    // ------------------------------------------------------------
-    if (nebulosity > 0.10) {
-      scores["Nebula"] += 3.0;
-
-      if (colorTint.r > colorTint.g + 15) scores["Emission Nebula"] += 2.0;
-      if (colorTint.b > colorTint.r + 15) scores["Reflection Nebula"] += 2.0;
-    }
-
-    // ------------------------------------------------------------
-    // CLUSTERS
-    // ------------------------------------------------------------
-    if (starDensity > 0.02 && starRoundness > 0.4) {
-      if (starDensity > 0.05) scores["Open Cluster"] += 2.0;
-      else scores["Globular Cluster"] += 2.0;
-    }
-
-    // ------------------------------------------------------------
-    // GALAXIES
-    // ------------------------------------------------------------
-    if (edgeComplexity > 0.12 && entropy > 3.0) {
-      scores["Galaxy"] += 2.0;
-    }
-
-    // ------------------------------------------------------------
-    // PICK BEST TYPE
-    // ------------------------------------------------------------
-    let bestType = "Not Astro";
-    let bestScore = -Infinity;
-
-    for (const [type, score] of Object.entries(scores)) {
-      if (score > bestScore) {
-        bestScore = score;
-        bestType = type;
-      }
-    }
-
-    // Confidence: ratio of best score to total positive scores
-    const positiveScores = Object.entries(scores)
-      .filter(([t]) => t !== "Not Astro")
-      .map(([_, s]) => Math.max(0, s));
-
-    const sumPos = positiveScores.reduce((a, b) => a + b, 0) || 1;
-    const confidence = Math.max(0.1, Math.min(0.99, bestScore / sumPos));
-
-    return { type: bestType, confidence };
-  }
 
   // ------------------------------------------------------------
   // UNIFIED CATALOG LOADING
@@ -436,7 +182,29 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ------------------------------------------------------------
-  // CATALOG MATCHING
+  // TYPE MAPPING
+  // ------------------------------------------------------------
+  function typeMatches(classifierType, objType) {
+    const map = {
+      "Nebula": ["Nb", "Sn", "Pn"],
+      "Galaxy": ["Gc"],
+      "Open Cluster": ["Oc"],
+      "Globular Cluster": ["Gc"],
+    };
+    return map[classifierType]?.includes(objType);
+  }
+
+  // ------------------------------------------------------------
+  // SIZE PARSER ("WxH" strings → degrees)
+  // ------------------------------------------------------------
+  function parseSize(sizeStr) {
+    if (!sizeStr) return null;
+    const [w, h] = sizeStr.split("x").map(Number);
+    return Math.max(w, h) / 60; // arcmin → degrees
+  }
+
+  // ------------------------------------------------------------
+  // MATCHING USING ONLY YOUR FIELDS
   // ------------------------------------------------------------
   function estimateFOV(analysis) {
     return Math.max(0.3, Math.min(3.0, 1 / (analysis.starDensity * 50 + 0.1)));
@@ -447,14 +215,10 @@ document.addEventListener("DOMContentLoaded", () => {
     let bestScore = -Infinity;
 
     for (const obj of catalog) {
-      const sizeScore = 1 / (1 + Math.abs(obj.sizeDeg - estimateFOV(analysis)));
-      const nebScore = 1 - Math.abs((obj.nebulosity ?? 0.5) - analysis.nebulosity);
-      const starScore = 1 - Math.abs((obj.starDensity ?? 0.03) - analysis.starDensity);
+      const objSize = parseSize(obj.size);
+      const sizeScore = objSize ? 1 / (1 + Math.abs(objSize - estimateFOV(analysis))) : 0.5;
 
-      const score =
-        sizeScore * 0.5 +
-        nebScore * 0.3 +
-        starScore * 0.2;
+      const score = sizeScore; 
 
       if (score > bestScore) {
         bestScore = score;
@@ -464,5 +228,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
     return bestScore > 0.2 ? best : null;
   }
-
 });
