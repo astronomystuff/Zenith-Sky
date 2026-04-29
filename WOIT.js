@@ -284,4 +284,4 @@
       // fallback
       return { type: "Not Astro", confidence: 0.9 };
     }
-
+});
