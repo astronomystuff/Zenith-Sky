@@ -1,4 +1,5 @@
   document.addEventListener("DOMContentLoaded", () => {
+    try {
   // ------------------------------------------------------------
   // DOM ELEMENTS
   // ------------------------------------------------------------
@@ -263,25 +264,45 @@
         }
       }
       return entropy / 8; // normalize
-    }
-
+    
     // ------------------------------------------------------------
     // CLASSIFIER
     // ------------------------------------------------------------
     function classifyObject({ starDensity, nebulosity, entropy }) {
-      // Nebula: high nebulosity
       if (nebulosity > 0.6) return { type: "Nebula", confidence: nebulosity };
-
-      // Galaxy: moderate nebulosity + moderate entropy
       if (nebulosity > 0.3 && entropy > 0.5) return { type: "Galaxy", confidence: (nebulosity + entropy) / 2 };
-
-      // Open cluster: high star density
       if (starDensity > 0.05) return { type: "Open Cluster", confidence: starDensity };
-
-      // Globular cluster: very high star density
       if (starDensity > 0.1) return { type: "Globular Cluster", confidence: starDensity };
-
-      // fallback
       return { type: "Not Astro", confidence: 0.9 };
     }
+
+    // ------------------------------------------------------------
+    // ERROR BOX FUNCTION
+    // ------------------------------------------------------------
+    function showError(err) {
+      const result = document.getElementById("woit-result");
+      result.style.display = "block";
+      result.innerHTML = `
+        <div style="border:2px solid red; padding:12px; background:#330000; color:#f2f2f7;">
+          <strong>WOIT Error:</strong><br>
+          ${err.message || "Unknown error"}<br><br>
+          Please try again or reset.
+        </div>
+      `;
+    }
+
+  } catch (err) {
+    // GLOBAL CATCH
+    const result = document.getElementById("woit-result");
+    if (result) {
+      result.style.display = "block";
+      result.innerHTML = `
+        <div style="border:2px solid red; padding:12px; background:#330000; color:#f2f2f7;">
+          <strong>WOIT Fatal Error:</strong><br>
+          ${err.message || "Unknown error"}<br><br>
+          The engine crashed before initialization.
+        </div>
+      `;
+    }
+  }
 });
