@@ -87,42 +87,45 @@ document.addEventListener("DOMContentLoaded", () => {
     // SHOW RESULT
     // ------------------------------------------------------------
     function showResult(analysis, match) {
-      result.style.display = "block";
+  result.style.display = "block";
 
-      if (analysis.type === "Not Astro") {
-        result.innerHTML = `
-          <strong>This does not appear to be an astronomical object.</strong><br><br>
-          <em>Classifier confidence:</em> ${(analysis.typeConfidence * 100).toFixed(1)}%<br>
-        `;
-        return;
-      }
+  if (analysis.type === "Not Astro") {
+    result.innerHTML = `
+      <strong>This does not appear to be an astronomical object.</strong><br><br>
+      <em>Classifier confidence:</em> ${(analysis.typeConfidence * 100).toFixed(1)}%<br>
+    `;
+    return;
+  }
 
-      if (!match) {
-        result.innerHTML = `
-          <strong>No confident catalog match found.</strong><br><br>
-          <em>Detected type:</em> ${analysis.type}<br>
-          <em>Type confidence:</em> ${(analysis.typeConfidence * 100).toFixed(1)}%<br>
-        `;
-        return;
-      }
+  // Always show type first
+  let html = `
+    <strong>Detected Type:</strong> ${analysis.type}<br>
+    <em>Type confidence:</em> ${(analysis.typeConfidence * 100).toFixed(1)}%<br><br>
+  `;
 
-      result.innerHTML = `
-        <strong>Identified Object:</strong><br><br>
-        <strong>${match.name}</strong> (${match.id}${match.ngc ? " / NGC " + match.ngc : ""})<br>
-        Type: ${match.type}<br>
-        Mag: ${match.mag}<br>
-        Size: ${match.size}<br>
-        Constellation: ${match.con}<br>
-        Season: ${match.season}<br><br>
+  if (!match) {
+    html += `
+      <strong>No confident catalog match found.</strong><br>
+    `;
+  } else {
+    html += `
+      <strong>Best Catalog Match:</strong><br>
+      ${match.name} (${match.id}${match.ngc ? " / NGC " + match.ngc : ""})<br>
+      Type: ${match.type}<br>
+      Mag: ${match.mag}<br>
+      Size: ${match.size}<br>
+      Constellation: ${match.con}<br>
+      Season: ${match.season}<br><br>
+      <strong>Catalog match confidence:</strong> ${(match.score * 100).toFixed(1)}%<br>
+    `;
+  }
 
-        <strong>Catalog match confidence:</strong> ${(match.score * 100).toFixed(1)}%<br>
-        <strong>Type classifier confidence:</strong> ${(analysis.typeConfidence * 100).toFixed(1)}%<br><br>
-      `;
-    }
+  result.innerHTML = html;
+}
 
-    // ------------------------------------------------------------
-    // IMAGE ANALYSIS
-    // ------------------------------------------------------------
+  // ------------------------------------------------------------
+  // IMAGE ANALYSIS
+  // ------------------------------------------------------------
     async function analyzeImage(imgElement) {
       return new Promise((resolve, reject) => {
         try {
