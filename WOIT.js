@@ -236,29 +236,34 @@ document.addEventListener("DOMContentLoaded", () => {
       return count / (data.length / 4);
     }
 
-    function estimateNebulosity(data) {
-      let sum = 0;
-      for (let i = 0; i < data.length; i += 4) {
-        sum += data[i] + data[i + 1] + data[i + 2];
-      }
-      return sum / (data.length * 3 * 255);
-    }
+  function estimateNebulosity(data) {
+  let sum = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    // average brightness per pixel
+    const brightness = (data[i] + data[i+1] + data[i+2]) / 3;
+    sum += brightness / 255;
+  }
+  return sum / (data.length / 4); // average normalized brightness
+}
 
-    function estimateEntropy(data) {
-      const hist = new Array(256).fill(0);
-      for (let i = 0; i < data.length; i += 4) {
-        hist[data[i]]++;
-      }
-      let entropy = 0;
-      for (const h of hist) {
-        if (h > 0) {
-          const p = h / (data.length / 4);
-          entropy -= p * Math.log2(p);
-        }
-      }
-      return entropy / 8;
-    }
-    
+function estimateEntropy(data) {
+  // use variance across all channels instead of just red histogram
+  let mean = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    mean += (data[i] + data[i+1] + data[i+2]) / 3;
+  }
+  mean /= (data.length / 4);
+
+  let variance = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    const brightness = (data[i] + data[i+1] + data[i+2]) / 3;
+    variance += Math.pow(brightness - mean, 2);
+  }
+  variance /= (data.length / 4);
+
+  return Math.log2(1 + variance / 255); // normalized entropy-like measure
+}
+
     // ------------------------------------------------------------
     // CLASSIFIER
     // ------------------------------------------------------------
