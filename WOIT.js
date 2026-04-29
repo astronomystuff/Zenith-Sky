@@ -263,16 +263,34 @@ document.addEventListener("DOMContentLoaded", () => {
     // CLASSIFIER
     // ------------------------------------------------------------
     function classifyObject({ starDensity, nebulosity, entropy }) {
-      if (nebulosity > 0.6) return { type: "Nebula", confidence: nebulosity };
-      if (nebulosity > 0.3 && entropy > 0.5) return { type: "Galaxy", confidence: (nebulosity + entropy) / 2 };
-      if (starDensity > 0.05) return { type: "Open Cluster", confidence: starDensity };
-      if (starDensity > 0.1) return { type: "Globular Cluster", confidence: starDensity };
-      return { type: "Not Astro", confidence: 0.9 };
-    }
+  // Nebula: high nebulosity dominates
+  if (nebulosity > 0.15) {
+    return { type: "Nebula", confidence: nebulosity };
+  }
 
-    // ------------------------------------------------------------
-    // ERROR BOX FUNCTION
-    // ------------------------------------------------------------
+  // Galaxy: moderate nebulosity + entropy
+  if (nebulosity > 0.10 && entropy > 0.3) {
+    return { type: "Galaxy", confidence: (nebulosity + entropy) / 2 };
+  }
+
+  // Open cluster: star density moderate
+  if (starDensity > 0.02) {
+    return { type: "Open Cluster", confidence: starDensity };
+  }
+
+  // Globular cluster: star density high
+  if (starDensity > 0.05) {
+    return { type: "Globular Cluster", confidence: starDensity };
+  }
+
+  // fallback
+  return { type: "Not Astro", confidence: 0.9 };
+}
+
+
+  // ------------------------------------------------------------
+  // ERROR BOX FUNCTION
+  // ------------------------------------------------------------
     function showError(err) {
       const result = document.getElementById("woit-result");
       if (result) {
