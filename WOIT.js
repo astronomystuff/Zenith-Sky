@@ -209,24 +209,26 @@ document.addEventListener("DOMContentLoaded", () => {
       return Math.max(0.3, Math.min(3.0, 1 / (analysis.starDensity * 50 + 0.1)));
     }
 
-    function matchObject(analysis, catalog) {
-      let best = null;
-      let bestScore = -Infinity;
+  function matchObject(analysis, catalog) {
+  let best = null;
+  let bestScore = -Infinity;
 
-      for (const obj of catalog) {
-        const objSize = parseSize(obj.size);
-        const sizeScore = objSize ? 1 / (1 + Math.abs(objSize - estimateFOV(analysis))) : 0.5;
+  for (const obj of catalog) {
+    const objSize = parseSize(obj.size);
+    const sizeScore = objSize ? 1 / (1 + Math.abs(objSize - estimateFOV(analysis))) : 0.5;
 
-        const score = sizeScore;
+    // weight by type confidence
+    const score = sizeScore * analysis.typeConfidence;
 
-        if (score > bestScore) {
-          bestScore = score;
-          best = { ...obj, score };
-        }
-      }
-
-      return bestScore > 0.2 ? best : null;
+    if (score > bestScore) {
+      bestScore = score;
+      best = { ...obj, score };
     }
+  }
+
+  return bestScore > 0.2 ? best : null;
+}
+
 
     // ------------------------------------------------------------
     // FEATURE ESTIMATORS
@@ -239,7 +241,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return count / (data.length / 4);
     }
 
-  function estimateNebulosity(data) {
+    function estimateNebulosity(data) {
   let sum = 0;
   for (let i = 0; i < data.length; i += 4) {
     // average brightness per pixel
@@ -250,7 +252,7 @@ document.addEventListener("DOMContentLoaded", () => {
 }
 
 function estimateEntropy(data) {
-  // use variance across all channels instead of just red histogram
+  // variance across all channels
   let mean = 0;
   for (let i = 0; i < data.length; i += 4) {
     mean += (data[i] + data[i+1] + data[i+2]) / 3;
@@ -266,6 +268,7 @@ function estimateEntropy(data) {
 
   return Math.log2(1 + variance / 255); // normalized entropy-like measure
 }
+
 
     // ------------------------------------------------------------
     // CLASSIFIER
