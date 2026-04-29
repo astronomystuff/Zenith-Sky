@@ -229,3 +229,59 @@
     return bestScore > 0.2 ? best : null;
   }
 });
+
+    // ------------------------------------------------------------
+    // FEATURE ESTIMATORS
+    // ------------------------------------------------------------
+    function estimateStarDensity(data) {
+      let count = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        // crude star detection: bright pixels
+        if (data[i] > 200 && data[i + 1] > 200 && data[i + 2] > 200) count++;
+      }
+      return count / (data.length / 4);
+    }
+
+    function estimateNebulosity(data) {
+      let sum = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        sum += data[i] + data[i + 1] + data[i + 2];
+      }
+      return sum / (data.length * 3 * 255);
+    }
+
+    function estimateEntropy(data) {
+      const hist = new Array(256).fill(0);
+      for (let i = 0; i < data.length; i += 4) {
+        hist[data[i]]++;
+      }
+      let entropy = 0;
+      for (const h of hist) {
+        if (h > 0) {
+          const p = h / (data.length / 4);
+          entropy -= p * Math.log2(p);
+        }
+      }
+      return entropy / 8; // normalize
+    }
+
+    // ------------------------------------------------------------
+    // CLASSIFIER
+    // ------------------------------------------------------------
+    function classifyObject({ starDensity, nebulosity, entropy }) {
+      // Nebula: high nebulosity
+      if (nebulosity > 0.6) return { type: "Nebula", confidence: nebulosity };
+
+      // Galaxy: moderate nebulosity + moderate entropy
+      if (nebulosity > 0.3 && entropy > 0.5) return { type: "Galaxy", confidence: (nebulosity + entropy) / 2 };
+
+      // Open cluster: high star density
+      if (starDensity > 0.05) return { type: "Open Cluster", confidence: starDensity };
+
+      // Globular cluster: very high star density
+      if (starDensity > 0.1) return { type: "Globular Cluster", confidence: starDensity };
+
+      // fallback
+      return { type: "Not Astro", confidence: 0.9 };
+    }
+
