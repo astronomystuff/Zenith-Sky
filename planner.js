@@ -1254,55 +1254,100 @@ const lonRad = deg2rad(lonDeg);
 if (s.isMoon) {
   const R = printMode ? 15 : 6 * scale;
 
-  const sunPos = computeSun(date, latDeg, lonDeg);
-  const sunRaRad = deg2rad(sunPos.raHours * 15);
-  const sunDecRad = deg2rad(sunPos.decDeg);
-
-  const haSun = normalizeAngle(lst - sunRaRad);
-
-  const sinAltSun =
-    Math.sin(latRad) * Math.sin(sunDecRad) +
-    Math.cos(latRad) * Math.cos(sunDecRad) * Math.cos(haSun);
-
-  const altSun = Math.asin(sinAltSun);
-
-  const cosAzSun =
-    (Math.sin(sunDecRad) - Math.sin(altSun) * Math.sin(latRad)) /
-    (Math.cos(altSun) * Math.cos(latRad));
-
-  let azSun = Math.acos(Math.max(-1, Math.min(1, cosAzSun)));
-  if (Math.sin(haSun) > 0) azSun = 2 * Math.PI - azSun;
-
-  const angleToSun = azSun - s.az;
-  const illum = s.illumination;
-  const k = 2 * illum - 1;
-  const offset = R * k;
-
   ctx.save();
   ctx.translate(s.x, s.y);
-  ctx.rotate(angleToSun);
-  ctx.fillStyle = "#000";
-  ctx.beginPath();
-  ctx.arc(0, 0, R, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(offset, 0, R, 0, Math.PI * 2);
-  ctx.clip();
-  ctx.fillStyle = "#fff";
-  ctx.beginPath();
-  ctx.arc(0, 0, R, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
+
+  switch (s.phaseName) {
+    case "New Moon":
+      ctx.fillStyle = "#000";
+      ctx.beginPath();
+      ctx.arc(0, 0, R, 0, 2 * Math.PI);
+      ctx.fill();
+      break;
+
+    case "Full Moon":
+      ctx.fillStyle = "#fff";
+      ctx.beginPath();
+      ctx.arc(0, 0, R, 0, 2 * Math.PI);
+      ctx.fill();
+      break;
+
+    case "First Quarter":
+      ctx.fillStyle = "#fff";
+      ctx.beginPath();
+      ctx.arc(0, 0, R, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, -R, R, 2 * R);
+      break;
+
+    case "Last Quarter":
+      ctx.fillStyle = "#fff";
+      ctx.beginPath();
+      ctx.arc(0, 0, R, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.fillStyle = "#000";
+      ctx.fillRect(-R, -R, R, 2 * R);
+      break;
+
+    case "Waxing Crescent":
+      // mostly dark, thin lit crescent on right
+      ctx.fillStyle = "#000";
+      ctx.beginPath();
+      ctx.arc(0, 0, R, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.fillStyle = "#fff";
+      ctx.beginPath();
+      ctx.arc(R * 0.3, 0, R * 0.7, 0, 2 * Math.PI);
+      ctx.fill();
+      break;
+
+    case "Waning Crescent":
+      // mostly dark, thin lit crescent on left
+      ctx.fillStyle = "#000";
+      ctx.beginPath();
+      ctx.arc(0, 0, R, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.fillStyle = "#fff";
+      ctx.beginPath();
+      ctx.arc(-R * 0.3, 0, R * 0.7, 0, 2 * Math.PI);
+      ctx.fill();
+      break;
+
+    case "Waxing Gibbous":
+      // mostly lit, small dark left edge
+      ctx.fillStyle = "#fff";
+      ctx.beginPath();
+      ctx.arc(0, 0, R, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.fillStyle = "#000";
+      ctx.beginPath();
+      ctx.arc(-R * 0.3, 0, R * 0.7, 0, 2 * Math.PI);
+      ctx.fill();
+      break;
+
+    case "Waning Gibbous":
+      // mostly lit, small dark right edge
+      ctx.fillStyle = "#fff";
+      ctx.beginPath();
+      ctx.arc(0, 0, R, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.fillStyle = "#000";
+      ctx.beginPath();
+      ctx.arc(R * 0.3, 0, R * 0.7, 0, 2 * Math.PI);
+      ctx.fill();
+      break;
+  }
+
   ctx.strokeStyle = "rgba(0,0,0,0.6)";
   ctx.lineWidth = 0.5 * scale;
   ctx.beginPath();
-  ctx.arc(0, 0, R, 0, Math.PI * 2);
+  ctx.arc(0, 0, R, 0, 2 * Math.PI);
   ctx.stroke();
+
   ctx.restore();
   return;
 }
-
 
 // --- PLANETS ---
   if (s.isPlanet) {
