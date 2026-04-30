@@ -2322,6 +2322,20 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
 
   try {
     // Step 1: Fill hidden root
+    let weather = null;
+  try {
+  const block = await fetchAstroWeather(lat, lon, dt);
+  if (block) {
+    weather = {
+      cc: block.cloudcover,
+      seeing: 9 - block.seeing,
+      trans: 9 - block.transparency
+    };
+  }
+} catch (e) {
+  console.error("Weather fetch failed:", e);
+}
+      
     await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
 
     // Step 2: Inject CSS + content
@@ -2406,7 +2420,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("planner-print").addEventListener("click", () => {
   openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr);
-});n
+});
 
   });
 });
