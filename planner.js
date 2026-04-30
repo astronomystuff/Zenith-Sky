@@ -2387,8 +2387,10 @@ function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr) {
     });
   }
 
-  printWin.focus();
-  printWin.print();
+  setTimeout(() => {
+    printWin.focus();
+    printWin.print();
+  }, 300);
 }
 
 // ===============================
