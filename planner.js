@@ -2310,7 +2310,9 @@ let printWin;
 // ===============================
 // openPlannerModalAndPrint
 // ===============================
-function openPlannerModalAndPrint() {
+async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr, weather) {
+  await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
+
   const src = document.getElementById("planner-pdf-root");
   if (!src || !src.children.length) {
     alert("Nothing to print.");
@@ -2389,32 +2391,25 @@ function openPlannerModalAndPrint() {
 
   Array.from(src.children).forEach(child => {
     const clone = child.cloneNode(true);
-
     const canvases = child.querySelectorAll("canvas");
-    if (canvases && canvases.length) {
-      canvases.forEach((c, i) => {
-        try {
-          const data = c.toDataURL("image/png");
-          const img = document.createElement("img");
-          img.src = data;
-          const cloneCanvas = clone.querySelectorAll("canvas")[i];
-          if (cloneCanvas && cloneCanvas.parentNode) cloneCanvas.parentNode.replaceChild(img, cloneCanvas);
-        } catch (e) {
+    canvases.forEach((c, i) => {
+      try {
+        const data = c.toDataURL("image/png");
+        const img = document.createElement("img");
+        img.src = data;
+        const cloneCanvas = clone.querySelectorAll("canvas")[i];
+        if (cloneCanvas && cloneCanvas.parentNode) {
+          cloneCanvas.parentNode.replaceChild(img, cloneCanvas);
         }
-      });
-    }
-
+      } catch (e) {}
+    });
     dest.appendChild(printWin.document.importNode(clone, true));
   });
-    
-  const imgs = Array.from(printWin.document.images || []);
-  Promise.all(imgs.map(img => img.complete ? Promise.resolve() : new Promise(res => { img.onload = img.onerror = res; })))
-    .then(() => {
-      setTimeout(() => {
-        try { printWin.focus(); } catch (e) {}
-        try { printWin.print(); } catch (e) {}
-      }, 200);
-    });
+
+  setTimeout(() => {
+    printWin.focus();
+    printWin.print();
+  }, 300);
 }
 
 // ===============================
