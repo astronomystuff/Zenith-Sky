@@ -1005,7 +1005,7 @@ if (printMode) {
       const height = parseFloat(style.height);
       cssSize = Math.min(width, height);
     } else {
-      cssSize = 350;
+      cssSize = 330;
     }
   }
 }
@@ -1029,7 +1029,7 @@ const padding = 9;
 const radius = size / 2 - padding;
 let scale;
 if (printMode) {
-  scale = 350 / 1050;
+  scale = 1050 / 350;
 } else {
   scale = (canvas.width * canvas.width) / 500000 + 0.25;
 }
@@ -2322,7 +2322,7 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
 
   try {
     // Step 1: Fill hidden root
-    await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr);
+    await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
 
     // Step 2: Inject CSS + content
     printWin.document.open();
