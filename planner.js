@@ -2310,7 +2310,15 @@ let printWin;
 // ===============================
 // openPlannerModalAndPrint
 // ===============================
-function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr, weather) {
+async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr, weather) {
+  await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
+
+  const src = document.getElementById("planner-pdf-root");
+  if (!src || !src.children.length) {
+    alert("Nothing to print.");
+    return;
+  }
+
   const printWin = window.open("", "_blank", "width=900,height=700");
   if (!printWin) {
     alert("Popup blocked — please allow popups for this site.");
@@ -2378,14 +2386,25 @@ function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr, weath
   `);
   printWin.document.close();
 
-  const src = document.getElementById("planner-pdf-root");
   const dest = printWin.document.getElementById("planner-pdf-print-root");
-  if (src && dest) {
-    dest.innerHTML = "";
-    Array.from(src.children).forEach(child => {
-      dest.appendChild(printWin.document.importNode(child, true));
+  dest.innerHTML = "";
+
+  Array.from(src.children).forEach(child => {
+    const clone = child.cloneNode(true);
+    const canvases = child.querySelectorAll("canvas");
+    canvases.forEach((c, i) => {
+      try {
+        const data = c.toDataURL("image/png");
+        const img = document.createElement("img");
+        img.src = data;
+        const cloneCanvas = clone.querySelectorAll("canvas")[i];
+        if (cloneCanvas && cloneCanvas.parentNode) {
+          cloneCanvas.parentNode.replaceChild(img, cloneCanvas);
+        }
+      } catch (e) {}
     });
-  }
+    dest.appendChild(printWin.document.importNode(clone, true));
+  });
 
   setTimeout(() => {
     printWin.focus();
