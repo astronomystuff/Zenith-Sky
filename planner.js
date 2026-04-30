@@ -597,7 +597,6 @@ async function loadObjects() {
     ["Zeta Herculis", "Sarin"],
     ["Sarin", "Pi Herculis"],
     ["Sarin", "Rasalgethi"],
-    ["Kornephoros", "Rasalgethi"],
     ["Sarin", "Mu Herculis"],
     ["Zeta Herculis", "Kornephoros"],
 
