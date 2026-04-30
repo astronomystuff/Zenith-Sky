@@ -2310,6 +2310,7 @@ let printWin;
 // openPlannerModalAndPrint
 // ===============================
 async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr) {
+ try {
   const printWin = window.open("", "_blank", "width=900,height=700");
   if (!printWin) {
     alert("Popup blocked — please allow popups for this site.");
@@ -2332,51 +2333,53 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
   } catch (e) {}
 
   await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
+      printWin.document.open();
+    printWin.document.write(`
+      <html>
+        <head>
+          <title>Observation Planner</title>
+          <style>
+            html,body{background:white;color:black;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}
+            @page{size:8.5in 11in;margin:0;}
+            .planner-pdf-page{width:8.5in;min-height:11in;page-break-after:always;display:flex;flex-direction:row;}
+            .planner-pdf-left{width:3.5in;padding:0.25in;box-sizing:border-box;}
+            .planner-pdf-right{width:5in;padding:0.25in;box-sizing:border-box;overflow:visible;}
+            table{width:100%;border-collapse:collapse;font-size:11.5px;}
+            th,td{border:1px solid #b5b5b5;padding:2.5px 3px;line-height:1.15;font-size:inherit;}
+            th{background:#eee;font-weight:600;}
+            img{max-width:100%;height:auto;display:block;}
+          </style>
+        </head>
+        <body>
+          <div id="planner-pdf-print-root" style="cursor:pointer;"></div>
+          <script>
+            document.getElementById('planner-pdf-print-root').addEventListener('click', () => {
+              try {
+                window.focus();
+                window.print();
+              } catch (err) {
+                alert("Print failed: " + err.message);
+              }
+            });
+          </script>
+        </body>
+      </html>
+    `);
+    printWin.document.close();
 
-  printWin.document.open();
-  printWin.document.write(`
-    <html>
-      <head>
-        <title>Observation Planner</title>
-        <style>
-          html,body{
-            background:white;
-            color:black;
-            margin:0;
-            padding:0;
-            font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-          }
-          @page{size:8.5in 11in;margin:0;}
-          .planner-pdf-page{width:8.5in;min-height:11in;page-break-after:always;display:flex;flex-direction:row;}
-          .planner-pdf-left{width:3.5in;padding:0.25in;box-sizing:border-box;}
-          .planner-pdf-right{width:5in;padding:0.25in;box-sizing:border-box;overflow:visible;}
-          table{width:100%;border-collapse:collapse;font-size:11.5px;}
-          th,td{border:1px solid #b5b5b5;padding:2.5px 3px;line-height:1.15;font-size:inherit;}
-          th{background:#eee;font-weight:600;}
-          img{max-width:100%;height:auto;display:block;}
-        </style>
-      </head>
-      <body>
-        <div id="planner-pdf-print-root" style="cursor:pointer;"></div>
-        <script>
-          // attach click handler to the whole content
-          document.getElementById('planner-pdf-print-root').addEventListener('click', () => {
-            window.focus();
-            window.print();
-          });
-        </script>
-      </body>
-    </html>
-  `);
-  printWin.document.close();
-
-  const src = document.getElementById("planner-pdf-root");
-  const dest = printWin.document.getElementById("planner-pdf-print-root");
-  if (src && dest) {
-    dest.innerHTML = "";
-    Array.from(src.children).forEach(child => {
-      dest.appendChild(printWin.document.importNode(child, true));
-    });
+    const src = document.getElementById("planner-pdf-root");
+    const dest = printWin.document.getElementById("planner-pdf-print-root");
+    if (src && dest) {
+      dest.innerHTML = "";
+      Array.from(src.children).forEach(child => {
+        dest.appendChild(printWin.document.importNode(child, true));
+      });
+    } else {
+      throw new Error("Source or destination root not found.");
+    }
+  } catch (err) {
+    console.error("openPlannerModalAndPrint failed:", err);
+    alert("Error preparing planner: " + err.message);
   }
 }
 
@@ -2400,7 +2403,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const timeStr = window.lastPlannerTimeStr || dt.toLocaleTimeString();
 
     document.getElementById("planner-print").addEventListener("click", () => {
-  openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr, weather);
+  openPlannerModalAndPrint(null, lat, lon, dt, results, dateStr, timeStr);
 });
 
   });
