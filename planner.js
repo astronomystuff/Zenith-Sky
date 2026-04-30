@@ -2311,6 +2311,7 @@ let printWin;
 // openPlannerModalAndPrint
 // ===============================
 async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr, weather) {
+  // Step 1: fill the hidden root
   await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
 
   const src = document.getElementById("planner-pdf-root");
@@ -2319,6 +2320,7 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr,
     return;
   }
 
+  // Step 2: open the print window with CSS
   const printWin = window.open("", "_blank", "width=900,height=700");
   if (!printWin) {
     alert("Popup blocked — please allow popups for this site.");
@@ -2386,31 +2388,20 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr,
   `);
   printWin.document.close();
 
+  // Step 3: copy content into the print window
   const dest = printWin.document.getElementById("planner-pdf-print-root");
   dest.innerHTML = "";
-
   Array.from(src.children).forEach(child => {
-    const clone = child.cloneNode(true);
-    const canvases = child.querySelectorAll("canvas");
-    canvases.forEach((c, i) => {
-      try {
-        const data = c.toDataURL("image/png");
-        const img = document.createElement("img");
-        img.src = data;
-        const cloneCanvas = clone.querySelectorAll("canvas")[i];
-        if (cloneCanvas && cloneCanvas.parentNode) {
-          cloneCanvas.parentNode.replaceChild(img, cloneCanvas);
-        }
-      } catch (e) {}
-    });
-    dest.appendChild(printWin.document.importNode(clone, true));
+    dest.appendChild(printWin.document.importNode(child, true));
   });
 
+  // Step 4: trigger print after short delay
   setTimeout(() => {
     printWin.focus();
     printWin.print();
   }, 300);
 }
+
 
 // ===============================
 // ATTACH PRINT BUTTON HANDLER
@@ -2431,7 +2422,10 @@ window.addEventListener("DOMContentLoaded", () => {
     const dateStr = window.lastPlannerDateStr || dt.toLocaleDateString();
     const timeStr = window.lastPlannerTimeStr || dt.toLocaleTimeString();
 
-    await openPlannerModalAndPrint(null, lat, lon, dt, results, dateStr, timeStr);
+    document.getElementById("planner-print").addEventListener("click", () => {
+  openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr, weather);
+});
+
   });
 });
 
