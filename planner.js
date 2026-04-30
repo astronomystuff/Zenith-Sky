@@ -2006,8 +2006,6 @@ function drawOnScreenMap(lat, lon, dt) {
   drawAzimuthalStarMap(canvas, lat, lon, dt, false, modalSize);
 }
 
-
-
 function renderMapImageForPrint(lat, lon, dt) {
   const inches = 3.5;
   const dpi = 300;
@@ -2320,24 +2318,24 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
   printWin.document.write("<html><body><div id='status'>Preparing PDF…</div></body></html>");
   printWin.document.close();
 
+  // Step 1: Fill root
   try {
-    // Step 1: Fill hidden root
     let weather = null;
-  try {
-  const block = await fetchAstroWeather(lat, lon, dt);
-  if (block) {
-    weather = {
-      cc: block.cloudcover,
-      seeing: 9 - block.seeing,
-      trans: 9 - block.transparency
-    };
-  }
-} catch (e) {
-  console.error("Weather fetch failed:", e);
-}
-      
-    await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
 
+    try {
+      const block = await fetchAstroWeather(lat, lon, dt);
+      if (block) {
+        weather = {
+          cc: block.cloudcover,
+          seeing: 9 - block.seeing,
+          trans: 9 - block.transparency
+        };
+      }
+    } catch (e) {
+      console.error("Weather fetch failed:", e);
+    }
+
+    await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather)
     // Step 2: Inject CSS + content
     printWin.document.open();
     printWin.document.write(`
