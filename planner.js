@@ -1257,94 +1257,94 @@ if (s.isMoon) {
   ctx.save();
   ctx.translate(s.x, s.y);
 
-  switch (s.phaseName) {
-    case "New Moon":
-      ctx.fillStyle = "#000";
-      ctx.beginPath();
-      ctx.arc(0, 0, R, 0, 2 * Math.PI);
-      ctx.fill();
-      break;
+  // Draw the Moon phase shape
+switch (s.phaseName) {
+  case "New Moon":
+    ctx.fillStyle = "#000";
+    ctx.beginPath();
+    ctx.arc(0, 0, R, 0, 2 * Math.PI);
+    ctx.fill();
+    break;
 
-    case "Full Moon":
-      ctx.fillStyle = "#fff";
-      ctx.beginPath();
-      ctx.arc(0, 0, R, 0, 2 * Math.PI);
-      ctx.fill();
-      break;
+  case "Full Moon":
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.arc(0, 0, R, 0, 2 * Math.PI);
+    ctx.fill();
+    break;
 
-    case "First Quarter":
-      ctx.fillStyle = "#fff";
-      ctx.beginPath();
-      ctx.arc(0, 0, R, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.fillStyle = "#000";
-      ctx.fillRect(0, -R, R, 2 * R);
-      break;
+  case "First Quarter":
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.arc(0, 0, R, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, -R, R, 2 * R);
+    break;
 
-    case "Last Quarter":
-      ctx.fillStyle = "#fff";
-      ctx.beginPath();
-      ctx.arc(0, 0, R, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.fillStyle = "#000";
-      ctx.fillRect(-R, -R, R, 2 * R);
-      break;
+  case "Last Quarter":
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.arc(0, 0, R, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillStyle = "#000";
+    ctx.fillRect(-R, -R, R, 2 * R);
+    break;
 
-    case "Waxing Crescent":
-      // mostly dark, thin lit crescent on right
-      ctx.fillStyle = "#000";
-      ctx.beginPath();
-      ctx.arc(0, 0, R, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.fillStyle = "#fff";
-      ctx.beginPath();
-      ctx.arc(R * 0.3, 0, R * 0.7, 0, 2 * Math.PI);
-      ctx.fill();
-      break;
+  case "Waxing Crescent":
+    ctx.fillStyle = "#000";
+    ctx.beginPath();
+    ctx.arc(0, 0, R, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.arc(R * 0.3, 0, R * 0.7, 0, 2 * Math.PI);
+    ctx.fill();
+    break;
 
-    case "Waning Crescent":
-      // mostly dark, thin lit crescent on left
-      ctx.fillStyle = "#000";
-      ctx.beginPath();
-      ctx.arc(0, 0, R, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.fillStyle = "#fff";
-      ctx.beginPath();
-      ctx.arc(-R * 0.3, 0, R * 0.7, 0, 2 * Math.PI);
-      ctx.fill();
-      break;
+  case "Waning Crescent":
+    ctx.fillStyle = "#000";
+    ctx.beginPath();
+    ctx.arc(0, 0, R, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.arc(-R * 0.3, 0, R * 0.7, 0, 2 * Math.PI);
+    ctx.fill();
+    break;
 
-    case "Waxing Gibbous":
-      // mostly lit, small dark left edge
-      ctx.fillStyle = "#fff";
-      ctx.beginPath();
-      ctx.arc(0, 0, R, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.fillStyle = "#000";
-      ctx.beginPath();
-      ctx.arc(-R * 0.3, 0, R * 0.7, 0, 2 * Math.PI);
-      ctx.fill();
-      break;
+  case "Waxing Gibbous":
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.arc(0, 0, R, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillStyle = "#000";
+    ctx.beginPath();
+    ctx.arc(-R * 0.3, 0, R * 0.7, 0, 2 * Math.PI);
+    ctx.fill();
+    break;
 
-    case "Waning Gibbous":
-      // mostly lit, small dark right edge
-      ctx.fillStyle = "#fff";
-      ctx.beginPath();
-      ctx.arc(0, 0, R, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.fillStyle = "#000";
-      ctx.beginPath();
-      ctx.arc(R * 0.3, 0, R * 0.7, 0, 2 * Math.PI);
-      ctx.fill();
-      break;
-  }
+  case "Waning Gibbous":
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.arc(0, 0, R, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillStyle = "#000";
+    ctx.beginPath();
+    ctx.arc(R * 0.3, 0, R * 0.7, 0, 2 * Math.PI);
+    ctx.fill();
+    break;
+}
 
   ctx.strokeStyle = "rgba(0,0,0,0.6)";
   ctx.lineWidth = 0.5 * scale;
   ctx.beginPath();
   ctx.arc(0, 0, R, 0, 2 * Math.PI);
   ctx.stroke();
-
+  ctx.beginPath();
+  ctx.arc(0, 0, R, 0, 2 * Math.PI);
+  ctx.clip();
+  ctx.clearRect(-R, -R, 2 * R, 2 * R);
   ctx.restore();
   return;
 }
