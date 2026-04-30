@@ -2310,123 +2310,85 @@ let printWin;
 // ===============================
 // openPlannerModalAndPrint
 // ===============================
-async function openPlannerModalAndPrint(modalWin, lat, lon, dt, results, dateStr, timeStr) {
+function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr) {
   const printWin = window.open("", "_blank", "width=900,height=700");
   if (!printWin) {
     alert("Popup blocked — please allow popups for this site.");
     return;
   }
 
-  printWin.document.write("<html><body>Preparing PDF…</body></html>");
+  printWin.document.write(`
+    <html>
+      <head>
+        <title>Observation Planner</title>
+        <style>
+          html,body{
+            background:white;
+            color:black;
+            margin:0;
+            padding:0;
+            font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+          }
+          @page{size:8.5in 11in;margin:0;}
+          .planner-pdf-page{
+            width:8.5in;
+            min-height:11in;
+            page-break-after:always;
+            display:flex;
+            flex-direction:row;
+          }
+          .planner-pdf-left{
+            width:3.5in;
+            padding:0.25in;
+            box-sizing:border-box;
+          }
+          .planner-pdf-right{
+            width:5in;
+            padding:0.25in;
+            box-sizing:border-box;
+            overflow:visible;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11.5px;
+          }
+          th, td {
+            border: 1px solid #b5b5b5;
+            padding: 2.5px 3px;
+            line-height: 1.15;
+            font-size: inherit;
+          }
+          th {
+            background: #eee;
+            font-weight: 600;
+          }
+          img{
+            max-width:100%;
+            height:auto;
+            display:block;
+          }
+        </style>
+      </head>
+      <body>
+        <div id="planner-pdf-print-root"></div>
+      </body>
+    </html>
+  `);
   printWin.document.close();
-
-  let weather = null;
-  try {
-    const block = await fetchAstroWeather(lat, lon, dt);
-    if (block) {
-      weather = {
-        cc: block.cloudcover,
-        seeing: 9 - block.seeing,
-        trans: 9 - block.transparency
-    };
-}
-
-  } catch (e) {}
-
-  await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
-
-  printWin.document.open();
-printWin.document.write(`
-  <html>
-    <head>
-      <title>Observation Planner</title>
-      <style>
-        html,body{
-          background:white;
-          color:black;
-          margin:0;
-          padding:0;
-          font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-        }
-        @page{size:8.5in 11in;margin:0;}
-        .planner-pdf-page{
-          width:8.5in;
-          min-height:11in;
-          page-break-after:always;
-          display:flex;
-          flex-direction:row;
-        }
-        .planner-pdf-left{
-          width:3.5in;
-          padding:0.25in;
-          box-sizing:border-box;
-        }
-        .planner-pdf-right{
-          width:5in;
-          padding:0.25in;
-          box-sizing:border-box;
-          overflow:visible;
-        }
-
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 11.5px;
-        }
-
-        th, td {
-          border: 1px solid #b5b5b5;
-          padding: 2.5px 3px;
-          line-height: 1.15;
-          font-size: inherit;
-        }
-
-        th {
-          background: #eee;
-          font-weight: 600;
-        }
-
-        img{
-          max-width:100%;
-          height:auto;
-          display:block;
-        }
-      </style>
-    </head>
-    <body>
-      <div id="planner-pdf-print-root"></div>
-    </body>
-  </html>
-`);
-printWin.document.close();
-
 
   const src = document.getElementById("planner-pdf-root");
   const dest = printWin.document.getElementById("planner-pdf-print-root");
-
   if (src && dest) {
-    dest.innerHTML = "";
     Array.from(src.children).forEach(child => {
-      const imported = printWin.document.importNode(child, true);
-      dest.appendChild(imported);
+      dest.appendChild(printWin.document.importNode(child, true));
     });
   }
 
-  const imgs = Array.from(printWin.document.images || []);
-  await Promise.all(imgs.map(img =>
-    img.complete ? Promise.resolve() : new Promise(res => { img.onload = img.onerror = res; })
-  ));
-
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      try { printWin.focus(); } catch (e) {}
-      setTimeout(() => {
-        try { printWin.print(); } catch (e) {}
-        try { printWin.close(); } catch (e) {}
-      }, 50);
-    });
-  });
+  printWin.focus();
+  printWin.print();
 }
+
 
 // ===============================
 // ATTACH PRINT BUTTON HANDLER
