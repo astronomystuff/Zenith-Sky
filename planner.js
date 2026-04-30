@@ -2317,6 +2317,7 @@ function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr) {
     return;
   }
 
+  printWin.document.open();
   printWin.document.write(`
     <html>
       <head>
@@ -2380,6 +2381,7 @@ function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr) {
   const src = document.getElementById("planner-pdf-root");
   const dest = printWin.document.getElementById("planner-pdf-print-root");
   if (src && dest) {
+    dest.innerHTML = "";
     Array.from(src.children).forEach(child => {
       dest.appendChild(printWin.document.importNode(child, true));
     });
@@ -2388,7 +2390,6 @@ function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr) {
   printWin.focus();
   printWin.print();
 }
-
 
 // ===============================
 // ATTACH PRINT BUTTON HANDLER
