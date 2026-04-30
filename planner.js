@@ -1027,8 +1027,12 @@ const cx = w / 2;
 const cy = h / 2;
 const padding = 9;
 const radius = size / 2 - padding;
-const scale = (canvas.width * canvas.width) / 500000 + 0.25;
-
+let scale;
+if (printMode) {
+  scale = 350 / 1050;
+} else {
+  scale = (canvas.width * canvas.width) / 500000 + 0.25;
+}
 
   // Background
   ctx.fillStyle = "#ffffff";
