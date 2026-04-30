@@ -2310,30 +2310,22 @@ let printWin;
 // openPlannerModalAndPrint
 // ===============================
 async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr) {
- try {
   const printWin = window.open("", "_blank", "width=900,height=700");
   if (!printWin) {
     alert("Popup blocked — please allow popups for this site.");
     return;
   }
 
-  printWin.document.write("<html><body>Preparing PDF…</body></html>");
+  // Initial placeholder
+  printWin.document.write("<html><body><div id='status'>Preparing PDF…</div></body></html>");
   printWin.document.close();
 
-  let weather = null;
   try {
-    const block = await fetchAstroWeather(lat, lon, dt);
-    if (block) {
-      weather = {
-        cc: block.cloudcover,
-        seeing: 9 - block.seeing,
-        trans: 9 - block.transparency
-      };
-    }
-  } catch (e) {}
+    // Step 1: Fill hidden root
+    await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr);
 
-  await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
-      printWin.document.open();
+    // Step 2: Inject CSS + content
+    printWin.document.open();
     printWin.document.write(`
       <html>
         <head>
@@ -2348,6 +2340,7 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
             th,td{border:1px solid #b5b5b5;padding:2.5px 3px;line-height:1.15;font-size:inherit;}
             th{background:#eee;font-weight:600;}
             img{max-width:100%;height:auto;display:block;}
+            .error{color:red;font-weight:bold;padding:20px;}
           </style>
         </head>
         <body>
@@ -2358,7 +2351,7 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
                 window.focus();
                 window.print();
               } catch (err) {
-                alert("Print failed: " + err.message);
+                document.body.innerHTML = '<div class="error">Print failed: ' + err.message + '</div>';
               }
             });
           </script>
@@ -2367,6 +2360,7 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
     `);
     printWin.document.close();
 
+    // Step 3: Copy content
     const src = document.getElementById("planner-pdf-root");
     const dest = printWin.document.getElementById("planner-pdf-print-root");
     if (src && dest) {
@@ -2379,9 +2373,17 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
     }
   } catch (err) {
     console.error("openPlannerModalAndPrint failed:", err);
-    alert("Error preparing planner: " + err.message);
+    // Replace placeholder with error message
+    printWin.document.open();
+    printWin.document.write(`
+      <html><body><div class="error">
+        Error preparing planner: ${err.message}
+      </div></body></html>
+    `);
+    printWin.document.close();
   }
 }
+
 
 // ===============================
 // ATTACH PRINT BUTTON HANDLER
@@ -2403,8 +2405,8 @@ window.addEventListener("DOMContentLoaded", () => {
     const timeStr = window.lastPlannerTimeStr || dt.toLocaleTimeString();
 
     document.getElementById("planner-print").addEventListener("click", () => {
-  openPlannerModalAndPrint(null, lat, lon, dt, results, dateStr, timeStr);
-});
+  openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr);
+});n
 
   });
 });
