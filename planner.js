@@ -1029,7 +1029,7 @@ const padding = 9;
 const radius = size / 2 - padding;
 let scale;
 if (printMode) {
-  scale = 1050 / 350;
+  scale = 1050 / 330;
 } else {
   scale = (canvas.width * canvas.width) / 500000 + 0.25;
 }
