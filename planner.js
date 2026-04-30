@@ -2254,7 +2254,6 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, w
   // FIRST PAGE
   // -------------------------
   const { page: firstPage, left: firstLeft, right: firstRight } = createPage();
-
   const moonDate = dt instanceof Date ? dt : new Date(dt);
   const moon = computeMoon(moonDate);
   const latRad = deg2rad(lat);
@@ -2310,22 +2309,29 @@ let printWin;
 // ===============================
 // openPlannerModalAndPrint
 // ===============================
-async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr, weather) {
-  // Step 1: fill the hidden root
-  await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
-
-  const src = document.getElementById("planner-pdf-root");
-  if (!src || !src.children.length) {
-    alert("Nothing to print.");
-    return;
-  }
-
-  // Step 2: open the print window with CSS
+async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr) {
   const printWin = window.open("", "_blank", "width=900,height=700");
   if (!printWin) {
     alert("Popup blocked — please allow popups for this site.");
     return;
   }
+
+  printWin.document.write("<html><body>Preparing PDF…</body></html>");
+  printWin.document.close();
+
+  let weather = null;
+  try {
+    const block = await fetchAstroWeather(lat, lon, dt);
+    if (block) {
+      weather = {
+        cc: block.cloudcover,
+        seeing: 9 - block.seeing,
+        trans: 9 - block.transparency
+      };
+    }
+  } catch (e) {}
+
+  await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
 
   printWin.document.open();
   printWin.document.write(`
@@ -2341,67 +2347,38 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr,
             font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
           }
           @page{size:8.5in 11in;margin:0;}
-          .planner-pdf-page{
-            width:8.5in;
-            min-height:11in;
-            page-break-after:always;
-            display:flex;
-            flex-direction:row;
-          }
-          .planner-pdf-left{
-            width:3.5in;
-            padding:0.25in;
-            box-sizing:border-box;
-          }
-          .planner-pdf-right{
-            width:5in;
-            padding:0.25in;
-            box-sizing:border-box;
-            overflow:visible;
-          }
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 11.5px;
-          }
-          th, td {
-            border: 1px solid #b5b5b5;
-            padding: 2.5px 3px;
-            line-height: 1.15;
-            font-size: inherit;
-          }
-          th {
-            background: #eee;
-            font-weight: 600;
-          }
-          img{
-            max-width:100%;
-            height:auto;
-            display:block;
-          }
+          .planner-pdf-page{width:8.5in;min-height:11in;page-break-after:always;display:flex;flex-direction:row;}
+          .planner-pdf-left{width:3.5in;padding:0.25in;box-sizing:border-box;}
+          .planner-pdf-right{width:5in;padding:0.25in;box-sizing:border-box;overflow:visible;}
+          table{width:100%;border-collapse:collapse;font-size:11.5px;}
+          th,td{border:1px solid #b5b5b5;padding:2.5px 3px;line-height:1.15;font-size:inherit;}
+          th{background:#eee;font-weight:600;}
+          img{max-width:100%;height:auto;display:block;}
         </style>
       </head>
       <body>
-        <div id="planner-pdf-print-root"></div>
+        <div id="planner-pdf-print-root" style="cursor:pointer;"></div>
+        <script>
+          // attach click handler to the whole content
+          document.getElementById('planner-pdf-print-root').addEventListener('click', () => {
+            window.focus();
+            window.print();
+          });
+        </script>
       </body>
     </html>
   `);
   printWin.document.close();
 
-  // Step 3: copy content into the print window
+  const src = document.getElementById("planner-pdf-root");
   const dest = printWin.document.getElementById("planner-pdf-print-root");
-  dest.innerHTML = "";
-  Array.from(src.children).forEach(child => {
-    dest.appendChild(printWin.document.importNode(child, true));
-  });
-
-  // Step 4: trigger print after short delay
-  setTimeout(() => {
-    printWin.focus();
-    printWin.print();
-  }, 300);
+  if (src && dest) {
+    dest.innerHTML = "";
+    Array.from(src.children).forEach(child => {
+      dest.appendChild(printWin.document.importNode(child, true));
+    });
+  }
 }
-
 
 // ===============================
 // ATTACH PRINT BUTTON HANDLER
