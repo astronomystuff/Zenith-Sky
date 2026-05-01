@@ -31,52 +31,53 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ------------------------------------------------------------
-// fetchHistoricalWeather
+// fetchHistoricalWeather (Open-Meteo)
 // ------------------------------------------------------------
 async function fetchHistoricalWeather(lat, lon, targetDate) {
-  // Meteostat hourly endpoint via proxy
   const dateStr = targetDate.toISOString().slice(0, 10);
-  const target = `https://meteostat.p.rapidapi.com/point/hourly?lat=${lat}&lon=${lon}&start=${dateStr}&end=${dateStr}`;
-  const proxyUrl = `https://astro-proxy.niamnbhakta.workers.dev/?url=${encodeURIComponent(target)}`;
+
+  // Open-Meteo reanalysis endpoint
+  const target = `https://archive-api.open-meteo.com/v1/era5?latitude=${lat}&longitude=${lon}&start_date=${dateStr}&end_date=${dateStr}&hourly=cloudcover,relativehumidity_2m,windspeed_10m`;
 
   try {
-    const res = await fetch(proxyUrl, {
-      headers: {
-        "X-RapidAPI-Key": "YOUR_API_KEY",
-        "X-RapidAPI-Host": "meteostat.p.rapidapi.com"
-      }
-    });
+    const res = await fetch(target);
     if (!res.ok) return { cc: null, seeing: null, trans: null };
     const data = await res.json();
-    if (!data?.data?.length) return { cc: null, seeing: null, trans: null };
+    if (!data?.hourly?.time?.length) return { cc: null, seeing: null, trans: null };
 
+    // Find closest block to targetDate
     let best = null, bestDiff = Infinity;
-    for (const block of data.data) {
-      const blockDate = new Date(block.time);
+    for (let i = 0; i < data.hourly.time.length; i++) {
+      const blockDate = new Date(data.hourly.time[i]);
       const diff = Math.abs(blockDate - targetDate);
-      if (diff < bestDiff) { bestDiff = diff; best = block; }
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        best = {
+          cloud: data.hourly.cloudcover[i],
+          humidity: data.hourly.relativehumidity_2m[i],
+          wind: data.hourly.windspeed_10m[i]
+        };
+      }
     }
     if (!best) return { cc: null, seeing: null, trans: null };
 
-    const cloudCode = best.coco ?? null;
-    const humidity = best.rh ?? null;
-    const wind = best.wspd ?? null;
-
+    // Transparency calculation
     let transparency = null;
-    if (cloudCode !== null && humidity !== null) {
-      const cloudFactor = 9 - cloudCode;
-      const humidityFactor = Math.max(0, 9 - Math.round(humidity / 10));
+    if (best.cloud !== null && best.humidity !== null) {
+      const cloudFactor = Math.max(0, 9 - Math.round(best.cloud / 10));
+      const humidityFactor = Math.max(0, 9 - Math.round(best.humidity / 10));
       transparency = Math.round((cloudFactor + humidityFactor) / 2);
     }
 
+    // Seeing calculation
     let seeing = null;
-    if (wind !== null && humidity !== null) {
-      const windFactor = Math.max(0, 9 - Math.round(wind / 2));
-      const humidityFactor = Math.max(0, 9 - Math.round(humidity / 10));
+    if (best.wind !== null && best.humidity !== null) {
+      const windFactor = Math.max(0, 9 - Math.round(best.wind / 2));
+      const humidityFactor = Math.max(0, 9 - Math.round(best.humidity / 10));
       seeing = Math.round((windFactor + humidityFactor) / 2);
     }
 
-    return { cc: cloudCode, seeing, trans: transparency };
+    return { cc: best.cloud, seeing, trans: transparency };
   } catch (e) {
     console.error("Historical weather fetch failed:", e);
     return { cc: null, seeing: null, trans: null };
@@ -87,17 +88,19 @@ async function fetchHistoricalWeather(lat, lon, targetDate) {
 // fetchAstroWeather
 // ------------------------------------------------------------
 async function fetchAstroWeather(lat, lon, targetDate) {
-  // Original 7Timer URL
   const now = new Date();
   if (targetDate < now) {
     return await fetchHistoricalWeather(lat, lon, targetDate);
   }
 
-  // Cloudflare Worker
+  // 7Timer forecast
   const target = `https://www.7timer.info/bin/api.pl?lon=${lon}&lat=${lat}&product=astro&output=json`;
-  const proxyUrl = `https://astro-proxy.niamnbhakta.workers.dev/?url=${encodeURIComponent(target)}`;
 
-  function getForecastBlockForDate(data, targetDate) {
+  try {
+    const res = await fetch(target, { cache: "no-store" });
+    if (!res.ok) return null;
+    const data = await res.json();
+
     if (!data || !data.dataseries || !data.init) return null;
     const init = data.init;
     const year = parseInt(init.slice(0, 4), 10);
@@ -105,29 +108,22 @@ async function fetchAstroWeather(lat, lon, targetDate) {
     const day = parseInt(init.slice(6, 8), 10);
     const hour = parseInt(init.slice(8, 10), 10);
     const initDate = new Date(Date.UTC(year, month - 1, day, hour));
-    const targetMs = targetDate.getTime();
+
     let best = null, bestDiff = Infinity;
     for (const block of data.dataseries) {
       const blockDate = new Date(initDate.getTime() + block.timepoint * 3600 * 1000);
-      const diff = Math.abs(blockDate - targetMs);
+      const diff = Math.abs(blockDate - targetDate);
       if (diff < bestDiff) { bestDiff = diff; best = block; }
     }
+
     const maxRangeMs = 72 * 3600 * 1000;
     if (bestDiff > maxRangeMs) return null;
     return best;
-  }
-
-  try {
-    const res = await fetch(proxyUrl, { cache: "no-store" });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return getForecastBlockForDate(data, targetDate);
   } catch (e) {
     console.warn("Weather fetch failed:", e);
     return null;
   }
 }
-
 
 
 
