@@ -2318,25 +2318,11 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
   printWin.document.write("<html><body><div id='status'>Preparing PDF…</div></body></html>");
   printWin.document.close();
 
-  // Step 1: Fill root
   try {
-    let weather = null;
+    // Step 1: Fill hidden root
+    await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr);
 
-    try {
-      const block = await fetchAstroWeather(lat, lon, dt);
-      if (block) {
-        weather = {
-          cc: block.cloudcover,
-          seeing: 9 - block.seeing,
-          trans: 9 - block.transparency
-        };
-      }
-    } catch (e) {
-      console.error("Weather fetch failed:", e);
-    }
-
-    await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather)
-    // Step 2: Inject CSS + content
+    // Step 2: Inject CSS + empty container
     printWin.document.open();
     printWin.document.write(`
       <html>
@@ -2356,17 +2342,7 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
           </style>
         </head>
         <body>
-          <div id="planner-pdf-print-root" style="cursor:pointer;"></div>
-          <script>
-            document.getElementById('planner-pdf-print-root').addEventListener('click', () => {
-              try {
-                window.focus();
-                window.print();
-              } catch (err) {
-                document.body.innerHTML = '<div class="error">Print failed: ' + err.message + '</div>';
-              }
-            });
-          </script>
+          <div id="planner-pdf-print-root"></div>
         </body>
       </html>
     `);
@@ -2380,12 +2356,21 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
       Array.from(src.children).forEach(child => {
         dest.appendChild(printWin.document.importNode(child, true));
       });
+
+      dest.addEventListener("click", () => {
+        try {
+          printWin.focus();
+          printWin.print();
+        } catch (err) {
+          printWin.document.body.innerHTML =
+            '<div class="error">Print failed: ' + err.message + "</div>";
+        }
+      });
     } else {
       throw new Error("Source or destination root not found.");
     }
   } catch (err) {
     console.error("openPlannerModalAndPrint failed:", err);
-    // Replace placeholder with error message
     printWin.document.open();
     printWin.document.write(`
       <html><body><div class="error">
@@ -2395,7 +2380,6 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
     printWin.document.close();
   }
 }
-
 
 // ===============================
 // ATTACH PRINT BUTTON HANDLER
