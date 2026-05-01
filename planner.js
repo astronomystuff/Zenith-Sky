@@ -89,41 +89,60 @@ async function fetchHistoricalWeather(lat, lon, targetDate) {
 // ------------------------------------------------------------
 async function fetchAstroWeather(lat, lon, targetDate) {
   const now = new Date();
+
+  // Past dates → call your existing historical function
   if (targetDate < now) {
     return await fetchHistoricalWeather(lat, lon, targetDate);
   }
 
-  // 7Timer forecast
+  // Original 7Timer URL
   const target = `https://www.7timer.info/bin/api.pl?lon=${lon}&lat=${lat}&product=astro&output=json`;
 
-  try {
-    const res = await fetch(target, { cache: "no-store" });
-    if (!res.ok) return null;
-    const data = await res.json();
+  // Cloudflare Worker
+  const proxyUrl = `https://astro-proxy.niamnbhakta.workers.dev/?url=${encodeURIComponent(target)}`;
 
+  function getForecastBlockForDate(data, targetDate) {
     if (!data || !data.dataseries || !data.init) return null;
-    const init = data.init;
+
+    const init = data.init; // "YYYYMMDDHH"
     const year = parseInt(init.slice(0, 4), 10);
     const month = parseInt(init.slice(4, 6), 10);
     const day = parseInt(init.slice(6, 8), 10);
     const hour = parseInt(init.slice(8, 10), 10);
-    const initDate = new Date(Date.UTC(year, month - 1, day, hour));
 
-    let best = null, bestDiff = Infinity;
+    const initDate = new Date(Date.UTC(year, month - 1, day, hour));
+    const targetMs = targetDate.getTime();
+
+    let best = null;
+    let bestDiff = Infinity;
+
     for (const block of data.dataseries) {
       const blockDate = new Date(initDate.getTime() + block.timepoint * 3600 * 1000);
-      const diff = Math.abs(blockDate - targetDate);
-      if (diff < bestDiff) { bestDiff = diff; best = block; }
+      const diff = Math.abs(blockDate.getTime() - targetMs);
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        best = block;
+      }
     }
 
     const maxRangeMs = 72 * 3600 * 1000;
     if (bestDiff > maxRangeMs) return null;
+
     return best;
+  }
+
+  try {
+    const res = await fetch(proxyUrl, { cache: "no-store" });
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    return getForecastBlockForDate(data, targetDate);
   } catch (e) {
     console.warn("Weather fetch failed:", e);
     return null;
   }
 }
+
 
 
 
