@@ -77,12 +77,17 @@ async function fetchHistoricalWeather(lat, lon, targetDate) {
       seeing = Math.round((windFactor + humidityFactor) / 2);
     }
 
-    return { cc: best.cloud, seeing, trans: transparency };
+    return {
+      cc: best.cloud !== null ? Math.min(9, Math.max(0, Math.round(best.cloud / 10))) : null,
+      seeing,
+      trans: transparency
+    };
   } catch (e) {
     console.error("Historical weather fetch failed:", e);
     return { cc: null, seeing: null, trans: null };
   }
 }
+
 
 // ------------------------------------------------------------
 // fetchAstroWeather
@@ -1879,21 +1884,21 @@ async function populateAstroWeather(lat, lon, targetDate, targetDoc = document) 
   const bar = v => "▮".repeat(v) + "▯".repeat(9 - v);
 
   container.innerHTML = `
-    <div style="font-size:13px; line-height:1.35;">
-      <p>
-        <strong>Cloud Cover:</strong> ${cloudLabel(rawCloud)}<br>
-        ${bar(9 - rawCloud)}
-      </p>
-      <p>
-        <strong>Seeing:</strong> ${seeingLabel(seeing)}<br>
-        ${bar(seeing)}
-      </p>
-      <p>
-        <strong>Transparency:</strong> ${transparencyLabel(trans)}<br>
-        ${bar(trans)}
-      </p>
-    </div>
-  `;
+  <div style="font-size:13px; line-height:1.35;">
+    <p>
+      <strong>Cloud Cover:</strong> ${cloudLabel(cc)}<br>
+      ${bar(9 - cc)}
+    </p>
+    <p>
+      <strong>Seeing:</strong> ${qualityLabel(seeing)}<br>
+      ${bar(seeing)}
+    </p>
+    <p>
+      <strong>Transparency:</strong> ${qualityLabel(trans)}<br>
+      ${bar(trans)}
+    </p>
+  </div>
+`;
 }
 
 // RUN PLANNER
