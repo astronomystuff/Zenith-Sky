@@ -2409,10 +2409,11 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
   printWin.document.close();
 
   try {
-    // Step 1: Fill hidden root
-    await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr);
+    // Fetch weather and build hidden root
+    const weather = await fetchAstroWeather(lat, lon, dt);
+    await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
 
-    // Step 2: Inject CSS + empty container
+    // Inject CSS + empty container
     printWin.document.open();
     printWin.document.write(`
       <html>
@@ -2438,7 +2439,7 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
     `);
     printWin.document.close();
 
-    // Step 3: Copy content
+    // Copy content
     const src = document.getElementById("planner-pdf-root");
     const dest = printWin.document.getElementById("planner-pdf-print-root");
     if (src && dest) {
@@ -2447,7 +2448,8 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
         dest.appendChild(printWin.document.importNode(child, true));
       });
 
-      dest.addEventListener("click", () => {
+      // Trigger print once content is ready
+      setTimeout(() => {
         try {
           printWin.focus();
           printWin.print();
@@ -2455,7 +2457,7 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
           printWin.document.body.innerHTML =
             '<div class="error">Print failed: ' + err.message + "</div>";
         }
-      });
+      }, 100);
     } else {
       throw new Error("Source or destination root not found.");
     }
