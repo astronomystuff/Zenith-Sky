@@ -46,9 +46,9 @@ async function fetchHistoricalWeather(lat, lon, targetDate) {
         "X-RapidAPI-Host": "meteostat.p.rapidapi.com"
       }
     });
-    if (!res.ok) return null;
+    if (!res.ok) return { cc: null, seeing: null, trans: null };
     const data = await res.json();
-    if (!data?.data?.length) return null;
+    if (!data?.data?.length) return { cc: null, seeing: null, trans: null };
 
     let best = null, bestDiff = Infinity;
     for (const block of data.data) {
@@ -56,7 +56,7 @@ async function fetchHistoricalWeather(lat, lon, targetDate) {
       const diff = Math.abs(blockDate - targetDate);
       if (diff < bestDiff) { bestDiff = diff; best = block; }
     }
-    if (!best) return null;
+    if (!best) return { cc: null, seeing: null, trans: null };
 
     const cloudCode = best.coco ?? null;
     const humidity = best.rh ?? null;
@@ -79,7 +79,7 @@ async function fetchHistoricalWeather(lat, lon, targetDate) {
     return { cc: cloudCode, seeing, trans: transparency };
   } catch (e) {
     console.error("Historical weather fetch failed:", e);
-    return null;
+    return { cc: null, seeing: null, trans: null };
   }
 }
 
@@ -90,46 +90,7 @@ async function fetchAstroWeather(lat, lon, targetDate) {
   // Original 7Timer URL
   const now = new Date();
   if (targetDate < now) {
-    const dateStr = targetDate.toISOString().slice(0, 10);
-    const target = `https://meteostat.p.rapidapi.com/point/hourly?lat=${lat}&lon=${lon}&start=${dateStr}&end=${dateStr}`;
-    const proxyUrl = `https://astro-proxy.niamnbhakta.workers.dev/?url=${encodeURIComponent(target)}`;
-    try {
-      const res = await fetch(proxyUrl, {
-        headers: {
-          "X-RapidAPI-Key": "YOUR_API_KEY",
-          "X-RapidAPI-Host": "meteostat.p.rapidapi.com"
-        }
-      });
-      if (!res.ok) return null;
-      const data = await res.json();
-      if (!data?.data?.length) return null;
-      let best = null, bestDiff = Infinity;
-      for (const block of data.data) {
-        const blockDate = new Date(block.time);
-        const diff = Math.abs(blockDate - targetDate);
-        if (diff < bestDiff) { bestDiff = diff; best = block; }
-      }
-      if (!best) return null;
-      const cloudCode = best.coco ?? null;
-      const humidity = best.rh ?? null;
-      const wind = best.wspd ?? null;
-      let transparency = null;
-      if (cloudCode !== null && humidity !== null) {
-        const cloudFactor = 9 - cloudCode;
-        const humidityFactor = Math.max(0, 9 - Math.round(humidity / 10));
-        transparency = Math.round((cloudFactor + humidityFactor) / 2);
-      }
-      let seeing = null;
-      if (wind !== null && humidity !== null) {
-        const windFactor = Math.max(0, 9 - Math.round(wind / 2));
-        const humidityFactor = Math.max(0, 9 - Math.round(humidity / 10));
-        seeing = Math.round((windFactor + humidityFactor) / 2);
-      }
-      return { cc: cloudCode, seeing, trans: transparency };
-    } catch (e) {
-      console.error("Historical weather fetch failed:", e);
-      return null;
-    }
+    return await fetchHistoricalWeather(lat, lon, targetDate);
   }
 
   // Cloudflare Worker
@@ -166,6 +127,7 @@ async function fetchAstroWeather(lat, lon, targetDate) {
     return null;
   }
 }
+
 
 
 
@@ -2481,7 +2443,6 @@ window.addEventListener("DOMContentLoaded", () => {
   if (!plannerPrintBtn) return;
 
   plannerPrintBtn.addEventListener("click", async () => {
-
     const modalOverlay = document.getElementById("planner-modal-overlay");
     if (modalOverlay) modalOverlay.style.display = "flex";
 
@@ -2492,10 +2453,6 @@ window.addEventListener("DOMContentLoaded", () => {
     const dateStr = window.lastPlannerDateStr || dt.toLocaleDateString();
     const timeStr = window.lastPlannerTimeStr || dt.toLocaleTimeString();
 
-    document.getElementById("planner-print").addEventListener("click", () => {
-  openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr);
-});
-
+    openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr);
   });
 });
-
