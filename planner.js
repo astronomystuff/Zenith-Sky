@@ -31,75 +31,9 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ------------------------------------------------------------
-// fetchHistoricalWeather (Open-Meteo)
-// ------------------------------------------------------------
-async function fetchHistoricalWeather(lat, lon, targetDate) {
-  const dateStr = targetDate.toISOString().slice(0, 10);
-
-  // Open-Meteo reanalysis endpoint
-  const target = `https://archive-api.open-meteo.com/v1/era5?latitude=${lat}&longitude=${lon}&start_date=${dateStr}&end_date=${dateStr}&hourly=cloudcover,relativehumidity_2m,windspeed_10m`;
-
-  try {
-    const res = await fetch(target);
-    if (!res.ok) return { cc: null, seeing: null, trans: null };
-    const data = await res.json();
-    if (!data?.hourly?.time?.length) return { cc: null, seeing: null, trans: null };
-
-    // Find closest block to targetDate
-    let best = null, bestDiff = Infinity;
-    for (let i = 0; i < data.hourly.time.length; i++) {
-      const blockDate = new Date(data.hourly.time[i]);
-      const diff = Math.abs(blockDate - targetDate);
-      if (diff < bestDiff) {
-        bestDiff = diff;
-        best = {
-          cloud: data.hourly.cloudcover[i],
-          humidity: data.hourly.relativehumidity_2m[i],
-          wind: data.hourly.windspeed_10m[i]
-        };
-      }
-    }
-    if (!best) return { cc: null, seeing: null, trans: null };
-
-    // Transparency calculation
-    let transparency = null;
-    if (best.cloud !== null && best.humidity !== null) {
-      const cloudFactor = Math.max(0, 9 - Math.round(best.cloud / 10));
-      const humidityFactor = Math.max(0, 9 - Math.round(best.humidity / 10));
-      transparency = Math.round((cloudFactor + humidityFactor) / 2);
-    }
-
-    // Seeing calculation
-    let seeing = null;
-    if (best.wind !== null && best.humidity !== null) {
-      const windFactor = Math.max(0, 9 - Math.round(best.wind / 2));
-      const humidityFactor = Math.max(0, 9 - Math.round(best.humidity / 10));
-      seeing = Math.round((windFactor + humidityFactor) / 2);
-    }
-
-    return {
-      cc: best.cloud !== null ? Math.min(9, Math.max(0, Math.round(best.cloud / 10))) : null,
-      seeing,
-      trans: transparency
-    };
-  } catch (e) {
-    console.error("Historical weather fetch failed:", e);
-    return { cc: null, seeing: null, trans: null };
-  }
-}
-
-
-// ------------------------------------------------------------
 // fetchAstroWeather
 // ------------------------------------------------------------
 async function fetchAstroWeather(lat, lon, targetDate) {
-  const now = new Date();
-
-  // Past dates → call your existing historical function
-  if (targetDate < now) {
-    return await fetchHistoricalWeather(lat, lon, targetDate);
-  }
-
   // Original 7Timer URL
   const target = `https://www.7timer.info/bin/api.pl?lon=${lon}&lat=${lat}&product=astro&output=json`;
 
@@ -147,7 +81,6 @@ async function fetchAstroWeather(lat, lon, targetDate) {
     return null;
   }
 }
-
 
 
 
