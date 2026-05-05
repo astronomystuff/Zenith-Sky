@@ -1816,18 +1816,18 @@ async function populateAstroWeather(lat, lon, targetDate, targetDoc = document) 
 
   const bar = v => "▮".repeat(v) + "▯".repeat(9 - v);
 
-  container.innerHTML = `
+ container.innerHTML = `
   <div style="font-size:13px; line-height:1.35;">
     <p>
-      <strong>Cloud Cover:</strong> ${cloudLabel(cc)}<br>
-      ${bar(9 - cc)}
+      <strong>Cloud Cover:</strong> ${cloudLabel(rawCloud)}<br>
+      ${bar(9 - rawCloud)}
     </p>
     <p>
-      <strong>Seeing:</strong> ${qualityLabel(seeing)}<br>
+      <strong>Seeing:</strong> ${seeingLabel(seeing)}<br>
       ${bar(seeing)}
     </p>
     <p>
-      <strong>Transparency:</strong> ${qualityLabel(trans)}<br>
+      <strong>Transparency:</strong> ${transparencyLabel(trans)}<br>
       ${bar(trans)}
     </p>
   </div>
