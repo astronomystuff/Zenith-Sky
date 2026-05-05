@@ -2332,7 +2332,7 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
       trans: 9 - raw.transparency
     } : null;
 
-    await buildPlannerPdfContent(..., weather);
+    await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
 
     // Inject CSS + empty container
     printWin.document.open();
