@@ -2325,8 +2325,14 @@ async function openPlannerModalAndPrint(lat, lon, dt, results, dateStr, timeStr)
 
   try {
     // Fetch weather and build hidden root
-    const weather = await fetchAstroWeather(lat, lon, dt);
-    await buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, weather);
+    const raw = await fetchAstroWeather(lat, lon, dt);
+    const weather = raw ? {
+      cc: raw.cloudcover,
+      seeing: 9 - raw.seeing,
+      trans: 9 - raw.transparency
+    } : null;
+
+    await buildPlannerPdfContent(..., weather);
 
     // Inject CSS + empty container
     printWin.document.open();
