@@ -97,7 +97,7 @@ async function startSky3D() {
   controls.enableDamping = true;
 
   // Load CSV
-  const stars = await loadStarCSV("stars.csv");
+  const stars = await loadStarCSV("https://github.com/astronomystuff/Zenith-Sky/releases/download/At-HYG/stars.csv");
 
   // Build geometry
   const geometry = buildStarGeometry(stars);
