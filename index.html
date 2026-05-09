@@ -140,7 +140,7 @@
 </div>
 
 
-<!-- Moon Map Modal (centered, outside tool-card) -->
+<!-- Moon Map Modal -->
 <div id="moonmap-modal-overlay" style="
   display:none;
   position:fixed;
@@ -236,11 +236,159 @@
   </div>
 </div>
 
+<!-- 3D Sky Engine Tool -->
+<div class="tool-card" id="sky3d-root">
+  <h2>3D Sky Engine</h2>
+  <button id="sky3d-open">Open 3D Sky</button>
+</div>
+
+<!-- 3D Sky Modal -->
+<div id="sky3d-modal-overlay" style="
+  display:none;
+  position:fixed;
+  top:0; left:0;
+  width:100vw; height:100vh;
+  background:rgba(0,0,0,0.5);
+  justify-content:center;
+  align-items:center;
+  z-index:9999;
+">
+  <div id="sky3d-modal" style="
+    background:#000;
+    width:95%;
+    height:95%;
+    border-radius:12px;
+    padding:0;
+    position:relative;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    color:white;
+  ">
+
+    <!-- Header -->
+    <div style="
+      height:40px;
+      padding:8px 12px;
+      font-size:14px;
+      border-bottom:1px solid #333;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      flex-shrink:0;
+      gap:10px;
+      background:#111;
+    ">
+      <div>3D Sky Engine</div>
+
+      <button id="sky3d-close" style="
+        font-size:20px;
+        background:none;
+        border:none;
+        cursor:pointer;
+        color:white;
+      ">×</button>
+    </div>
+
+    <!-- Main Layout -->
+    <div id="sky3d-layout" style="
+      flex:1;
+      display:flex;
+      overflow:hidden;
+      background:#000;
+    ">
+
+      <!-- Left Controls -->
+      <aside id="sky3d-controls" style="
+        width:260px;
+        background:#111;
+        padding:12px;
+        overflow-y:auto;
+        border-right:1px solid #333;
+      ">
+
+        <h3>Date & Time</h3>
+        <label>Year</label>
+        <input type="number" id="sky3d-year" value="2025" style="width:100%;">
+        <label>Month</label>
+        <input type="number" id="sky3d-month" value="1" min="1" max="12" style="width:100%;">
+        <label>Day</label>
+        <input type="number" id="sky3d-day" value="1" min="1" max="31" style="width:100%;">
+        <label>Time (UTC)</label>
+        <input type="time" id="sky3d-time" value="00:00" style="width:100%;">
+        <label>Era</label>
+        <select id="sky3d-era" style="width:100%;">
+          <option value="CE" selected>CE</option>
+          <option value="BCE">BCE</option>
+        </select>
+        <button id="sky3d-apply-datetime" style="margin-top:10px; width:100%;">Apply</button>
+
+        <h3 style="margin-top:20px;">Location</h3>
+        <label>Latitude</label>
+        <input type="number" id="sky3d-lat" step="0.0001" value="0" style="width:100%;">
+        <label>Longitude</label>
+        <input type="number" id="sky3d-lon" step="0.0001" value="0" style="width:100%;">
+        <button id="sky3d-apply-location" style="margin-top:10px; width:100%;">Apply</button>
+
+        <h3 style="margin-top:20px;">Layers</h3>
+        <label><input type="checkbox" id="sky3d-planets" checked> Planets</label><br>
+        <label><input type="checkbox" id="sky3d-comets" checked> Comets</label><br>
+        <label><input type="checkbox" id="sky3d-asteroids" checked> Asteroids</label><br>
+        <label><input type="checkbox" id="sky3d-constellations" checked> Constellations</label><br>
+        <label><input type="checkbox" id="sky3d-dso" checked> Deep Sky Objects</label><br>
+
+        <h3 style="margin-top:20px;">Search</h3>
+        <input type="text" id="sky3d-search" placeholder="Search object..." style="width:100%;">
+        <button id="sky3d-search-btn" style="margin-top:10px; width:100%;">Go</button>
+
+      </aside>
+
+      <!-- Canvas Area -->
+      <main id="sky3d-canvas-wrapper" style="
+        flex:1;
+        position:relative;
+        background:#000;
+      ">
+        <canvas id="sky3d-canvas" style="
+          width:100%;
+          height:100%;
+          display:block;
+          background:#000;
+        "></canvas>
+      </main>
+
+      <!-- Right Info Panel -->
+      <aside id="sky3d-info" style="
+        width:260px;
+        background:#111;
+        padding:12px;
+        overflow-y:auto;
+        border-left:1px solid #333;
+      ">
+        <h3>Selected Object</h3>
+        <div id="sky3d-object-name">None</div>
+        <div id="sky3d-object-type"></div>
+        <div id="sky3d-object-ra-dec"></div>
+        <div id="sky3d-object-alt-az"></div>
+        <div id="sky3d-object-mag"></div>
+        <div id="sky3d-object-distance"></div>
+
+        <h3 style="margin-top:20px;">View</h3>
+        <button id="sky3d-center" disabled style="width:100%;">Center on Object</button>
+        <button id="sky3d-lock" disabled style="width:100%; margin-top:10px;">Lock View</button>
+      </aside>
+
+    </div>
+
+  </div>
+</div>
+
 <!-- External scripts -->
 <script src="videotool.js"></script>
 <script src="planner.js"></script>
 <script src="WOIT.js"></script>
 <script src="moonmap.js"></script>
+<script src="skyengine.js"></script>
 
 </body>
 </html>
