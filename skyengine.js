@@ -148,8 +148,9 @@ async function startSky3D() {
 
   // Load CSV (now using xθ,yθ,zθ)
   const stars = await loadStarCSV(
-    "https://github.com/astronomystuff/Zenith-Sky/releases/download/AT-HYG/stars.csv"
-  );
+  "https://astro-proxy.niamnbhakta.workers.dev/?url=" +
+  encodeURIComponent("https://github.com/astronomystuff/Zenith-Sky/releases/download/At-HYG/stars.csv")
+);
 
   // Build geometry
   const geometry = buildStarGeometry(stars);
