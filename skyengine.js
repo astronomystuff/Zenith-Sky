@@ -65,7 +65,7 @@ class MinimalCameraControls {
 }
 
 // -------------------------------
-// Load CSV (now reading xθ,yθ,zθ)
+// Load CSV
 // -------------------------------
 async function loadStarCSV(url) {
   const response = await fetch(url);
@@ -74,9 +74,9 @@ async function loadStarCSV(url) {
   const lines = text.split("\n");
   const header = lines[0].split(",");
 
-  const xIndex = header.indexOf("xθ");
-  const yIndex = header.indexOf("yθ");
-  const zIndex = header.indexOf("zθ");
+  const xIndex = header.indexOf("x0");
+  const yIndex = header.indexOf("y0");
+  const zIndex = header.indexOf("z0");
   const magIndex = header.indexOf("mag");
 
   const stars = [];
