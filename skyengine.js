@@ -130,16 +130,21 @@ async function loadStarCSV(url) {
 }
 
 // ---------------- xyz <-> RA/Dec + proper motion ----------------
+const LY_TO_PC = 1 / 3.26156;
+
 function xyzToRaDec(x, y, z) {
-  const r = Math.sqrt(x*x + y*y + z*z);
+  const rLY = Math.sqrt(x*x + y*y + z*z);
+  const rPC = rLY * LY_TO_PC;
+
   const ra  = Math.atan2(z, x);
-  const dec = Math.asin(y / r);
+  const dec = Math.asin(y / rLY);
 
   let raHours = (ra < 0 ? ra + 2*Math.PI : ra) * 12 / Math.PI;
   let decDeg  = dec * 180 / Math.PI;
 
-  return { raHours, decDeg, distance: r };
+  return { raHours, decDeg, distance: rPC };
 }
+
 
 function masToRad(mas) {
   return mas * (Math.PI / (180 * 3600 * 1000));
@@ -161,9 +166,9 @@ function applyProperMotionFromXYZ(star, yearsSinceJ2000) {
   const pmDecRad = masToRad(pmDec || 0);
   const rvPcy    = rvToParsecPerYear(rv || 0);
 
-  const x = dist * Math.cos(dec) * Math.cos(ra);
-  const y = dist * Math.sin(dec);
-  const z = dist * Math.cos(dec) * Math.sin(ra);
+const x = dist * Math.cos(dec) * Math.cos(ra);
+const y = dist * Math.sin(dec);
+const z = dist * Math.cos(dec) * Math.sin(ra);
 
   const vx = -pmRaRad * y - pmDecRad * Math.sin(ra) * Math.sin(dec) + rvPcy * Math.cos(dec) * Math.cos(ra);
   const vy =  pmRaRad * x - pmDecRad * Math.cos(ra) * Math.sin(dec) + rvPcy * Math.sin(dec);
