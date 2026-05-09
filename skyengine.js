@@ -1,53 +1,65 @@
 let sky3dScene, sky3dCamera, sky3dRenderer, sky3dStars;
 let sky3dModalOpen = false;
+let sky3dControls;
+let sky3dStarBase = []; // raw catalog data from x0,y0,z0, pm, rv, mag
 
-// ------------------------------------------------------
-// Minimal Camera Controls (OrbitControls replacement)
-// ------------------------------------------------------
+// J2000 reference (UTC)
+const J2000_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
+
+// -------------------------------
+// Minimal Camera Controls
+// -------------------------------
 class MinimalCameraControls {
   constructor(camera, domElement) {
     this.camera = camera;
     this.domElement = domElement;
 
     this.rotateSpeed = 0.005;
-    this.zoomSpeed = 0.1;
-    this.panSpeed = 0.002;
+    this.zoomSpeed = 0.2;
 
     this.isRotating = false;
-    this.isPanning = false;
-
     this.lastX = 0;
     this.lastY = 0;
 
     domElement.addEventListener("mousedown", e => this.onMouseDown(e));
     domElement.addEventListener("mousemove", e => this.onMouseMove(e));
     domElement.addEventListener("mouseup",   () => this.onMouseUp());
+    domElement.addEventListener("mouseleave",() => this.onMouseUp());
     domElement.addEventListener("wheel",     e => this.onWheel(e), { passive: false });
+    domElement.addEventListener("contextmenu", e => e.preventDefault());
   }
 
   onMouseDown(e) {
+    if (e.button !== 0) return;
+    this.isRotating = true;
     this.lastX = e.clientX;
     this.lastY = e.clientY;
-
-    if (e.button === 0) this.isRotating = true;
-    if (e.button === 2) this.isPanning = true;
   }
 
   onMouseMove(e) {
+    if (!this.isRotating) return;
+
     const dx = e.clientX - this.lastX;
     const dy = e.clientY - this.lastY;
 
-    if (this.isRotating) {
-      this.camera.rotation.y -= dx * this.rotateSpeed;
-      this.camera.rotation.x -= dy * this.rotateSpeed;
-    }
+    const rotY = dx * this.rotateSpeed;
+    const rotX = dy * this.rotateSpeed;
 
-    if (this.isPanning) {
-      const panX = -dx * this.panSpeed;
-      const panY =  dy * this.panSpeed;
-      this.camera.position.x += panX;
-      this.camera.position.y += panY;
-    }
+    const offset = this.camera.position.clone();
+    const radius = offset.length();
+
+    const theta = Math.atan2(offset.x, offset.z);
+    const phi   = Math.acos(offset.y / radius);
+
+    const newTheta = theta + rotY;
+    const newPhi   = Math.min(Math.max(phi + rotX, 0.01), Math.PI - 0.01);
+
+    offset.x = radius * Math.sin(newPhi) * Math.sin(newTheta);
+    offset.y = radius * Math.cos(newPhi);
+    offset.z = radius * Math.sin(newPhi) * Math.cos(newTheta);
+
+    this.camera.position.copy(offset);
+    this.camera.lookAt(0, 0, 0);
 
     this.lastX = e.clientX;
     this.lastY = e.clientY;
@@ -55,17 +67,25 @@ class MinimalCameraControls {
 
   onMouseUp() {
     this.isRotating = false;
-    this.isPanning = false;
   }
 
   onWheel(e) {
     e.preventDefault();
-    this.camera.position.z += e.deltaY * this.zoomSpeed;
+    const dir = this.camera.position.clone().normalize();
+    const delta = e.deltaY * this.zoomSpeed * 0.01;
+    const newPos = this.camera.position.clone().addScaledVector(dir, delta);
+    const r = newPos.length();
+    const minR = 1.5;
+    const maxR = 6.0;
+    if (r >= minR && r <= maxR) {
+      this.camera.position.copy(newPos);
+      this.camera.lookAt(0, 0, 0);
+    }
   }
 }
 
 // -------------------------------
-// Load CSV
+// CSV loader (x0,y0,z0, dist, pm, rv, mag)
 // -------------------------------
 async function loadStarCSV(url) {
   const response = await fetch(url);
@@ -74,10 +94,14 @@ async function loadStarCSV(url) {
   const lines = text.split("\n");
   const header = lines[0].split(",");
 
-  const xIndex = header.indexOf("x0");
-  const yIndex = header.indexOf("y0");
-  const zIndex = header.indexOf("z0");
-  const magIndex = header.indexOf("mag");
+  const xIndex    = header.indexOf("x0");
+  const yIndex    = header.indexOf("y0");
+  const zIndex    = header.indexOf("z0");
+  const distIndex = header.indexOf("dist");
+  const pmRaIndex = header.indexOf("pm_ra");
+  const pmDecIndex= header.indexOf("pm_dec");
+  const rvIndex   = header.indexOf("rv");
+  const magIndex  = header.indexOf("mag");
 
   const stars = [];
 
@@ -87,36 +111,199 @@ async function loadStarCSV(url) {
 
     const cols = row.split(",");
 
-    const x = parseFloat(cols[xIndex]);
-    const y = parseFloat(cols[yIndex]);
-    const z = parseFloat(cols[zIndex]);
-    const mag = parseFloat(cols[magIndex]);
+    const x0   = parseFloat(cols[xIndex]);
+    const y0   = parseFloat(cols[yIndex]);
+    const z0   = parseFloat(cols[zIndex]);
+    const dist = parseFloat(cols[distIndex]);
+    const pmRa = parseFloat(cols[pmRaIndex]);   // mas/yr
+    const pmDec= parseFloat(cols[pmDecIndex]);  // mas/yr
+    const rv   = parseFloat(cols[rvIndex]);     // km/s
+    const mag  = parseFloat(cols[magIndex]);
 
-    if (isNaN(x) || isNaN(y) || isNaN(z) || isNaN(mag)) continue;
+    if (isNaN(x0) || isNaN(y0) || isNaN(z0) || isNaN(dist) || isNaN(mag)) continue;
 
-    stars.push({ x, y, z, mag });
+    stars.push({ x0, y0, z0, dist, pmRa, pmDec, rv, mag });
   }
 
   return stars;
 }
 
 // -------------------------------
-// Build Star Geometry (direct XYZ)
+// x,y,z -> RA/Dec
 // -------------------------------
-function buildStarGeometry(stars) {
-  const positions = new Float32Array(stars.length * 3);
+function xyzToRaDec(x, y, z) {
+  const r = Math.sqrt(x*x + y*y + z*z);
+  const ra  = Math.atan2(z, x); // radians
+  const dec = Math.asin(y / r); // radians
 
+  let raHours = (ra < 0 ? ra + 2*Math.PI : ra) * 12 / Math.PI;
+  let decDeg  = dec * 180 / Math.PI;
+
+  return { raHours, decDeg, distance: r };
+}
+
+// -------------------------------
+// Proper motion
+// -------------------------------
+function masToRad(mas) {
+  return mas * (Math.PI / (180 * 3600 * 1000));
+}
+
+// rv: km/s → parsec/year (approx)
+function rvToParsecPerYear(rvKmPerSec) {
+  return rvKmPerSec / 977792.221;
+}
+
+function applyProperMotionFromXYZ(star, yearsSinceJ2000) {
+  const { x0, y0, z0, pmRa, pmDec, rv } = star;
+
+  const base = xyzToRaDec(x0, y0, z0);
+  const ra  = base.raHours * 15 * Math.PI/180;
+  const dec = base.decDeg * Math.PI/180;
+  const dist = base.distance; // parsec
+
+  const pmRaRad  = masToRad(pmRa || 0);
+  const pmDecRad = masToRad(pmDec || 0);
+  const rvPcy    = rvToParsecPerYear(rv || 0);
+
+  const x = dist * Math.cos(dec) * Math.cos(ra);
+  const y = dist * Math.sin(dec);
+  const z = dist * Math.cos(dec) * Math.sin(ra);
+
+  const vx = -pmRaRad * y - pmDecRad * Math.sin(ra) * Math.sin(dec) + rvPcy * Math.cos(dec) * Math.cos(ra);
+  const vy =  pmRaRad * x - pmDecRad * Math.cos(ra) * Math.sin(dec) + rvPcy * Math.sin(dec);
+  const vz =  pmDecRad * Math.cos(dec) + rvPcy * Math.cos(dec) * Math.sin(ra);
+
+  const x2 = x + vx * yearsSinceJ2000;
+  const y2 = y + vy * yearsSinceJ2000;
+  const z2 = z + vz * yearsSinceJ2000;
+
+  return xyzToRaDec(x2, y2, z2);
+}
+
+// -------------------------------
+// Sidereal time helpers
+// -------------------------------
+function toJulianDate(date) {
+  const time = date.getTime();
+  return time / 86400000 + 2440587.5;
+}
+
+function gmstFromJulian(jd) {
+  const T = (jd - 2451545.0) / 36525.0;
+  let gmst = 280.46061837 +
+             360.98564736629 * (jd - 2451545.0) +
+             0.000387933 * T * T -
+             (T * T * T) / 38710000.0;
+  gmst = ((gmst % 360) + 360) % 360;
+  return gmst * Math.PI / 180;
+}
+
+function getLSTRadians(date, lonDeg) {
+  const jd   = toJulianDate(date);
+  const gmst = gmstFromJulian(jd);
+  const lon  = lonDeg * Math.PI / 180;
+  let lst = gmst + lon;
+  lst = ((lst % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+  return lst;
+}
+
+// -------------------------------
+// RA/Dec -> Alt/Az
+// -------------------------------
+function raDecToAltAz(raHours, decDeg, latDeg, lstRad) {
+  const ra  = raHours * 15 * Math.PI/180;
+  const dec = decDeg * Math.PI/180;
+  const lat = latDeg * Math.PI/180;
+
+  const ha = lstRad - ra;
+
+  const sinAlt = Math.sin(dec)*Math.sin(lat) + Math.cos(dec)*Math.cos(lat)*Math.cos(ha);
+  const alt = Math.asin(sinAlt);
+
+  const cosAz = (Math.sin(dec) - Math.sin(alt)*Math.sin(lat)) / (Math.cos(alt)*Math.cos(lat));
+  let az = Math.acos(Math.max(-1, Math.min(1, cosAz)));
+
+  if (Math.sin(ha) > 0) az = 2*Math.PI - az;
+
+  return { alt, az };
+}
+
+// -------------------------------
+// Alt/Az -> XYZ on sky dome
+// -------------------------------
+function altAzToXYZ(alt, az) {
+  const x = Math.cos(alt) * Math.sin(az);
+  const y = Math.sin(alt);
+  const z = Math.cos(alt) * Math.cos(az);
+  return { x, y, z };
+}
+
+// -------------------------------
+// Build geometry for given date/location
+// -------------------------------
+function buildEarthSkyGeometry(date, latDeg, lonDeg) {
+  const lst = getLSTRadians(date, lonDeg);
+  const yearsSinceJ2000 = (date.getTime() - J2000_MS) / 31557600000; // Julian year
+
+  const positions = new Float32Array(sky3dStarBase.length * 3);
   let ptr = 0;
-  for (const s of stars) {
-    positions[ptr++] = s.x;
-    positions[ptr++] = s.y;
-    positions[ptr++] = s.z;
+
+  for (let i = 0; i < sky3dStarBase.length; i++) {
+    const s = sky3dStarBase[i];
+
+    const { raHours, decDeg } = applyProperMotionFromXYZ(s, yearsSinceJ2000);
+    const { alt, az } = raDecToAltAz(raHours, decDeg, latDeg, lst);
+    const p = altAzToXYZ(alt, az);
+
+    positions[ptr++] = p.x;
+    positions[ptr++] = p.y;
+    positions[ptr++] = p.z;
   }
 
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-
   return geometry;
+}
+
+// -------------------------------
+// Read UI -> Date object
+// -------------------------------
+function getDateFromUI() {
+  const year  = parseInt(document.getElementById("sky3d-year").value, 10);
+  const month = parseInt(document.getElementById("sky3d-month").value, 10);
+  const day   = parseInt(document.getElementById("sky3d-day").value, 10);
+  const timeStr = document.getElementById("sky3d-time").value || "00:00";
+  const era  = document.getElementById("sky3d-era").value;
+
+  let [hh, mm] = timeStr.split(":").map(v => parseInt(v, 10));
+  if (isNaN(hh)) hh = 0;
+  if (isNaN(mm)) mm = 0;
+
+  let y = year;
+  if (era === "BCE") y = 1 - year;
+
+  return new Date(Date.UTC(y, month - 1, day, hh, mm, 0));
+}
+
+function getLocationFromUI() {
+  const latDeg = parseFloat(document.getElementById("sky3d-lat").value) || 0;
+  const lonDeg = parseFloat(document.getElementById("sky3d-lon").value) || 0;
+  return { latDeg, lonDeg };
+}
+
+// -------------------------------
+// Update sky for current UI
+// -------------------------------
+function updateSkyFromUI() {
+  if (!sky3dScene || sky3dStarBase.length === 0 || !sky3dStars) return;
+
+  const date = getDateFromUI();
+  const { latDeg, lonDeg } = getLocationFromUI();
+
+  const geometry = buildEarthSkyGeometry(date, latDeg, lonDeg);
+  sky3dStars.geometry.dispose();
+  sky3dStars.geometry = geometry;
 }
 
 // -------------------------------
@@ -139,26 +326,27 @@ async function startSky3D() {
     60,
     canvas.clientWidth / canvas.clientHeight,
     0.1,
-    50000
+    100
   );
-  sky3dCamera.position.set(0, 0, 3000);
+  sky3dCamera.position.set(0, 0, 3);
+  sky3dCamera.lookAt(0, 0, 0);
 
-  // NEW: custom camera controls
-  const controls = new MinimalCameraControls(sky3dCamera, canvas);
+  sky3dControls = new MinimalCameraControls(sky3dCamera, canvas);
 
-  // Load CSV (now using xθ,yθ,zθ)
   const stars = await loadStarCSV(
-  "https://astro-proxy.niamnbhakta.workers.dev/?url=" +
-  encodeURIComponent("https://github.com/astronomystuff/Zenith-Sky/releases/download/At-HYG/stars.csv")
-);
+    "https://astro-proxy.niamnbhakta.workers.dev/?url=" +
+    encodeURIComponent("https://github.com/astronomystuff/Zenith-Sky/releases/download/At-HYG/stars.csv")
+  );
+  sky3dStarBase = stars;
 
-  // Build geometry
-  const geometry = buildStarGeometry(stars);
+  const date = getDateFromUI();
+  const { latDeg, lonDeg } = getLocationFromUI();
+  const geometry = buildEarthSkyGeometry(date, latDeg, lonDeg);
 
-  // Simple white points
   const material = new THREE.PointsMaterial({
     color: 0xffffff,
-    size: 3
+    size: 2,
+    sizeAttenuation: true
   });
 
   sky3dStars = new THREE.Points(geometry, material);
@@ -172,13 +360,12 @@ async function startSky3D() {
 // -------------------------------
 function animateSky3D() {
   if (!sky3dModalOpen) return;
-
   requestAnimationFrame(animateSky3D);
   sky3dRenderer.render(sky3dScene, sky3dCamera);
 }
 
 // -------------------------------
-// Modal Open/Close
+// Modal + UI wiring
 // -------------------------------
 function initSky3DModal() {
   const openBtn = document.getElementById("sky3d-open");
@@ -188,12 +375,24 @@ function initSky3DModal() {
   openBtn.onclick = () => {
     overlay.style.display = "flex";
     sky3dModalOpen = true;
-    startSky3D();
+    if (!sky3dScene) {
+      startSky3D();
+    } else {
+      animateSky3D();
+    }
   };
 
   closeBtn.onclick = () => {
     overlay.style.display = "none";
     sky3dModalOpen = false;
+  };
+
+  document.getElementById("sky3d-apply-datetime").onclick = () => {
+    updateSkyFromUI();
+  };
+
+  document.getElementById("sky3d-apply-location").onclick = () => {
+    updateSkyFromUI();
   };
 }
 
