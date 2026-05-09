@@ -1,14 +1,11 @@
 let sky3dScene, sky3dCamera, sky3dRenderer, sky3dStars;
 let sky3dModalOpen = false;
 let sky3dControls;
-let sky3dStarBase = []; // raw catalog data from x0,y0,z0, pm, rv, mag
+let sky3dStarBase = [];
 
-// J2000 reference (UTC)
 const J2000_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
 
-// -------------------------------
-// Minimal Camera Controls
-// -------------------------------
+// ---------------- Minimal Camera Controls ----------------
 class MinimalCameraControls {
   constructor(camera, domElement) {
     this.camera = camera;
@@ -84,15 +81,17 @@ class MinimalCameraControls {
   }
 }
 
-// -------------------------------
-// CSV loader (x0,y0,z0, dist, pm, rv, mag)
-// -------------------------------
+// ---------------- CSV loader (with quote‑stripping) ----------------
 async function loadStarCSV(url) {
   const response = await fetch(url);
   const text = await response.text();
 
   const lines = text.split("\n");
-  const header = lines[0].split(",");
+  if (!lines.length) return [];
+
+  // strip quotes from header fields
+  const rawHeader = lines[0].split(",");
+  const header = rawHeader.map(h => h.replace(/"/g, "").trim());
 
   const xIndex    = header.indexOf("x0");
   const yIndex    = header.indexOf("y0");
@@ -109,15 +108,16 @@ async function loadStarCSV(url) {
     const row = lines[i].trim();
     if (!row) continue;
 
-    const cols = row.split(",");
+    const rawCols = row.split(",");
+    const cols = rawCols.map(c => c.replace(/"/g, "").trim());
 
     const x0   = parseFloat(cols[xIndex]);
     const y0   = parseFloat(cols[yIndex]);
     const z0   = parseFloat(cols[zIndex]);
     const dist = parseFloat(cols[distIndex]);
-    const pmRa = parseFloat(cols[pmRaIndex]);   // mas/yr
-    const pmDec= parseFloat(cols[pmDecIndex]);  // mas/yr
-    const rv   = parseFloat(cols[rvIndex]);     // km/s
+    const pmRa = parseFloat(cols[pmRaIndex]);
+    const pmDec= parseFloat(cols[pmDecIndex]);
+    const rv   = parseFloat(cols[rvIndex]);
     const mag  = parseFloat(cols[magIndex]);
 
     if (isNaN(x0) || isNaN(y0) || isNaN(z0) || isNaN(dist) || isNaN(mag)) continue;
@@ -125,16 +125,15 @@ async function loadStarCSV(url) {
     stars.push({ x0, y0, z0, dist, pmRa, pmDec, rv, mag });
   }
 
+  console.log("Loaded stars:", stars.length);
   return stars;
 }
 
-// -------------------------------
-// x,y,z -> RA/Dec
-// -------------------------------
+// ---------------- xyz <-> RA/Dec + proper motion ----------------
 function xyzToRaDec(x, y, z) {
   const r = Math.sqrt(x*x + y*y + z*z);
-  const ra  = Math.atan2(z, x); // radians
-  const dec = Math.asin(y / r); // radians
+  const ra  = Math.atan2(z, x);
+  const dec = Math.asin(y / r);
 
   let raHours = (ra < 0 ? ra + 2*Math.PI : ra) * 12 / Math.PI;
   let decDeg  = dec * 180 / Math.PI;
@@ -142,14 +141,10 @@ function xyzToRaDec(x, y, z) {
   return { raHours, decDeg, distance: r };
 }
 
-// -------------------------------
-// Proper motion
-// -------------------------------
 function masToRad(mas) {
   return mas * (Math.PI / (180 * 3600 * 1000));
 }
 
-// rv: km/s → parsec/year (approx)
 function rvToParsecPerYear(rvKmPerSec) {
   return rvKmPerSec / 977792.221;
 }
@@ -160,7 +155,7 @@ function applyProperMotionFromXYZ(star, yearsSinceJ2000) {
   const base = xyzToRaDec(x0, y0, z0);
   const ra  = base.raHours * 15 * Math.PI/180;
   const dec = base.decDeg * Math.PI/180;
-  const dist = base.distance; // parsec
+  const dist = base.distance;
 
   const pmRaRad  = masToRad(pmRa || 0);
   const pmDecRad = masToRad(pmDec || 0);
@@ -181,9 +176,7 @@ function applyProperMotionFromXYZ(star, yearsSinceJ2000) {
   return xyzToRaDec(x2, y2, z2);
 }
 
-// -------------------------------
-// Sidereal time helpers
-// -------------------------------
+// ---------------- Time / LST / AltAz ----------------
 function toJulianDate(date) {
   const time = date.getTime();
   return time / 86400000 + 2440587.5;
@@ -208,9 +201,6 @@ function getLSTRadians(date, lonDeg) {
   return lst;
 }
 
-// -------------------------------
-// RA/Dec -> Alt/Az
-// -------------------------------
 function raDecToAltAz(raHours, decDeg, latDeg, lstRad) {
   const ra  = raHours * 15 * Math.PI/180;
   const dec = decDeg * Math.PI/180;
@@ -229,9 +219,6 @@ function raDecToAltAz(raHours, decDeg, latDeg, lstRad) {
   return { alt, az };
 }
 
-// -------------------------------
-// Alt/Az -> XYZ on sky dome
-// -------------------------------
 function altAzToXYZ(alt, az) {
   const x = Math.cos(alt) * Math.sin(az);
   const y = Math.sin(alt);
@@ -239,36 +226,7 @@ function altAzToXYZ(alt, az) {
   return { x, y, z };
 }
 
-// -------------------------------
-// Build geometry for given date/location
-// -------------------------------
-function buildEarthSkyGeometry(date, latDeg, lonDeg) {
-  const lst = getLSTRadians(date, lonDeg);
-  const yearsSinceJ2000 = (date.getTime() - J2000_MS) / 31557600000; // Julian year
-
-  const positions = new Float32Array(sky3dStarBase.length * 3);
-  let ptr = 0;
-
-  for (let i = 0; i < sky3dStarBase.length; i++) {
-    const s = sky3dStarBase[i];
-
-    const { raHours, decDeg } = applyProperMotionFromXYZ(s, yearsSinceJ2000);
-    const { alt, az } = raDecToAltAz(raHours, decDeg, latDeg, lst);
-    const p = altAzToXYZ(alt, az);
-
-    positions[ptr++] = p.x;
-    positions[ptr++] = p.y;
-    positions[ptr++] = p.z;
-  }
-
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-  return geometry;
-}
-
-// -------------------------------
-// Read UI -> Date object
-// -------------------------------
+// ---------------- UI helpers ----------------
 function getDateFromUI() {
   const year  = parseInt(document.getElementById("sky3d-year").value, 10);
   const month = parseInt(document.getElementById("sky3d-month").value, 10);
@@ -292,9 +250,31 @@ function getLocationFromUI() {
   return { latDeg, lonDeg };
 }
 
-// -------------------------------
-// Update sky for current UI
-// -------------------------------
+// ---------------- Build geometry for given date/location ----------------
+function buildEarthSkyGeometry(date, latDeg, lonDeg) {
+  const lst = getLSTRadians(date, lonDeg);
+  const yearsSinceJ2000 = (date.getTime() - J2000_MS) / 31557600000;
+
+  const positions = new Float32Array(sky3dStarBase.length * 3);
+  let ptr = 0;
+
+  for (let i = 0; i < sky3dStarBase.length; i++) {
+    const s = sky3dStarBase[i];
+
+    const { raHours, decDeg } = applyProperMotionFromXYZ(s, yearsSinceJ2000);
+    const { alt, az } = raDecToAltAz(raHours, decDeg, latDeg, lst);
+    const p = altAzToXYZ(alt, az);
+
+    positions[ptr++] = p.x;
+    positions[ptr++] = p.y;
+    positions[ptr++] = p.z;
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  return geometry;
+}
+
 function updateSkyFromUI() {
   if (!sky3dScene || sky3dStarBase.length === 0 || !sky3dStars) return;
 
@@ -306,9 +286,7 @@ function updateSkyFromUI() {
   sky3dStars.geometry = geometry;
 }
 
-// -------------------------------
-// Initialize 3D Scene
-// -------------------------------
+// ---------------- Init scene ----------------
 async function startSky3D() {
   const canvas = document.getElementById("sky3d-canvas");
 
@@ -355,18 +333,14 @@ async function startSky3D() {
   animateSky3D();
 }
 
-// -------------------------------
-// Animation Loop
-// -------------------------------
+// ---------------- Animation ----------------
 function animateSky3D() {
   if (!sky3dModalOpen) return;
   requestAnimationFrame(animateSky3D);
   sky3dRenderer.render(sky3dScene, sky3dCamera);
 }
 
-// -------------------------------
-// Modal + UI wiring
-// -------------------------------
+// ---------------- Modal wiring ----------------
 function initSky3DModal() {
   const openBtn = document.getElementById("sky3d-open");
   const closeBtn = document.getElementById("sky3d-close");
@@ -396,9 +370,6 @@ function initSky3DModal() {
   };
 }
 
-// -------------------------------
-// Boot
-// -------------------------------
 window.addEventListener("DOMContentLoaded", () => {
   initSky3DModal();
 });
