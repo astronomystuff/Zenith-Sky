@@ -483,6 +483,8 @@ function rebuildCelestialSphere() {
    Init Scene
    ============================================================ */
 async function startSky3D() {
+  console.log("startSky3D ran");
+  console.log("canvas:", canvas);
   const canvas = document.getElementById("sky3d-canvas");
 
   sky3dRenderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -504,6 +506,7 @@ async function startSky3D() {
 
   sky3dControls = new MinimalCameraControls(sky3dCamera, canvas);
   canvas.addEventListener("click", onSky3DClick);
+  canvas.addEventListener("click", () => console.log("CANVAS CLICKED"));
    
   sky3dStarBase = await loadStarCSV(
     "https://astro-proxy.niamnbhakta.workers.dev/?url=" +
