@@ -17,17 +17,10 @@ function makeStarTexture() {
   canvas.height = size;
   const ctx = canvas.getContext("2d");
 
-  const gradient = ctx.createRadialGradient(
-    size / 2, size / 2, 0,
-    size / 2, size / 2, size / 2
-  );
-
-  gradient.addColorStop(0.0, "rgba(255,255,255,1)");
-  gradient.addColorStop(0.4, "rgba(255,255,255,0.6)");
-  gradient.addColorStop(1.0, "rgba(255,255,255,0)");
-
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = "white";
+  ctx.beginPath();
+  ctx.arc(size/2, size/2, size/2, 0, Math.PI * 2);
+  ctx.fill();
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.minFilter = THREE.LinearFilter;
@@ -36,6 +29,7 @@ function makeStarTexture() {
 
   return texture;
 }
+
 
 /* ============================================================
    Minimal Camera Controls — rotate sphere + zoom
@@ -311,7 +305,7 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
     positions[ptr++] = p.z;
 
     const mag = sky3dStarBase[c.idx].mag;
-    sizes[i] = 0.15 * Math.pow(1.5, -mag);
+    sizes[i] = 0.075 * Math.pow(1.5, -mag);
   }
 
   const geometry = new THREE.BufferGeometry();
@@ -319,13 +313,14 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
   geometry.setAttribute("sizeAttr", new THREE.BufferAttribute(sizes, 1));
 
   const material = new THREE.PointsMaterial({
-    color: 0xffffff,
-    size: 1.0,
-    sizeAttenuation: true,
-    map: makeStarTexture(),
-    transparent: true,
-    alphaTest: 0.01
-  });
+  color: 0xffffff,
+  size: 1.0,
+  sizeAttenuation: true,
+  map: makeStarTexture(),
+  transparent: true,
+  alphaTest: 0.5
+});
+
 
   material.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader.replace(
