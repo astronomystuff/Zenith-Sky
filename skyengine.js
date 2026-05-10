@@ -125,6 +125,9 @@ async function loadStarCSV(url) {
 
     const cols = row.split(",").map(c => c.replace(/"/g, "").trim());
 
+    const proper = cols[idx.proper]?.trim();
+    if (proper && proper.toLowerCase() === "Sol") continue;
+     
     const x0   = parseFloat(cols[idx.x]);
     const y0   = parseFloat(cols[idx.y]);
     const z0   = parseFloat(cols[idx.z]);
@@ -133,9 +136,6 @@ async function loadStarCSV(url) {
     const pmDec= parseFloat(cols[idx.pmDec]);
     const rv   = parseFloat(cols[idx.rv]);
     const mag  = parseFloat(cols[idx.mag]);
-
-     const proper = cols[idx.proper]?.trim();
-     if (proper && proper.toLowerCase() === "sol") continue;
 
     if (isNaN(x0) || isNaN(y0) || isNaN(z0) || isNaN(dist) || isNaN(mag)) continue;
 
