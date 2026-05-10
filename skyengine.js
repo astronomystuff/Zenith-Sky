@@ -6,6 +6,7 @@ let sky3dCelestialSphere = null;
 let sky3dGround = null;
 let sky3dTooltip = null;
 let sky3dRaycaster = new THREE.Raycaster();
+  sky3dRaycaster.params.Points.threshold = 0.01;
 let sky3dMouse = new THREE.Vector2();
 
 const J2000_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
