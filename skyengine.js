@@ -313,37 +313,37 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
   const chosen = [];
 
   for (let i = 0; i < sky3dStarBase.length; i++) {
-    const s = sky3dStarBase[i];
-    if (s.mag > dynamicMagLimit) continue;
+  const s = sky3dStarBase[i];
 
-    const pm = applyProperMotionFromXYZ(s, years);
+  const pm = applyProperMotionFromXYZ(s, years);
 
-    const raRad  = pm.raHours * 15 * Math.PI / 180;
-    const decRad = pm.decDeg * Math.PI / 180;
+  const raRad  = pm.raHours * 15 * Math.PI / 180;
+  const decRad = pm.decDeg * Math.PI / 180;
 
-    // Hour angle
-    const H = lst - raRad;
+  // Hour angle
+  const H = lst - raRad;
 
-    // Altitude
-    const sinAlt = Math.sin(latRad) * Math.sin(decRad) +
-                   Math.cos(latRad) * Math.cos(decRad) * Math.cos(H);
-    const alt = Math.asin(sinAlt);
+  // Altitude
+  const sinAlt = Math.sin(latRad) * Math.sin(decRad) +
+                 Math.cos(latRad) * Math.cos(decRad) * Math.cos(H);
+  const alt = Math.asin(sinAlt);
 
-    if (alt <= 0) continue; // below horizon
+  if (alt <= 0) continue;
+  if (s.mag > dynamicMagLimit) continue;
 
-    // Azimuth
-    const cosAz = (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
-                  (Math.cos(alt) * Math.cos(latRad));
-    const sinAz = -Math.cos(decRad) * Math.sin(H) / Math.cos(alt);
-    const az = Math.atan2(sinAz, cosAz);
+  // Azimuth
+  const cosAz = (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
+                (Math.cos(alt) * Math.cos(latRad));
+  const sinAz = -Math.cos(decRad) * Math.sin(H) / Math.cos(alt);
+  const az = Math.atan2(sinAz, cosAz);
 
-    // Convert alt/az → XYZ
-    const x = Math.cos(alt) * Math.sin(az);
-    const y = Math.sin(alt);
-    const z = Math.cos(alt) * Math.cos(az);
+  // Convert alt/az → XYZ
+  const x = Math.cos(alt) * Math.sin(az);
+  const y = Math.sin(alt);
+  const z = Math.cos(alt) * Math.cos(az);
 
-    chosen.push({ idx: i, x, y, z });
-  }
+  chosen.push({ idx: i, x, y, z });
+}
 
   chosen.sort((a, b) => sky3dStarBase[a.idx].mag - sky3dStarBase[b.idx].mag);
   if (chosen.length > maxPoints) chosen.length = maxPoints;
