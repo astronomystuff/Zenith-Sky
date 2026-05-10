@@ -427,11 +427,14 @@ function onSky3DClick(event) {
 
   // Project star to screen
   const pos = new THREE.Vector3(
-    points.geometry.attributes.position.getX(i),
-    points.geometry.attributes.position.getY(i),
-    points.geometry.attributes.position.getZ(i)
-  );
+  points.geometry.attributes.position.getX(i),
+  points.geometry.attributes.position.getY(i),
+  points.geometry.attributes.position.getZ(i)
+);
+   
+  pos.applyMatrix4(points.matrixWorld);
   pos.project(sky3dCamera);
+
 
   const sx = (pos.x * 0.5 + 0.5) * rect.width + rect.left;
   const sy = (-pos.y * 0.5 + 0.5) * rect.height + rect.top;
