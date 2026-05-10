@@ -305,7 +305,7 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
   const years = (dateLMT.getTime() - J2000_MS) / 31557600000;
   const latRad = latDeg * Math.PI / 180;
 
-  // Dynamic magnitude limit based on zoom (correct direction)
+  // Dynamic magnitude limit
   let fov = sky3dCamera ? sky3dCamera.fov : 60;
   let dynamicMagLimit = 6 - (fov - 60) * 0.08;
   dynamicMagLimit = Math.max(3, Math.min(10, dynamicMagLimit));
@@ -324,16 +324,27 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
     // Hour angle
     const H = lst - raRad;
 
-    // Altitude (radians)
+    // Altitude
     const sinAlt = Math.sin(latRad) * Math.sin(decRad) +
                    Math.cos(latRad) * Math.cos(decRad) * Math.cos(H);
     const alt = Math.asin(sinAlt);
-    if (alt <= 0) continue;
 
-    chosen.push({ idx: i, ra: pm.raHours, dec: pm.decDeg });
+    if (alt <= 0) continue; // below horizon
+
+    // Azimuth
+    const cosAz = (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
+                  (Math.cos(alt) * Math.cos(latRad));
+    const sinAz = -Math.cos(decRad) * Math.sin(H) / Math.cos(alt);
+    const az = Math.atan2(sinAz, cosAz);
+
+    // Convert alt/az → XYZ
+    const x = Math.cos(alt) * Math.sin(az);
+    const y = Math.sin(alt);
+    const z = Math.cos(alt) * Math.cos(az);
+
+    chosen.push({ idx: i, x, y, z });
   }
 
-  // Sort by brightness
   chosen.sort((a, b) => sky3dStarBase[a.idx].mag - sky3dStarBase[b.idx].mag);
   if (chosen.length > maxPoints) chosen.length = maxPoints;
 
@@ -343,11 +354,10 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
   let ptr = 0;
   for (let i = 0; i < chosen.length; i++) {
     const c = chosen[i];
-    const p = raDecToXYZ(c.ra, c.dec);
 
-    positions[ptr++] = p.x;
-    positions[ptr++] = p.y;
-    positions[ptr++] = p.z;
+    positions[ptr++] = c.x;
+    positions[ptr++] = c.y;
+    positions[ptr++] = c.z;
 
     const mag = sky3dStarBase[c.idx].mag;
     sizes[i] = 0.0375 * Math.pow(1.5, -mag);
@@ -383,12 +393,9 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
   const group = new THREE.Group();
   group.add(points);
 
-  // Rotate sky for latitude + LST
-  group.rotation.x = (Math.PI / 2) - latRad;
-  group.rotation.y = -lst;
-
   return group;
 }
+
 
 /* ============================================================
    Rebuild Sphere
