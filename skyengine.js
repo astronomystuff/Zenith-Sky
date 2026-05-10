@@ -270,6 +270,19 @@ function getLocationFromUI() {
   };
 }
 
+function makeGround() {
+  const geometry = new THREE.SphereGeometry(1.01, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2);
+  const material = new THREE.MeshBasicMaterial({
+    color: 0x000000,
+    side: THREE.BackSide
+  });
+
+  const ground = new THREE.Mesh(geometry, material);
+  ground.rotation.x = Math.PI / 2; // flat side = horizon
+
+  return ground;
+}
+
 /* ============================================================
    Build Celestial Sphere (with per‑star sizes + dynamic mag limit)
    ============================================================ */
@@ -362,6 +375,10 @@ function rebuildCelestialSphere() {
 
   sky3dCelestialSphere = buildCelestialSphere(dateCivil, latDeg, lonDeg);
   sky3dScene.add(sky3dCelestialSphere);
+  if (sky3dGround) {
+  sky3dGround.rotation.x = sky3dCelestialSphere.rotation.x;
+  sky3dGround.rotation.y = sky3dCelestialSphere.rotation.y;
+  }
 }
 
 /* ============================================================
@@ -376,6 +393,9 @@ async function startSky3D() {
 
   sky3dScene = new THREE.Scene();
   sky3dScene.background = new THREE.Color(0x000000);
+
+  sky3dGround = makeGround();
+  sky3dScene.add(sky3dGround);
 
   sky3dCamera = new THREE.PerspectiveCamera(
     60,
