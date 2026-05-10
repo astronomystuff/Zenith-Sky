@@ -302,7 +302,7 @@ function makeGround() {
 
 
 /* ============================================================
-   Build Celestial Sphere (with per‑star sizes + dynamic mag limit)
+   Build Celestial Sphere
    ============================================================ */
 function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
   const { lst, dateLMT } = getLSTRadiansFromCivil(dateCivil, lonDeg);
@@ -405,6 +405,7 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
    onSky3DClick
    ============================================================ */
 function onSky3DClick(event) {
+  console.log("CLICK");
   const rect = sky3dRenderer.domElement.getBoundingClientRect();
 
   sky3dMouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -416,6 +417,7 @@ function onSky3DClick(event) {
 
   const points = sky3dCelestialSphere.children[0];
   const intersects = sky3dRaycaster.intersectObject(points);
+  console.log("intersects:", intersects);
 
   if (intersects.length === 0) return;
 
