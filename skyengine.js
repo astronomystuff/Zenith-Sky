@@ -444,7 +444,6 @@ function onSky3DClick(event) {
   const dist = Math.sqrt(dx * dx + dy * dy);
 
   console.log("dist:", dist);
-  if (dist > 12) return;
 
   // Show tooltip
   sky3dTooltip.innerHTML =
