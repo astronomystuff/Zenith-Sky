@@ -8,7 +8,37 @@ const J2000_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
 const LY_TO_PC = 1 / 3.26156;
 
 /* ============================================================
-   Minimal Camera Controls — now rotates the celestial sphere
+   Star texture (round sprite)
+   ============================================================ */
+function makeStarTexture() {
+  const size = 64;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+
+  const gradient = ctx.createRadialGradient(
+    size / 2, size / 2, 0,
+    size / 2, size / 2, size / 2
+  );
+
+  gradient.addColorStop(0.0, "rgba(255,255,255,1)");
+  gradient.addColorStop(0.4, "rgba(255,255,255,0.6)");
+  gradient.addColorStop(1.0, "rgba(255,255,255,0)");
+
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.generateMipmaps = false;
+
+  return texture;
+}
+
+/* ============================================================
+   Minimal Camera Controls — rotate sphere + zoom
    ============================================================ */
 class MinimalCameraControls {
   constructor(camera, domElement) {
@@ -16,14 +46,16 @@ class MinimalCameraControls {
     this.domElement = domElement;
 
     this.rotateSpeed = 0.005;
+    this.zoomSpeed = 0.05;
     this.isRotating = false;
     this.lastX = 0;
     this.lastY = 0;
 
     domElement.addEventListener("mousedown", e => this.onMouseDown(e));
     domElement.addEventListener("mousemove", e => this.onMouseMove(e));
-    domElement.addEventListener("mouseup",   () => this.onMouseUp());
-    domElement.addEventListener("mouseleave",() => this.onMouseUp());
+    domElement.addEventListener("mouseup", () => this.onMouseUp());
+    domElement.addEventListener("mouseleave", () => this.onMouseUp());
+    domElement.addEventListener("wheel", e => this.onWheel(e), { passive: false });
     domElement.addEventListener("contextmenu", e => e.preventDefault());
   }
 
@@ -40,7 +72,6 @@ class MinimalCameraControls {
     const dx = e.clientX - this.lastX;
     const dy = e.clientY - this.lastY;
 
-    // ⭐ Rotate the celestial sphere, not the camera
     if (sky3dCelestialSphere) {
       sky3dCelestialSphere.rotation.y += dx * this.rotateSpeed;
       sky3dCelestialSphere.rotation.x += dy * this.rotateSpeed;
@@ -52,6 +83,19 @@ class MinimalCameraControls {
 
   onMouseUp() {
     this.isRotating = false;
+  }
+
+  onWheel(e) {
+    e.preventDefault();
+    if (!this.camera) return;
+
+    const delta = e.deltaY > 0 ? 1 : -1;
+    this.camera.fov += delta * (this.camera.fov * this.zoomSpeed);
+    this.camera.fov = Math.max(20, Math.min(100, this.camera.fov));
+    this.camera.updateProjectionMatrix();
+
+    // Rebuild sphere with new magnitude limit based on zoom
+    rebuildCelestialSphere();
   }
 }
 
@@ -108,14 +152,14 @@ async function loadStarCSV(url) {
    XYZ → RA/Dec (LY → parsec)
    ============================================================ */
 function xyzToRaDec(x, y, z) {
-  const rLY = Math.sqrt(x*x + y*y + z*z);
+  const rLY = Math.sqrt(x * x + y * y + z * z);
   const rPC = rLY * LY_TO_PC;
 
   const ra  = Math.atan2(z, x);
   const dec = Math.asin(y / rLY);
 
   return {
-    raHours: (ra < 0 ? ra + 2*Math.PI : ra) * 12 / Math.PI,
+    raHours: (ra < 0 ? ra + 2 * Math.PI : ra) * 12 / Math.PI,
     decDeg: dec * 180 / Math.PI,
     distance: rPC
   };
@@ -135,8 +179,8 @@ function rvToParsecPerYear(rvKmPerSec) {
 function applyProperMotionFromXYZ(star, years) {
   const base = xyzToRaDec(star.x0, star.y0, star.z0);
 
-  const ra  = base.raHours * 15 * Math.PI/180;
-  const dec = base.decDeg * Math.PI/180;
+  const ra  = base.raHours * 15 * Math.PI / 180;
+  const dec = base.decDeg * Math.PI / 180;
   const dist = base.distance;
 
   const pmRaRad  = masToRad(star.pmRa || 0);
@@ -169,9 +213,9 @@ function gmstFromJulian(jd) {
   const T = (jd - 2451545.0) / 36525.0;
   let gmst = 280.46061837 +
              360.98564736629 * (jd - 2451545.0) +
-             0.000387933 * T*T -
-             (T*T*T) / 38710000.0;
-  return ((gmst % 360) + 360) % 360 * Math.PI/180;
+             0.000387933 * T * T -
+             (T * T * T) / 38710000.0;
+  return ((gmst % 360) + 360) % 360 * Math.PI / 180;
 }
 
 function getLSTRadiansFromCivil(dateCivil, lonDegUI) {
@@ -185,7 +229,7 @@ function getLSTRadiansFromCivil(dateCivil, lonDegUI) {
   const gmst = gmstFromJulian(jd);
 
   return {
-    lst: gmst + lonEastDeg * Math.PI/180,
+    lst: gmst + lonEastDeg * Math.PI / 180,
     dateLMT
   };
 }
@@ -194,8 +238,8 @@ function getLSTRadiansFromCivil(dateCivil, lonDegUI) {
    RA/Dec → Unit Sphere XYZ
    ============================================================ */
 function raDecToXYZ(raHours, decDeg) {
-  const ra = raHours * 15 * Math.PI/180;
-  const dec = decDeg * Math.PI/180;
+  const ra = raHours * 15 * Math.PI / 180;
+  const dec = decDeg * Math.PI / 180;
 
   return {
     x: Math.cos(dec) * Math.cos(ra),
@@ -229,18 +273,23 @@ function getLocationFromUI() {
 }
 
 /* ============================================================
-   Build Celestial Sphere (with per‑star sizes)
+   Build Celestial Sphere (with per‑star sizes + dynamic mag limit)
    ============================================================ */
-function buildCelestialSphere(dateCivil, latDeg, lonDeg, magThreshold = 10, maxPoints = 150000) {
+function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
   const { lst, dateLMT } = getLSTRadiansFromCivil(dateCivil, lonDeg);
   const years = (dateLMT.getTime() - J2000_MS) / 31557600000;
+  const latRad = latDeg * Math.PI / 180;
 
-  const latRad = latDeg * Math.PI/180;
+  // Dynamic magnitude limit based on zoom (camera FOV)
+  let fov = sky3dCamera ? sky3dCamera.fov : 60;
+  let dynamicMagLimit = 6 + (fov - 60) * 0.08; // smaller fov → more faint stars
+  dynamicMagLimit = Math.max(3, Math.min(10, dynamicMagLimit));
 
   const chosen = [];
+
   for (let i = 0; i < sky3dStarBase.length; i++) {
     const s = sky3dStarBase[i];
-    if (s.mag > magThreshold) continue;
+    if (s.mag > dynamicMagLimit) continue;
 
     const pm = applyProperMotionFromXYZ(s, years);
     chosen.push({ idx: i, ra: pm.raHours, dec: pm.decDeg });
@@ -262,7 +311,7 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, magThreshold = 10, maxP
     positions[ptr++] = p.z;
 
     const mag = sky3dStarBase[c.idx].mag;
-    sizes[i] = 0.01 * Math.pow(2.512, -mag);
+    sizes[i] = 0.15 * Math.pow(1.5, -mag);
   }
 
   const geometry = new THREE.BufferGeometry();
@@ -272,10 +321,12 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, magThreshold = 10, maxP
   const material = new THREE.PointsMaterial({
     color: 0xffffff,
     size: 1.0,
-    sizeAttenuation: true
+    sizeAttenuation: true,
+    map: makeStarTexture(),
+    transparent: true,
+    alphaTest: 0.01
   });
 
-  // ⭐ Shader patch for per‑star sizes
   material.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader.replace(
       "void main() {",
@@ -288,11 +339,10 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, magThreshold = 10, maxP
   };
 
   const points = new THREE.Points(geometry, material);
-
   const group = new THREE.Group();
   group.add(points);
 
-  group.rotation.x = (Math.PI/2) - latRad;
+  group.rotation.x = (Math.PI / 2) - latRad;
   group.rotation.y = -lst;
 
   return group;
@@ -302,6 +352,8 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, magThreshold = 10, maxP
    Rebuild Sphere
    ============================================================ */
 function rebuildCelestialSphere() {
+  if (!sky3dScene || sky3dStarBase.length === 0) return;
+
   if (sky3dCelestialSphere) {
     sky3dScene.remove(sky3dCelestialSphere);
   }
@@ -359,11 +411,13 @@ function animateSky3D() {
    Modal Wiring
    ============================================================ */
 function initSky3DModal() {
-  const openBtn   = document.getElementById("sky3d-open");
-  const closeBtn  = document.getElementById("sky3d-close");
-  const overlay   = document.getElementById("sky3d-modal-overlay");
-  const applyDT   = document.getElementById("sky3d-apply-datetime");
-  const applyLoc  = document.getElementById("sky3d-apply-location");
+  const openBtn  = document.getElementById("sky3d-open");
+  const closeBtn = document.getElementById("sky3d-close");
+  const overlay  = document.getElementById("sky3d-modal-overlay");
+  const applyDT  = document.getElementById("sky3d-apply-datetime");
+  const applyLoc = document.getElementById("sky3d-apply-location");
+
+  if (!openBtn || !closeBtn || !overlay) return;
 
   openBtn.onclick = () => {
     overlay.style.display = "flex";
@@ -382,15 +436,13 @@ function initSky3DModal() {
     sky3dModalOpen = false;
   };
 
-  applyDT.onclick = () => {
-    rebuildCelestialSphere();
-  };
-
-  applyLoc.onclick = () => {
-    rebuildCelestialSphere();
-  };
+  if (applyDT) applyDT.onclick = rebuildCelestialSphere;
+  if (applyLoc) applyLoc.onclick = rebuildCelestialSphere;
 }
 
+/* ============================================================
+   Ensure modal wiring runs
+   ============================================================ */
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", initSky3DModal);
 } else {
