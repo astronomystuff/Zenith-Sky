@@ -208,16 +208,17 @@ function raDecToXYZ(raHours, decDeg) {
    UI Helpers
    ============================================================ */
 function getDateFromUICivil() {
-  const year  = parseInt(sky3d-year.value, 10);
-  const month = parseInt(sky3d-month.value, 10);
-  const day   = parseInt(sky3d-day.value, 10);
-  const timeStr = sky3d-time.value || "00:00";
-  const era  = sky3d-era.value;
+  const year  = parseInt(document.getElementById("sky3d-year").value, 10);
+  const month = parseInt(document.getElementById("sky3d-month").value, 10);
+  const day   = parseInt(document.getElementById("sky3d-day").value, 10);
+  const timeStr = document.getElementById("sky3d-time").value || "00:00";
+  const era  = document.getElementById("sky3d-era").value;
 
   let [hh, mm] = timeStr.split(":").map(Number);
-  if (era === "BCE") year = 1 - year;
+  let y = year;
+  if (era === "BCE") y = 1 - year;
 
-  return new Date(year, month - 1, day, hh, mm, 0, 0);
+  return new Date(y, month - 1, day, hh, mm, 0, 0);
 }
 
 function getLocationFromUI() {
