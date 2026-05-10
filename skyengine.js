@@ -80,14 +80,15 @@ class MinimalCameraControls {
   }
 
   onWheel(e) {
-    e.preventDefault();
-    if (!this.camera) return;
+  e.preventDefault();
+  if (!this.camera) return;
 
-    const delta = e.deltaY > 0 ? 1 : -1;
-    this.camera.fov += delta * (this.camera.fov * this.zoomSpeed);
-    this.camera.fov = Math.max(20, Math.min(100, this.camera.fov));
-    this.camera.updateProjectionMatrix();
-  }
+  const delta = e.deltaY > 0 ? 1 : -1;
+  this.camera.fov += delta * (this.camera.fov * this.zoomSpeed);
+  this.camera.fov = Math.max(20, Math.min(100, this.camera.fov));
+  this.camera.updateProjectionMatrix();
+}
+
 }
 
 /* ============================================================
