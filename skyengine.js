@@ -538,17 +538,20 @@ function initSky3DModal() {
 
   if (!openBtn || !closeBtn || !overlay) return;
 
-  openBtn.onclick = () => {
-    overlay.style.display = "flex";
-    sky3dModalOpen = true;
-
+openBtn.onclick = () => {
+  overlay.style.display = "flex";
+  sky3dModalOpen = true;
+   
+  setTimeout(() => {
     if (!sky3dScene) {
       startSky3D();
     } else {
       rebuildCelestialSphere();
       animateSky3D();
     }
-  };
+  }, 0);
+};
+
 
   closeBtn.onclick = () => {
     overlay.style.display = "none";
