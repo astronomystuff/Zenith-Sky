@@ -300,9 +300,9 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
   const years = (dateLMT.getTime() - J2000_MS) / 31557600000;
   const latRad = latDeg * Math.PI / 180;
 
-  // Dynamic magnitude limit based on zoom (camera FOV)
+  // Dynamic magnitude limit based on zoom (correct direction)
   let fov = sky3dCamera ? sky3dCamera.fov : 60;
-  let dynamicMagLimit = 6 + (fov - 60) * 0.08; // smaller fov → more faint stars
+  let dynamicMagLimit = 6 - (fov - 60) * 0.08;
   dynamicMagLimit = Math.max(3, Math.min(10, dynamicMagLimit));
 
   const chosen = [];
@@ -312,9 +312,23 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
     if (s.mag > dynamicMagLimit) continue;
 
     const pm = applyProperMotionFromXYZ(s, years);
+
+    const raRad  = pm.raHours * 15 * Math.PI / 180;
+    const decRad = pm.decDeg * Math.PI / 180;
+
+    // Hour angle
+    const H = lst - raRad;
+
+    // Altitude (radians)
+    const sinAlt = Math.sin(latRad) * Math.sin(decRad) +
+                   Math.cos(latRad) * Math.cos(decRad) * Math.cos(H);
+    const alt = Math.asin(sinAlt);
+    if (alt <= 0) continue;
+
     chosen.push({ idx: i, ra: pm.raHours, dec: pm.decDeg });
   }
 
+  // Sort by brightness
   chosen.sort((a, b) => sky3dStarBase[a.idx].mag - sky3dStarBase[b.idx].mag);
   if (chosen.length > maxPoints) chosen.length = maxPoints;
 
@@ -339,17 +353,15 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
   geometry.setAttribute("sizeAttr", new THREE.BufferAttribute(sizes, 1));
 
   const material = new THREE.PointsMaterial({
-  color: 0xffffff,
-  size: 1.0,
-  sizeAttenuation: true,
-  map: makeStarTexture(),
-  transparent: true,
-  alphaTest: 0.5,
-  depthTest: true,
-  depthWrite: false
-});
-
-
+    color: 0xffffff,
+    size: 1.0,
+    sizeAttenuation: true,
+    map: makeStarTexture(),
+    transparent: true,
+    alphaTest: 0.5,
+    depthTest: true,
+    depthWrite: false
+  });
 
   material.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader.replace(
@@ -366,6 +378,7 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
   const group = new THREE.Group();
   group.add(points);
 
+  // Rotate sky for latitude + LST
   group.rotation.x = (Math.PI / 2) - latRad;
   group.rotation.y = -lst;
 
