@@ -114,7 +114,7 @@ async function loadStarCSV(url) {
     const x0   = parseFloat(cols[xIndex]);
     const y0   = parseFloat(cols[yIndex]);
     const z0   = parseFloat(cols[zIndex]);
-    const dist = parseFloat(cols[distIndex]); // in light-years (HYG)
+    const dist = parseFloat(cols[distIndex]); // light-years (HYG)
     const pmRa = parseFloat(cols[pmRaIndex]);   // mas/yr
     const pmDec= parseFloat(cols[pmDecIndex]);  // mas/yr
     const rv   = parseFloat(cols[rvIndex]);     // km/s
@@ -195,13 +195,29 @@ function gmstFromJulian(jd) {
   return gmst * Math.PI / 180;
 }
 
-function getLSTRadians(date, lonDeg) {
-  const jd   = toJulianDate(date);
+// UI longitude: positive west, negative east
+// Astronomy longitude: positive east, negative west
+// Civil local time -> Local Mean Time -> LST
+function getLSTRadiansFromCivil(dateCivil, lonDegUI) {
+  const lonEastDeg = -lonDegUI; // convert UI to astronomical
+
+  // timezone offset in hours (e.g. -7 for MST)
+  const tzOffsetHours = -dateCivil.getTimezoneOffset() / 60;
+
+  // Local Mean Time offset from civil time (hours)
+  const lmtMinusCivilHours = lonEastDeg / 15 - tzOffsetHours;
+  const lmtMs = dateCivil.getTime() + lmtMinusCivilHours * 3600000;
+  const dateLMT = new Date(lmtMs);
+
+  const jd = toJulianDate(dateLMT);
   const gmst = gmstFromJulian(jd);
-  const lon  = lonDeg * Math.PI / 180;
-  let lst = gmst + lon;
+
+  const lonEastRad = lonEastDeg * Math.PI / 180;
+
+  // LST = GMST + longitude(EAST)
+  let lst = gmst + lonEastRad;
   lst = ((lst % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-  return lst;
+  return { lst, dateLMT };
 }
 
 function raDecToAltAz(raHours, decDeg, latDeg, lstRad) {
@@ -230,7 +246,7 @@ function altAzToXYZ(alt, az) {
 }
 
 // ---------------- UI helpers ----------------
-function getDateFromUI() {
+function getDateFromUICivil() {
   const year  = parseInt(document.getElementById("sky3d-year").value, 10);
   const month = parseInt(document.getElementById("sky3d-month").value, 10);
   const day   = parseInt(document.getElementById("sky3d-day").value, 10);
@@ -244,7 +260,8 @@ function getDateFromUI() {
   let y = year;
   if (era === "BCE") y = 1 - year;
 
-  return new Date(Date.UTC(y, month - 1, day, hh, mm, 0));
+  // Construct as local civil time (no UTC)
+  return new Date(y, month - 1, day, hh, mm, 0, 0);
 }
 
 function getLocationFromUI() {
@@ -254,9 +271,9 @@ function getLocationFromUI() {
 }
 
 // ---------------- Optimized geometry builder ----------------
-function buildEarthSkyGeometryOptimized(date, latDeg, lonDeg, magThreshold = 6.0, maxPoints = 150000) {
-  const lst = getLSTRadians(date, lonDeg);
-  const yearsSinceJ2000 = (date.getTime() - J2000_MS) / 31557600000;
+function buildEarthSkyGeometryOptimized(dateCivil, latDeg, lonDeg, magThreshold = 10.0, maxPoints = 150000) {
+  const { lst, dateLMT } = getLSTRadiansFromCivil(dateCivil, lonDeg);
+  const yearsSinceJ2000 = (dateLMT.getTime() - J2000_MS) / 31557600000;
 
   const chosen = [];
 
@@ -298,10 +315,10 @@ function buildEarthSkyGeometryOptimized(date, latDeg, lonDeg, magThreshold = 6.0
 function updateSkyFromUI() {
   if (!sky3dScene || sky3dStarBase.length === 0 || !sky3dStars) return;
 
-  const date = getDateFromUI();
+  const dateCivil = getDateFromUICivil();
   const { latDeg, lonDeg } = getLocationFromUI();
 
-  const geometry = buildEarthSkyGeometryOptimized(date, latDeg, lonDeg, 6.0, 150000);
+  const geometry = buildEarthSkyGeometryOptimized(dateCivil, latDeg, lonDeg, 10.0, 150000);
   sky3dStars.geometry.dispose();
   sky3dStars.geometry = geometry;
 }
@@ -343,13 +360,13 @@ async function startSky3D() {
   );
   sky3dStarBase = stars;
 
-  const date = getDateFromUI();
+  const dateCivil = getDateFromUICivil();
   const { latDeg, lonDeg } = getLocationFromUI();
-  const geometry = buildEarthSkyGeometryOptimized(date, latDeg, lonDeg, 6.0, 150000);
+  const geometry = buildEarthSkyGeometryOptimized(dateCivil, latDeg, lonDeg, 10.0, 150000);
 
   const material = new THREE.PointsMaterial({
     color: 0xffffff,
-    size: 2.5,
+    size: 2.0,
     sizeAttenuation: true,
     alphaTest: 0.5
   });
