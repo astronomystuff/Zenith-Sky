@@ -87,9 +87,6 @@ class MinimalCameraControls {
     this.camera.fov += delta * (this.camera.fov * this.zoomSpeed);
     this.camera.fov = Math.max(20, Math.min(100, this.camera.fov));
     this.camera.updateProjectionMatrix();
-
-    // Rebuild sphere with new magnitude limit based on zoom
-    rebuildCelestialSphere();
   }
 }
 
