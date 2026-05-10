@@ -434,10 +434,9 @@ function onSky3DClick(event) {
   const sx = (pos.x * 0.5 + 0.5) * rect.width + rect.left;
   const sy = (-pos.y * 0.5 + 0.5) * rect.height + rect.top;
 
-  // Pixel distance check
   const dx = event.clientX - sx;
   const dy = event.clientY - sy;
-  const dist = Math.sqrt(dx*dx + dy*dy);
+  const dist = Math.sqrt(dx * dx + dy * dy);
 
   if (dist > 12) return;
 
@@ -451,7 +450,6 @@ function onSky3DClick(event) {
   sky3dTooltip.style.top = (event.clientY + 12) + "px";
   sky3dTooltip.style.display = "block";
 
-  // Auto-hide after 5 seconds
   clearTimeout(sky3dTooltip.hideTimer);
   sky3dTooltip.hideTimer = setTimeout(() => {
     sky3dTooltip.style.display = "none";
