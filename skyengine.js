@@ -61,19 +61,26 @@ class MinimalCameraControls {
   }
 
   onMouseMove(e) {
-    if (!this.isRotating) return;
+  if (!this.isRotating) return;
 
-    const dx = e.clientX - this.lastX;
-    const dy = e.clientY - this.lastY;
+  const dx = e.clientX - this.lastX;
+  const dy = e.clientY - this.lastY;
 
-    if (sky3dCelestialSphere) {
-      sky3dCelestialSphere.rotation.y += dx * this.rotateSpeed;
-      sky3dCelestialSphere.rotation.x += dy * this.rotateSpeed;
-    }
+  if (sky3dCelestialSphere) {
+    sky3dCelestialSphere.rotation.y += dx * this.rotateSpeed;
 
-    this.lastX = e.clientX;
-    this.lastY = e.clientY;
+    sky3dCelestialSphere.rotation.x += dy * this.rotateSpeed;
+
+    const limit = Math.PI / 2;
+    sky3dCelestialSphere.rotation.x = Math.max(
+      -limit,
+      Math.min(limit, sky3dCelestialSphere.rotation.x)
+    );
   }
+
+  this.lastX = e.clientX;
+  this.lastY = e.clientY;
+}
 
   onMouseUp() {
     this.isRotating = false;
