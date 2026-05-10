@@ -390,3 +390,9 @@ function initSky3DModal() {
     rebuildCelestialSphere();
   };
 }
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initSky3DModal);
+} else {
+  initSky3DModal();
+}
