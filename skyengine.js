@@ -271,17 +271,25 @@ function getLocationFromUI() {
 }
 
 function makeGround() {
-  const geometry = new THREE.SphereGeometry(1.01, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2);
+  const geometry = new THREE.SphereGeometry(
+    5,
+    64, 32,
+    0, Math.PI * 2,
+    0, Math.PI / 2
+  );
+
   const material = new THREE.MeshBasicMaterial({
-    color: 0x000000,
-    side: THREE.BackSide
+    color: 0x0242,
+    side: THREE.BackSide,
+    transparent: false
   });
 
   const ground = new THREE.Mesh(geometry, material);
-  ground.rotation.x = Math.PI / 2; // flat side = horizon
-
+  ground.rotation.x = Math.PI / 2;
+  ground.renderOrder = 999; // draw last
   return ground;
 }
+
 
 /* ============================================================
    Build Celestial Sphere (with per‑star sizes + dynamic mag limit)
@@ -335,8 +343,11 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
   sizeAttenuation: true,
   map: makeStarTexture(),
   transparent: true,
-  alphaTest: 0.5
+  alphaTest: 0.5,
+  depthTest: true,
+  depthWrite: false
 });
+
 
 
   material.onBeforeCompile = (shader) => {
