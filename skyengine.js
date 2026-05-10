@@ -4,6 +4,7 @@ let sky3dControls;
 let sky3dStarBase = [];
 
 const J2000_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
+const LY_TO_PC = 1 / 3.26156;
 
 // ---------------- Minimal Camera Controls ----------------
 class MinimalCameraControls {
@@ -81,7 +82,7 @@ class MinimalCameraControls {
   }
 }
 
-// ---------------- CSV loader (with quote‑stripping) ----------------
+// ---------------- CSV loader (quoted headers) ----------------
 async function loadStarCSV(url) {
   const response = await fetch(url);
   const text = await response.text();
@@ -89,7 +90,6 @@ async function loadStarCSV(url) {
   const lines = text.split("\n");
   if (!lines.length) return [];
 
-  // strip quotes from header fields
   const rawHeader = lines[0].split(",");
   const header = rawHeader.map(h => h.replace(/"/g, "").trim());
 
@@ -114,10 +114,10 @@ async function loadStarCSV(url) {
     const x0   = parseFloat(cols[xIndex]);
     const y0   = parseFloat(cols[yIndex]);
     const z0   = parseFloat(cols[zIndex]);
-    const dist = parseFloat(cols[distIndex]);
-    const pmRa = parseFloat(cols[pmRaIndex]);
-    const pmDec= parseFloat(cols[pmDecIndex]);
-    const rv   = parseFloat(cols[rvIndex]);
+    const dist = parseFloat(cols[distIndex]); // in light-years (HYG)
+    const pmRa = parseFloat(cols[pmRaIndex]);   // mas/yr
+    const pmDec= parseFloat(cols[pmDecIndex]);  // mas/yr
+    const rv   = parseFloat(cols[rvIndex]);     // km/s
     const mag  = parseFloat(cols[magIndex]);
 
     if (isNaN(x0) || isNaN(y0) || isNaN(z0) || isNaN(dist) || isNaN(mag)) continue;
@@ -129,9 +129,7 @@ async function loadStarCSV(url) {
   return stars;
 }
 
-// ---------------- xyz <-> RA/Dec + proper motion ----------------
-const LY_TO_PC = 1 / 3.26156;
-
+// ---------------- xyz (LY) -> RA/Dec/dist (parsecs) ----------------
 function xyzToRaDec(x, y, z) {
   const rLY = Math.sqrt(x*x + y*y + z*z);
   const rPC = rLY * LY_TO_PC;
@@ -145,7 +143,7 @@ function xyzToRaDec(x, y, z) {
   return { raHours, decDeg, distance: rPC };
 }
 
-
+// ---------------- Proper motion / RV ----------------
 function masToRad(mas) {
   return mas * (Math.PI / (180 * 3600 * 1000));
 }
@@ -160,15 +158,15 @@ function applyProperMotionFromXYZ(star, yearsSinceJ2000) {
   const base = xyzToRaDec(x0, y0, z0);
   const ra  = base.raHours * 15 * Math.PI/180;
   const dec = base.decDeg * Math.PI/180;
-  const dist = base.distance;
+  const dist = base.distance; // parsecs
 
   const pmRaRad  = masToRad(pmRa || 0);
   const pmDecRad = masToRad(pmDec || 0);
   const rvPcy    = rvToParsecPerYear(rv || 0);
 
-const x = dist * Math.cos(dec) * Math.cos(ra);
-const y = dist * Math.sin(dec);
-const z = dist * Math.cos(dec) * Math.sin(ra);
+  const x = dist * Math.cos(dec) * Math.cos(ra);
+  const y = dist * Math.sin(dec);
+  const z = dist * Math.cos(dec) * Math.sin(ra);
 
   const vx = -pmRaRad * y - pmDecRad * Math.sin(ra) * Math.sin(dec) + rvPcy * Math.cos(dec) * Math.cos(ra);
   const vy =  pmRaRad * x - pmDecRad * Math.cos(ra) * Math.sin(dec) + rvPcy * Math.sin(dec);
@@ -255,21 +253,38 @@ function getLocationFromUI() {
   return { latDeg, lonDeg };
 }
 
-// ---------------- Build geometry for given date/location ----------------
-function buildEarthSkyGeometry(date, latDeg, lonDeg) {
+// ---------------- Optimized geometry builder ----------------
+function buildEarthSkyGeometryOptimized(date, latDeg, lonDeg, magThreshold = 6.0, maxPoints = 150000) {
   const lst = getLSTRadians(date, lonDeg);
   const yearsSinceJ2000 = (date.getTime() - J2000_MS) / 31557600000;
 
-  const positions = new Float32Array(sky3dStarBase.length * 3);
-  let ptr = 0;
+  const chosen = [];
 
   for (let i = 0; i < sky3dStarBase.length; i++) {
     const s = sky3dStarBase[i];
+    if (isNaN(s.mag)) continue;
+    if (s.mag > magThreshold) continue;
 
-    const { raHours, decDeg } = applyProperMotionFromXYZ(s, yearsSinceJ2000);
-    const { alt, az } = raDecToAltAz(raHours, decDeg, latDeg, lst);
-    const p = altAzToXYZ(alt, az);
+    const pm = applyProperMotionFromXYZ(s, yearsSinceJ2000);
+    const altaz = raDecToAltAz(pm.raHours, pm.decDeg, latDeg, lst);
+    if (altaz.alt <= 0) continue;
 
+    chosen.push({
+      idx: i,
+      alt: altaz.alt,
+      az: altaz.az
+    });
+  }
+
+  chosen.sort((a, b) => (sky3dStarBase[a.idx].mag || 99) - (sky3dStarBase[b.idx].mag || 99));
+  if (chosen.length > maxPoints) chosen.length = maxPoints;
+
+  const positions = new Float32Array(chosen.length * 3);
+  let ptr = 0;
+
+  for (let i = 0; i < chosen.length; i++) {
+    const c = chosen[i];
+    const p = altAzToXYZ(c.alt, c.az);
     positions[ptr++] = p.x;
     positions[ptr++] = p.y;
     positions[ptr++] = p.z;
@@ -286,7 +301,7 @@ function updateSkyFromUI() {
   const date = getDateFromUI();
   const { latDeg, lonDeg } = getLocationFromUI();
 
-  const geometry = buildEarthSkyGeometry(date, latDeg, lonDeg);
+  const geometry = buildEarthSkyGeometryOptimized(date, latDeg, lonDeg, 6.0, 150000);
   sky3dStars.geometry.dispose();
   sky3dStars.geometry = geometry;
 }
@@ -299,15 +314,21 @@ async function startSky3D() {
     canvas: canvas,
     antialias: true
   });
-  sky3dRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
-  sky3dRenderer.setPixelRatio(window.devicePixelRatio);
+
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = Math.floor(canvas.clientWidth * dpr);
+  const h = Math.floor(canvas.clientHeight * dpr);
+  canvas.width = w;
+  canvas.height = h;
+  sky3dRenderer.setSize(w, h, false);
+  sky3dRenderer.setPixelRatio(dpr);
 
   sky3dScene = new THREE.Scene();
   sky3dScene.background = new THREE.Color(0x000000);
 
   sky3dCamera = new THREE.PerspectiveCamera(
     60,
-    canvas.clientWidth / canvas.clientHeight,
+    w / h,
     0.1,
     100
   );
@@ -324,12 +345,13 @@ async function startSky3D() {
 
   const date = getDateFromUI();
   const { latDeg, lonDeg } = getLocationFromUI();
-  const geometry = buildEarthSkyGeometry(date, latDeg, lonDeg);
+  const geometry = buildEarthSkyGeometryOptimized(date, latDeg, lonDeg, 6.0, 150000);
 
   const material = new THREE.PointsMaterial({
     color: 0xffffff,
-    size: 2,
-    sizeAttenuation: true
+    size: 2.5,
+    sizeAttenuation: true,
+    alphaTest: 0.5
   });
 
   sky3dStars = new THREE.Points(geometry, material);
