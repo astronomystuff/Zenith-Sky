@@ -228,19 +228,13 @@ function gmstFromJulian(jd) {
 
 function getLSTRadiansFromCivil(dateCivil, lonDegUI) {
   const lonEastDeg = -lonDegUI;
-  const tzOffsetHours = -dateCivil.getTimezoneOffset() / 60;
-
-  const lmtMinusCivilHours = lonEastDeg / 15 - tzOffsetHours;
-  const dateLMT = new Date(dateCivil.getTime() + lmtMinusCivilHours * 3600000);
-
-  const jd = toJulianDate(dateLMT);
+  const jd = toJulianDate(dateCivil);
   const gmst = gmstFromJulian(jd);
-
-  return {
-    lst: gmst + lonEastDeg * Math.PI / 180,
-    dateLMT
-  };
+  let lst = gmst + lonEastDeg * Math.PI / 180;
+  lst = ((lst % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+  return { lst, dateLMT: dateCivil };
 }
+
 
 /* ============================================================
    RA/Dec → Unit Sphere XYZ
