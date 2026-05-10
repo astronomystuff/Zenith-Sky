@@ -223,8 +223,8 @@ function getDateFromUICivil() {
 
 function getLocationFromUI() {
   return {
-    latDeg: parseFloat(sky3d-lat.value) || 0,
-    lonDeg: parseFloat(sky3d-lon.value) || 0
+    latDeg: parseFloat(document.getElementById("sky3d-lat").value) || 0,
+    lonDeg: parseFloat(document.getElementById("sky3d-lon").value) || 0
   };
 }
 
@@ -317,7 +317,7 @@ function rebuildCelestialSphere() {
    Init Scene
    ============================================================ */
 async function startSky3D() {
-  const canvas = sky3d-canvas;
+  const canvas = document.getElementById("sky3d-canvas");
 
   sky3dRenderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   sky3dRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
