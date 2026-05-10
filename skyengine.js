@@ -359,20 +359,34 @@ function animateSky3D() {
    Modal Wiring
    ============================================================ */
 function initSky3DModal() {
-  sky3d-open.onclick = () => {
-    sky3d-modal-overlay.style.display = "flex";
+  const openBtn   = document.getElementById("sky3d-open");
+  const closeBtn  = document.getElementById("sky3d-close");
+  const overlay   = document.getElementById("sky3d-modal-overlay");
+  const applyDT   = document.getElementById("sky3d-apply-datetime");
+  const applyLoc  = document.getElementById("sky3d-apply-location");
+
+  openBtn.onclick = () => {
+    overlay.style.display = "flex";
     sky3dModalOpen = true;
-    if (!sky3dScene) startSky3D();
-    else { rebuildCelestialSphere(); animateSky3D(); }
+
+    if (!sky3dScene) {
+      startSky3D();
+    } else {
+      rebuildCelestialSphere();
+      animateSky3D();
+    }
   };
 
-  sky3d-close.onclick = () => {
-    sky3d-modal-overlay.style.display = "none";
+  closeBtn.onclick = () => {
+    overlay.style.display = "none";
     sky3dModalOpen = false;
   };
 
-  sky3d-apply-datetime.onclick = rebuildCelestialSphere;
-  sky3d-apply-location.onclick = rebuildCelestialSphere;
-}
+  applyDT.onclick = () => {
+    rebuildCelestialSphere();
+  };
 
-window.addEventListener("DOMContentLoaded", initSky3DModal);
+  applyLoc.onclick = () => {
+    rebuildCelestialSphere();
+  };
+}
