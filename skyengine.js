@@ -3,6 +3,7 @@ let sky3dModalOpen = false;
 let sky3dControls;
 let sky3dStarBase = [];
 let sky3dCelestialSphere = null;
+let sky3dGround = null;
 let sky3dRaycaster = new THREE.Raycaster();
 let sky3dMouse = new THREE.Vector2();
 
