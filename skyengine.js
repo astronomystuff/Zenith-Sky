@@ -3,6 +3,8 @@ let sky3dModalOpen = false;
 let sky3dControls;
 let sky3dStarBase = [];
 let sky3dCelestialSphere = null;
+let sky3dRaycaster = new THREE.Raycaster();
+let sky3dMouse = new THREE.Vector2();
 
 const J2000_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
 const LY_TO_PC = 1 / 3.26156;
@@ -347,10 +349,12 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
 
   const positions = new Float32Array(chosen.length * 3);
   const sizes = new Float32Array(chosen.length);
+  const starIndices = new Uint32Array(chosen.length);
 
   let ptr = 0;
   for (let i = 0; i < chosen.length; i++) {
     const c = chosen[i];
+    starIndices[i] = c.idx;
 
     positions[ptr++] = c.x;
     positions[ptr++] = c.y;
@@ -363,6 +367,7 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute("sizeAttr", new THREE.BufferAttribute(sizes, 1));
+  geometry.userData.starIndices = starIndices;
 
   const material = new THREE.PointsMaterial({
     color: 0xffffff,
@@ -391,6 +396,37 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
   group.add(points);
 
   return group;
+}
+
+
+/* ============================================================
+   onSky3DClick
+   ============================================================ */
+function onSky3DClick(event) {
+  const rect = sky3dRenderer.domElement.getBoundingClientRect();
+
+  sky3dMouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  sky3dMouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+  sky3dRaycaster.setFromCamera(sky3dMouse, sky3dCamera);
+
+  if (!sky3dCelestialSphere) return;
+
+  const points = sky3dCelestialSphere.children[0];
+  const intersects = sky3dRaycaster.intersectObject(points);
+
+  if (intersects.length === 0) return;
+
+  const i = intersects[0].index;
+
+  const starIdx = points.geometry.userData.starIndices[i];
+  const star = sky3dStarBase[starIdx];
+
+  alert(
+    `Star: ${star.proper || "(unnamed)"}\n` +
+    `Mag: ${star.mag}\n` +
+    `Distance: ${star.dist} ly`
+  );
 }
 
 
@@ -441,7 +477,8 @@ async function startSky3D() {
   sky3dCamera.lookAt(0, 0, -1);
 
   sky3dControls = new MinimalCameraControls(sky3dCamera, canvas);
-
+  canvas.addEventListener("click", onSky3DClick);
+   
   sky3dStarBase = await loadStarCSV(
     "https://astro-proxy.niamnbhakta.workers.dev/?url=" +
     encodeURIComponent("https://github.com/astronomystuff/Zenith-Sky/releases/download/At-HYG/stars.csv")
