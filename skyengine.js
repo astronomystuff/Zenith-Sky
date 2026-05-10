@@ -4,6 +4,7 @@ let sky3dControls;
 let sky3dStarBase = [];
 let sky3dCelestialSphere = null;
 let sky3dGround = null;
+let sky3dTooltip = null;
 let sky3dRaycaster = new THREE.Raycaster();
 let sky3dMouse = new THREE.Vector2();
 
@@ -419,17 +420,43 @@ function onSky3DClick(event) {
   if (intersects.length === 0) return;
 
   const i = intersects[0].index;
-
   const starIdx = points.geometry.userData.starIndices[i];
   const star = sky3dStarBase[starIdx];
 
-  alert(
-    `Star: ${star.proper || "(unnamed)"}\n` +
-    `Mag: ${star.mag}\n` +
-    `Distance: ${star.dist} ly`
+  // Project star to screen
+  const pos = new THREE.Vector3(
+    points.geometry.attributes.position.getX(i),
+    points.geometry.attributes.position.getY(i),
+    points.geometry.attributes.position.getZ(i)
   );
-}
+  pos.project(sky3dCamera);
 
+  const sx = (pos.x * 0.5 + 0.5) * rect.width + rect.left;
+  const sy = (-pos.y * 0.5 + 0.5) * rect.height + rect.top;
+
+  // Pixel distance check
+  const dx = event.clientX - sx;
+  const dy = event.clientY - sy;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+
+  if (dist > 12) return;
+
+  // Show tooltip
+  sky3dTooltip.innerHTML =
+    `<b>${star.proper || "Unnamed star"}</b><br>` +
+    `Mag: ${star.mag}<br>` +
+    `Dist: ${star.dist} ly`;
+
+  sky3dTooltip.style.left = (event.clientX + 12) + "px";
+  sky3dTooltip.style.top = (event.clientY + 12) + "px";
+  sky3dTooltip.style.display = "block";
+
+  // Auto-hide after 5 seconds
+  clearTimeout(sky3dTooltip.hideTimer);
+  sky3dTooltip.hideTimer = setTimeout(() => {
+    sky3dTooltip.style.display = "none";
+  }, 5000);
+}
 
 /* ============================================================
    Rebuild Sphere
@@ -461,13 +488,11 @@ async function startSky3D() {
   sky3dRenderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   sky3dRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
   sky3dRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
   sky3dScene = new THREE.Scene();
   sky3dScene.background = new THREE.Color(0x000000);
-
+  sky3dTooltip = document.getElementById("sky3d-tooltip");
   sky3dGround = makeGround();
   sky3dScene.add(sky3dGround);
-
   sky3dCamera = new THREE.PerspectiveCamera(
     60,
     canvas.clientWidth / canvas.clientHeight,
