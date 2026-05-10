@@ -106,15 +106,16 @@ async function loadStarCSV(url) {
   const header = lines[0].split(",").map(h => h.replace(/"/g, "").trim());
 
   const idx = {
-    x: header.indexOf("x0"),
-    y: header.indexOf("y0"),
-    z: header.indexOf("z0"),
-    dist: header.indexOf("dist"),
-    pmRa: header.indexOf("pm_ra"),
-    pmDec: header.indexOf("pm_dec"),
-    rv: header.indexOf("rv"),
-    mag: header.indexOf("mag")
-  };
+  proper: header.indexOf("proper"),
+  x: header.indexOf("x0"),
+  y: header.indexOf("y0"),
+  z: header.indexOf("z0"),
+  dist: header.indexOf("dist"),
+  pmRa: header.indexOf("pm_ra"),
+  pmDec: header.indexOf("pm_dec"),
+  rv: header.indexOf("rv"),
+  mag: header.indexOf("mag")
+};
 
   const stars = [];
 
@@ -133,9 +134,12 @@ async function loadStarCSV(url) {
     const rv   = parseFloat(cols[idx.rv]);
     const mag  = parseFloat(cols[idx.mag]);
 
+     const proper = cols[idx.proper]?.trim();
+     if (proper && proper.toLowerCase() === "sol") continue;
+
     if (isNaN(x0) || isNaN(y0) || isNaN(z0) || isNaN(dist) || isNaN(mag)) continue;
 
-    stars.push({ x0, y0, z0, dist, pmRa, pmDec, rv, mag });
+    stars.push({ proper, x0, y0, z0, dist, pmRa, pmDec, rv, mag });
   }
 
   console.log("Loaded stars:", stars.length);
@@ -305,7 +309,7 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
     positions[ptr++] = p.z;
 
     const mag = sky3dStarBase[c.idx].mag;
-    sizes[i] = 0.075 * Math.pow(1.5, -mag);
+    sizes[i] = 0.0375 * Math.pow(1.5, -mag);
   }
 
   const geometry = new THREE.BufferGeometry();
