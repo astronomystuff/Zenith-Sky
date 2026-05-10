@@ -314,9 +314,7 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
 
   for (let i = 0; i < sky3dStarBase.length; i++) {
   const s = sky3dStarBase[i];
-
   const pm = applyProperMotionFromXYZ(s, years);
-
   const raRad  = pm.raHours * 15 * Math.PI / 180;
   const decRad = pm.decDeg * Math.PI / 180;
 
@@ -327,7 +325,6 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
   const sinAlt = Math.sin(latRad) * Math.sin(decRad) +
                  Math.cos(latRad) * Math.cos(decRad) * Math.cos(H);
   const alt = Math.asin(sinAlt);
-
   if (alt <= 0) continue;
   if (s.mag > dynamicMagLimit) continue;
 
