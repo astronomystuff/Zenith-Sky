@@ -126,7 +126,7 @@ async function loadStarCSV(url) {
     const cols = row.split(",").map(c => c.replace(/"/g, "").trim());
 
     const proper = cols[idx.proper]?.trim();
-    if (proper && proper.toLowerCase() === "Sol") continue;
+    if (proper && proper.toLowerCase() === "sol") continue;
      
     const x0   = parseFloat(cols[idx.x]);
     const y0   = parseFloat(cols[idx.y]);
