@@ -275,18 +275,19 @@ function makeGround() {
     5,
     64, 32,
     0, Math.PI * 2,
-    0, Math.PI / 2
+    Math.PI / 2, Math.PI / 2
   );
 
   const material = new THREE.MeshBasicMaterial({
-    color: 0x0242,
-    side: THREE.BackSide,
-    transparent: false
+    color: 0x000000,
+    side: THREE.BackSide
   });
 
   const ground = new THREE.Mesh(geometry, material);
-  ground.rotation.x = Math.PI / 2;
-  ground.renderOrder = 999; // draw last
+
+  ground.rotation.x = -Math.PI / 2;
+  ground.renderOrder = 999;
+
   return ground;
 }
 
