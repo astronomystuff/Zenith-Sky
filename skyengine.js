@@ -1,7 +1,8 @@
-let sky3dScene, sky3dCamera, sky3dRenderer, sky3dStars;
+let sky3dScene, sky3dCamera, sky3dRenderer;
 let sky3dModalOpen = false;
 let sky3dControls;
 let sky3dStarBase = [];
+let sky3dCelestialSphere = null;
 
 const J2000_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
 const LY_TO_PC = 1 / 3.26156;
@@ -43,22 +44,13 @@ class MinimalCameraControls {
     const rotY = dx * this.rotateSpeed;
     const rotX = dy * this.rotateSpeed;
 
-    const offset = this.camera.position.clone();
-    const radius = offset.length();
+    const offset = new THREE.Vector3(0, 0, 1);
+    const euler = new THREE.Euler(0, 0, 0, "YXZ");
+    euler.y = rotY;
+    euler.x = rotX;
+    offset.applyEuler(euler);
 
-    const theta = Math.atan2(offset.x, offset.z);
-    const phi   = Math.acos(offset.y / radius);
-
-    const newTheta = theta + rotY;
-    const newPhi   = Math.min(Math.max(phi + rotX, 0.01), Math.PI - 0.01);
-
-    offset.x = radius * Math.sin(newPhi) * Math.sin(newTheta);
-    offset.y = radius * Math.cos(newPhi);
-    offset.z = radius * Math.sin(newPhi) * Math.cos(newTheta);
-
-    this.camera.position.copy(offset);
-    this.camera.lookAt(0, 0, 0);
-
+    this.camera.lookAt(offset);
     this.lastX = e.clientX;
     this.lastY = e.clientY;
   }
@@ -69,16 +61,7 @@ class MinimalCameraControls {
 
   onWheel(e) {
     e.preventDefault();
-    const dir = this.camera.position.clone().normalize();
-    const delta = e.deltaY * this.zoomSpeed * 0.01;
-    const newPos = this.camera.position.clone().addScaledVector(dir, delta);
-    const r = newPos.length();
-    const minR = 1.5;
-    const maxR = 6.0;
-    if (r >= minR && r <= maxR) {
-      this.camera.position.copy(newPos);
-      this.camera.lookAt(0, 0, 0);
-    }
+    // no zoom for Earth-sky: keep camera at center
   }
 }
 
@@ -114,7 +97,7 @@ async function loadStarCSV(url) {
     const x0   = parseFloat(cols[xIndex]);
     const y0   = parseFloat(cols[yIndex]);
     const z0   = parseFloat(cols[zIndex]);
-    const dist = parseFloat(cols[distIndex]); // light-years (HYG)
+    const dist = parseFloat(cols[distIndex]); // light-years
     const pmRa = parseFloat(cols[pmRaIndex]);   // mas/yr
     const pmDec= parseFloat(cols[pmDecIndex]);  // mas/yr
     const rv   = parseFloat(cols[rvIndex]);     // km/s
@@ -179,7 +162,7 @@ function applyProperMotionFromXYZ(star, yearsSinceJ2000) {
   return xyzToRaDec(x2, y2, z2);
 }
 
-// ---------------- Time / LST / AltAz ----------------
+// ---------------- Time / LST ----------------
 function toJulianDate(date) {
   const time = date.getTime();
   return time / 86400000 + 2440587.5;
@@ -201,10 +184,8 @@ function gmstFromJulian(jd) {
 function getLSTRadiansFromCivil(dateCivil, lonDegUI) {
   const lonEastDeg = -lonDegUI; // convert UI to astronomical
 
-  // timezone offset in hours (e.g. -7 for MST)
   const tzOffsetHours = -dateCivil.getTimezoneOffset() / 60;
 
-  // Local Mean Time offset from civil time (hours)
   const lmtMinusCivilHours = lonEastDeg / 15 - tzOffsetHours;
   const lmtMs = dateCivil.getTime() + lmtMinusCivilHours * 3600000;
   const dateLMT = new Date(lmtMs);
@@ -214,34 +195,20 @@ function getLSTRadiansFromCivil(dateCivil, lonDegUI) {
 
   const lonEastRad = lonEastDeg * Math.PI / 180;
 
-  // LST = GMST + longitude(EAST)
   let lst = gmst + lonEastRad;
   lst = ((lst % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
   return { lst, dateLMT };
 }
 
-function raDecToAltAz(raHours, decDeg, latDeg, lstRad) {
-  const ra  = raHours * 15 * Math.PI/180;
-  const dec = decDeg * Math.PI/180;
-  const lat = latDeg * Math.PI/180;
+// ---------------- RA/Dec -> unit sphere XYZ ----------------
+function raDecToXYZ(raHours, decDeg) {
+  const ra = raHours * 15 * Math.PI / 180;
+  const dec = decDeg * Math.PI / 180;
 
-  const ha = lstRad - ra;
+  const x = Math.cos(dec) * Math.cos(ra);
+  const y = Math.sin(dec);
+  const z = Math.cos(dec) * Math.sin(ra);
 
-  const sinAlt = Math.sin(dec)*Math.sin(lat) + Math.cos(dec)*Math.cos(lat)*Math.cos(ha);
-  const alt = Math.asin(sinAlt);
-
-  const cosAz = (Math.sin(dec) - Math.sin(alt)*Math.sin(lat)) / (Math.cos(alt)*Math.cos(lat));
-  let az = Math.acos(Math.max(-1, Math.min(1, cosAz)));
-
-  if (Math.sin(ha) > 0) az = 2*Math.PI - az;
-
-  return { alt, az };
-}
-
-function altAzToXYZ(alt, az) {
-  const x = Math.cos(alt) * Math.sin(az);
-  const y = Math.sin(alt);
-  const z = Math.cos(alt) * Math.cos(az);
   return { x, y, z };
 }
 
@@ -260,7 +227,6 @@ function getDateFromUICivil() {
   let y = year;
   if (era === "BCE") y = 1 - year;
 
-  // Construct as local civil time (no UTC)
   return new Date(y, month - 1, day, hh, mm, 0, 0);
 }
 
@@ -270,10 +236,12 @@ function getLocationFromUI() {
   return { latDeg, lonDeg };
 }
 
-// ---------------- Optimized geometry builder ----------------
-function buildEarthSkyGeometryOptimized(dateCivil, latDeg, lonDeg, magThreshold = 10.0, maxPoints = 150000) {
+// ---------------- Build celestial sphere ----------------
+function buildCelestialSphereGeometry(dateCivil, latDeg, lonDeg, magThreshold = 10.0, maxPoints = 150000) {
   const { lst, dateLMT } = getLSTRadiansFromCivil(dateCivil, lonDeg);
   const yearsSinceJ2000 = (dateLMT.getTime() - J2000_MS) / 31557600000;
+
+  const latRad = latDeg * Math.PI / 180;
 
   const chosen = [];
 
@@ -283,14 +251,7 @@ function buildEarthSkyGeometryOptimized(dateCivil, latDeg, lonDeg, magThreshold 
     if (s.mag > magThreshold) continue;
 
     const pm = applyProperMotionFromXYZ(s, yearsSinceJ2000);
-    const altaz = raDecToAltAz(pm.raHours, pm.decDeg, latDeg, lst);
-    if (altaz.alt <= 0) continue;
-
-    chosen.push({
-      idx: i,
-      alt: altaz.alt,
-      az: altaz.az
-    });
+    chosen.push({ idx: i, raHours: pm.raHours, decDeg: pm.decDeg });
   }
 
   chosen.sort((a, b) => (sky3dStarBase[a.idx].mag || 99) - (sky3dStarBase[b.idx].mag || 99));
@@ -301,7 +262,7 @@ function buildEarthSkyGeometryOptimized(dateCivil, latDeg, lonDeg, magThreshold 
 
   for (let i = 0; i < chosen.length; i++) {
     const c = chosen[i];
-    const p = altAzToXYZ(c.alt, c.az);
+    const p = raDecToXYZ(c.raHours, c.decDeg);
     positions[ptr++] = p.x;
     positions[ptr++] = p.y;
     positions[ptr++] = p.z;
@@ -309,18 +270,39 @@ function buildEarthSkyGeometryOptimized(dateCivil, latDeg, lonDeg, magThreshold 
 
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-  return geometry;
+
+  const group = new THREE.Group();
+  const material = new THREE.PointsMaterial({
+    color: 0xffffff,
+    size: 0.003,
+    sizeAttenuation: true
+  });
+  const points = new THREE.Points(geometry, material);
+  group.add(points);
+
+  group.rotation.x = (Math.PI / 2) - latRad;
+  group.rotation.y = -lst;
+
+  return group;
 }
 
-function updateSkyFromUI() {
-  if (!sky3dScene || sky3dStarBase.length === 0 || !sky3dStars) return;
+function rebuildCelestialSphere() {
+  if (!sky3dScene || sky3dStarBase.length === 0) return;
 
   const dateCivil = getDateFromUICivil();
   const { latDeg, lonDeg } = getLocationFromUI();
 
-  const geometry = buildEarthSkyGeometryOptimized(dateCivil, latDeg, lonDeg, 10.0, 150000);
-  sky3dStars.geometry.dispose();
-  sky3dStars.geometry = geometry;
+  if (sky3dCelestialSphere) {
+    sky3dScene.remove(sky3dCelestialSphere);
+    sky3dCelestialSphere.traverse(obj => {
+      if (obj.isPoints && obj.geometry) obj.geometry.dispose();
+      if (obj.isPoints && obj.material) obj.material.dispose();
+    });
+    sky3dCelestialSphere = null;
+  }
+
+  sky3dCelestialSphere = buildCelestialSphereGeometry(dateCivil, latDeg, lonDeg, 10.0, 150000);
+  sky3dScene.add(sky3dCelestialSphere);
 }
 
 // ---------------- Init scene ----------------
@@ -347,10 +329,10 @@ async function startSky3D() {
     60,
     w / h,
     0.1,
-    100
+    10
   );
-  sky3dCamera.position.set(0, 0, 3);
-  sky3dCamera.lookAt(0, 0, 0);
+  sky3dCamera.position.set(0, 0, 0);
+  sky3dCamera.lookAt(0, 0, -1);
 
   sky3dControls = new MinimalCameraControls(sky3dCamera, canvas);
 
@@ -360,20 +342,7 @@ async function startSky3D() {
   );
   sky3dStarBase = stars;
 
-  const dateCivil = getDateFromUICivil();
-  const { latDeg, lonDeg } = getLocationFromUI();
-  const geometry = buildEarthSkyGeometryOptimized(dateCivil, latDeg, lonDeg, 10.0, 150000);
-
-  const material = new THREE.PointsMaterial({
-    color: 0xffffff,
-    size: 2.0,
-    sizeAttenuation: true,
-    alphaTest: 0.5
-  });
-
-  sky3dStars = new THREE.Points(geometry, material);
-  sky3dScene.add(sky3dStars);
-
+  rebuildCelestialSphere();
   animateSky3D();
 }
 
@@ -396,6 +365,7 @@ function initSky3DModal() {
     if (!sky3dScene) {
       startSky3D();
     } else {
+      rebuildCelestialSphere();
       animateSky3D();
     }
   };
@@ -406,11 +376,11 @@ function initSky3DModal() {
   };
 
   document.getElementById("sky3d-apply-datetime").onclick = () => {
-    updateSkyFromUI();
+    rebuildCelestialSphere();
   };
 
   document.getElementById("sky3d-apply-location").onclick = () => {
-    updateSkyFromUI();
+    rebuildCelestialSphere();
   };
 }
 
