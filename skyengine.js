@@ -405,8 +405,7 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
 /* ============================================================
    onSky3DClick
    ============================================================ */
-function onSky3DClick(event) {
-  console.log("CLICK");
+function onSky3DClick(event) 
   const rect = sky3dRenderer.domElement.getBoundingClientRect();
 
   sky3dMouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -418,8 +417,6 @@ function onSky3DClick(event) {
 
   const points = sky3dCelestialSphere.children[0];
   const intersects = sky3dRaycaster.intersectObject(points);
-  console.log("intersects:", intersects);
-
   if (intersects.length === 0) return;
 
   const i = intersects[0].index;
@@ -443,8 +440,6 @@ function onSky3DClick(event) {
   const dx = event.clientX - sx;
   const dy = event.clientY - sy;
   const dist = Math.sqrt(dx * dx + dy * dy);
-
-  console.log("dist:", dist);
 
   // Show tooltip
   sky3dTooltip.innerHTML =
@@ -487,9 +482,7 @@ function rebuildCelestialSphere() {
    Init Scene
    ============================================================ */
 async function startSky3D() {
-  console.log("startSky3D ran");
   const canvas = document.getElementById("sky3d-canvas");
-  console.log("canvas:", canvas);
 
   sky3dRenderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   sky3dRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
@@ -510,7 +503,6 @@ sky3dCamera.lookAt(0, 0, -1);
 
   sky3dControls = new MinimalCameraControls(sky3dCamera, canvas);
   canvas.addEventListener("click", onSky3DClick);
-  canvas.addEventListener("click", () => console.log("CANVAS CLICKED"));
    
   sky3dStarBase = await loadStarCSV(
     "https://astro-proxy.niamnbhakta.workers.dev/?url=" +
