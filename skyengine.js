@@ -46,17 +46,33 @@ class MinimalCameraControls {
 
     this.rotateSpeed = 0.005;
     this.zoomSpeed = 0.05;
+
     this.isRotating = false;
     this.lastX = 0;
     this.lastY = 0;
 
+    // Touch state
+    this.touchMode = null; // "rotate" or "pinch"
+    this.lastTouchDist = 0;
+
+    // Desktop
     domElement.addEventListener("mousedown", e => this.onMouseDown(e));
     domElement.addEventListener("mousemove", e => this.onMouseMove(e));
     domElement.addEventListener("mouseup", () => this.onMouseUp());
     domElement.addEventListener("mouseleave", () => this.onMouseUp());
     domElement.addEventListener("wheel", e => this.onWheel(e), { passive: false });
     domElement.addEventListener("contextmenu", e => e.preventDefault());
+
+    // Mobile
+    domElement.addEventListener("touchstart", e => this.onTouchStart(e), { passive: false });
+    domElement.addEventListener("touchmove", e => this.onTouchMove(e), { passive: false });
+    domElement.addEventListener("touchend", () => this.onTouchEnd());
+    domElement.addEventListener("touchcancel", () => this.onTouchEnd());
   }
+
+  /* ============================
+     DESKTOP CONTROLS
+  ============================ */
 
   onMouseDown(e) {
     if (e.button !== 0) return;
@@ -66,41 +82,103 @@ class MinimalCameraControls {
   }
 
   onMouseMove(e) {
-  if (!this.isRotating) return;
+    if (!this.isRotating) return;
 
-  const dx = e.clientX - this.lastX;
-  const dy = e.clientY - this.lastY;
+    const dx = e.clientX - this.lastX;
+    const dy = e.clientY - this.lastY;
 
-  if (sky3dCelestialSphere) {
-    sky3dCelestialSphere.rotation.y += dx * this.rotateSpeed;
+    if (sky3dCelestialSphere) {
+      sky3dCelestialSphere.rotation.y += dx * this.rotateSpeed;
+      sky3dCelestialSphere.rotation.x += dy * this.rotateSpeed;
 
-    sky3dCelestialSphere.rotation.x += dy * this.rotateSpeed;
+      const limit = Math.PI / 2;
+      sky3dCelestialSphere.rotation.x = Math.max(
+        -limit,
+        Math.min(limit, sky3dCelestialSphere.rotation.x)
+      );
+    }
 
-    const limit = Math.PI / 2;
-    sky3dCelestialSphere.rotation.x = Math.max(
-      -limit,
-      Math.min(limit, sky3dCelestialSphere.rotation.x)
-    );
+    this.lastX = e.clientX;
+    this.lastY = e.clientY;
   }
-
-  this.lastX = e.clientX;
-  this.lastY = e.clientY;
-}
 
   onMouseUp() {
     this.isRotating = false;
   }
 
   onWheel(e) {
-  e.preventDefault();
-  if (!this.camera) return;
+    e.preventDefault();
+    if (!this.camera) return;
 
-  const delta = e.deltaY > 0 ? 1 : -1;
-  this.camera.fov += delta * (this.camera.fov * this.zoomSpeed);
-  this.camera.fov = Math.max(20, Math.min(100, this.camera.fov));
-  this.camera.updateProjectionMatrix();
-}
+    const delta = e.deltaY > 0 ? 1 : -1;
+    this.camera.fov += delta * (this.camera.fov * this.zoomSpeed);
+    this.camera.fov = Math.max(20, Math.min(100, this.camera.fov));
+    this.camera.updateProjectionMatrix();
+  }
 
+  /* ============================
+     MOBILE CONTROLS
+  ============================ */
+
+  onTouchStart(e) {
+    if (e.touches.length === 1) {
+      // One finger → rotate
+      this.touchMode = "rotate";
+      this.lastX = e.touches[0].clientX;
+      this.lastY = e.touches[0].clientY;
+    } else if (e.touches.length === 2) {
+      // Two fingers → pinch zoom
+      this.touchMode = "pinch";
+      this.lastTouchDist = this.getTouchDistance(e);
+    }
+  }
+
+  onTouchMove(e) {
+    e.preventDefault();
+
+    if (this.touchMode === "rotate" && e.touches.length === 1) {
+      const x = e.touches[0].clientX;
+      const y = e.touches[0].clientY;
+
+      const dx = x - this.lastX;
+      const dy = y - this.lastY;
+
+      if (sky3dCelestialSphere) {
+        sky3dCelestialSphere.rotation.y += dx * this.rotateSpeed;
+        sky3dCelestialSphere.rotation.x += dy * this.rotateSpeed;
+
+        const limit = Math.PI / 2;
+        sky3dCelestialSphere.rotation.x = Math.max(
+          -limit,
+          Math.min(limit, sky3dCelestialSphere.rotation.x)
+        );
+      }
+
+      this.lastX = x;
+      this.lastY = y;
+    }
+
+    if (this.touchMode === "pinch" && e.touches.length === 2) {
+      const newDist = this.getTouchDistance(e);
+      const delta = this.lastTouchDist - newDist;
+
+      this.camera.fov += delta * 0.02; // pinch zoom sensitivity
+      this.camera.fov = Math.max(20, Math.min(100, this.camera.fov));
+      this.camera.updateProjectionMatrix();
+
+      this.lastTouchDist = newDist;
+    }
+  }
+
+  onTouchEnd() {
+    this.touchMode = null;
+  }
+
+  getTouchDistance(e) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
 }
 
 /* ============================================================
