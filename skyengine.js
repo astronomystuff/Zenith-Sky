@@ -162,7 +162,7 @@ class MinimalCameraControls {
       const newDist = this.getTouchDistance(e);
       const delta = this.lastTouchDist - newDist;
 
-      this.camera.fov += delta * 0.02; // pinch zoom sensitivity
+      this.camera.fov += delta * 0.15; // pinch zoom sensitivity
       this.camera.fov = Math.max(20, Math.min(100, this.camera.fov));
       this.camera.updateProjectionMatrix();
 
