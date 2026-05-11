@@ -399,7 +399,7 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
 /* ============================================================
    onSky3DClick
    ============================================================ */
-function onSky3DClick(event) 
+function onSky3DClick(event) {
   const rect = sky3dRenderer.domElement.getBoundingClientRect();
 
   sky3dMouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
