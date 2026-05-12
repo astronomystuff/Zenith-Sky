@@ -38,25 +38,31 @@ The following uses are permitted:<br>
 - open‑source forks that remain non‑commercial<br>
 - nonprofit organizations if part of the organization's core mission<br>
 <br>
+
 ## 3. Attribution<br>
 Attribution must be included in any permitted distribution:<br>
 “Zenith Sky (ZSNCSL‑1.1)”<br>
 <br>
+
 ## 4. No Warranty<br>
 The Software is provided “as is”, without warranty of any kind.<br>
 <br>
+
 ## 5. No Liability<br>
 The authors are not liable for any damages arising from use of the Software.<br>
 <br>
+
 ## 6. Asset Exclusion<br>
 This license applies only to the Software (code).<br>
 All non‑code materials are licensed separately under a Creative Commons<br>
 Non‑Commercial license.<br>
 <br>
+
 ## 7. Commercial Licensing<br>
 For any commercial use defined above, contact the project maintainers before such <br>
 use begins. Continued use without a license is a breach of copyright<br>
 <br>
+
 ## 8. Forks<br>
 Forks are permitted, as long as they remain open-source and any modifications, <br>
 adaptations, or derivative works of the Software must be licensed<br>
@@ -76,6 +82,7 @@ Upon termination, you must cease all use and destroy all copies of the Software 
 <br>
 This License does not grant permission to use the ‘Zenith Sky’ name, logo, or trademarks.<br>
 <br>
+
 # Asset License — CC BY‑NC 4.0<br>
 <br>
 All non‑code materials in this directory are licensed under the<br>
