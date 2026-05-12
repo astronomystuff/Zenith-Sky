@@ -529,12 +529,14 @@ function onSky3DClick(event) {
 }
 
 function centerSkyOnAltAz(alt, az) {
-  // Reset sphere rotation
-  sky3dCelestialSphere.rotation.set(0, 0, 0);
+  if (!sky3dCelestialSphere) return;
 
-  // Apply inverse alt/az rotation
-  sky3dCelestialSphere.rotation.y = az;     // yaw
-  sky3dCelestialSphere.rotation.x = -alt;   // pitch
+  // Reset rotation
+  sky3dCelestialSphere.rotation.set(0, 0, 0);
+  const yaw = -(az - Math.PI);
+  const pitch = alt;
+  sky3dCelestialSphere.rotation.y = yaw;
+  sky3dCelestialSphere.rotation.x = pitch;
 
   // Keep ground aligned
   if (sky3dGround) {
@@ -542,6 +544,7 @@ function centerSkyOnAltAz(alt, az) {
     sky3dGround.rotation.y = sky3dCelestialSphere.rotation.y;
   }
 }
+
 
 function searchSky3D() {
   const query = document.getElementById("sky3d-search").value.trim().toLowerCase();
