@@ -4,8 +4,10 @@ The Next Generation of Astronomy Tools <br>
 <br>
 Tools: <br>
 Video Stacking <br>
-What Object Is This? <br>
 Observation Planner <br>
+What Object Is This? <br>
+Moon Map <br>
+Sky Engine <br>
 <br>
 <br>
 ## Licensing<br>
