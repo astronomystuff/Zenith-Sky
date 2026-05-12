@@ -508,7 +508,6 @@ function onSky3DClick(event) {
 
   const sx = (pos.x * 0.5 + 0.5) * rect.width + rect.left;
   const sy = (-pos.y * 0.5 + 0.5) * rect.height + rect.top;
-
   const dx = event.clientX - sx;
   const dy = event.clientY - sy;
   const dist = Math.sqrt(dx * dx + dy * dy);
@@ -529,6 +528,20 @@ function onSky3DClick(event) {
   }, 5000);
 }
 
+function centerSkyOnAltAz(alt, az) {
+  // Reset sphere rotation
+  sky3dCelestialSphere.rotation.set(0, 0, 0);
+
+  // Apply inverse alt/az rotation
+  sky3dCelestialSphere.rotation.y = az;     // yaw
+  sky3dCelestialSphere.rotation.x = -alt;   // pitch
+
+  // Keep ground aligned
+  if (sky3dGround) {
+    sky3dGround.rotation.x = sky3dCelestialSphere.rotation.x;
+    sky3dGround.rotation.y = sky3dCelestialSphere.rotation.y;
+  }
+}
 
 function searchSky3D() {
   const query = document.getElementById("sky3d-search").value.trim().toLowerCase();
@@ -581,21 +594,10 @@ function searchSky3D() {
                 (Math.cos(alt) * Math.cos(latRad));
   const az = Math.atan2(sinAz, cosAz);
 
-  // 4. Convert alt/az → XYZ
-  const x = Math.cos(alt) * Math.sin(az);
-  const y = Math.sin(alt);
-  const z = Math.cos(alt) * Math.cos(az);
+  window.sky3dSelectedAltAz = { alt, az };
+  centerSkyOnAltAz(alt, az);
 
-  // 5. Rotate the sky so the star is centered
-  sky3dCelestialSphere.rotation.x = 0;
-  sky3dCelestialSphere.rotation.y = 0;
-
-  const target = new THREE.Vector3(x, y, z).normalize();
-  const current = new THREE.Vector3(0, 0, 1);
-  const q = new THREE.Quaternion().setFromUnitVectors(current, target);
-  sky3dCelestialSphere.setRotationFromQuaternion(q);
-
-  // 6. Update right info panel
+  // 4. Update right info panel
   document.getElementById("sky3d-object-name").textContent = star.proper || "Unnamed star";
   document.getElementById("sky3d-object-type").textContent = "Star";
   document.getElementById("sky3d-object-ra-dec").textContent =
@@ -707,18 +709,27 @@ openBtn.onclick = () => {
     sky3dModalOpen = false;
   };
 
-  if (applyDT) applyDT.onclick = rebuildCelestialSphere;
-  if (applyLoc) applyLoc.onclick = rebuildCelestialSphere;
-  
-  // Search wiring
+if (applyDT) applyDT.onclick = rebuildCelestialSphere;
+if (applyLoc) applyLoc.onclick = rebuildCelestialSphere;
+
+// Search wiring
 const searchBtn = document.getElementById("sky3d-search-btn");
 if (searchBtn) searchBtn.onclick = searchSky3D;
-
 const searchInput = document.getElementById("sky3d-search");
 if (searchInput) {
   searchInput.addEventListener("keydown", e => {
     if (e.key === "Enter") searchSky3D();
   });
+}
+
+// Center on Object wiring
+const centerBtn = document.getElementById("sky3d-center");
+if (centerBtn) {
+  centerBtn.onclick = () => {
+    if (!window.sky3dSelectedAltAz) return;
+    const { alt, az } = window.sky3dSelectedAltAz;
+    centerSkyOnAltAz(alt, az);
+  };
 }
 
 }
