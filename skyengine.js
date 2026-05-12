@@ -531,20 +531,15 @@ function onSky3DClick(event) {
 function centerSkyOnAltAz(alt, az) {
   if (!sky3dCelestialSphere) return;
 
-  // Reset rotation
   sky3dCelestialSphere.rotation.set(0, 0, 0);
-  const yaw = -(az - Math.PI);
-  const pitch = alt;
-  sky3dCelestialSphere.rotation.y = yaw;
-  sky3dCelestialSphere.rotation.x = pitch;
+  sky3dCelestialSphere.rotation.y = az;
+  sky3dCelestialSphere.rotation.x = -alt;
 
-  // Keep ground aligned
   if (sky3dGround) {
     sky3dGround.rotation.x = sky3dCelestialSphere.rotation.x;
     sky3dGround.rotation.y = sky3dCelestialSphere.rotation.y;
   }
 }
-
 
 function searchSky3D() {
   const query = document.getElementById("sky3d-search").value.trim().toLowerCase();
@@ -582,23 +577,38 @@ function searchSky3D() {
   const base = xyzToRaDec(star.x0, star.y0, star.z0);
 
   // 3. Convert RA/Dec → Alt/Az for current time/location
-  const dateCivil = getDateFromUICivil();
-  const { latDeg, lonDeg } = getLocationFromUI();
-  const { lst } = getLSTRadiansFromCivil(dateCivil, lonDeg);
-  const raRad = base.raHours * 15 * Math.PI / 180;
-  const decRad = base.decDeg * Math.PI / 180;
-  const latRad = latDeg * Math.PI / 180;
-  const H = lst - raRad;
-  const sinAlt = Math.sin(latRad) * Math.sin(decRad) +
-                 Math.cos(latRad) * Math.cos(decRad) * Math.cos(H);
-  const alt = Math.asin(sinAlt);
-  const sinAz = -Math.cos(decRad) * Math.sin(H) / Math.cos(alt);
-  const cosAz = (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
-                (Math.cos(alt) * Math.cos(latRad));
-  const az = Math.atan2(sinAz, cosAz);
+const dateCivil = getDateFromUICivil();
+const { latDeg, lonDeg } = getLocationFromUI();
+const { lst, dateLMT } = getLSTRadiansFromCivil(dateCivil, lonDeg);
+const years = (dateLMT.getTime() - J2000_MS) / 31557600000;
 
-  window.sky3dSelectedAltAz = { alt, az };
-  centerSkyOnAltAz(alt, az);
+// Use the same proper-motion function as the sphere builder
+const pm = applyProperMotionFromXYZ(star, years);
+
+const raRad  = pm.raHours * 15 * Math.PI / 180;
+const decRad = pm.decDeg * Math.PI / 180;
+const latRad = latDeg * Math.PI / 180;
+
+// Hour angle
+const H = lst - raRad;
+
+// Altitude
+const sinAlt = Math.sin(latRad) * Math.sin(decRad) +
+               Math.cos(latRad) * Math.cos(decRad) * Math.cos(H);
+const alt = Math.asin(sinAlt);
+
+// Azimuth
+const sinAz = -Math.cos(decRad) * Math.sin(H) / Math.cos(alt);
+const cosAz = (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
+              (Math.cos(alt) * Math.cos(latRad));
+const az = Math.atan2(sinAz, cosAz);
+
+// Store for center button
+window.sky3dSelectedAltAz = { alt, az };
+
+// Center immediately
+centerSkyOnAltAz(alt, az);
+
 
   // 4. Update right info panel
   document.getElementById("sky3d-object-name").textContent = star.proper || "Unnamed star";
