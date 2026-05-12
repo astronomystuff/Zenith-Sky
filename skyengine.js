@@ -529,6 +529,87 @@ function onSky3DClick(event) {
   }, 5000);
 }
 
+
+function searchSky3D() {
+  const query = document.getElementById("sky3d-search").value.trim().toLowerCase();
+  if (!query) return;
+
+  // 1. Find matching star
+  let best = null;
+  for (let i = 0; i < sky3dStarBase.length; i++) {
+    const s = sky3dStarBase[i];
+
+    // Match by proper name
+    if (s.proper && s.proper.toLowerCase().includes(query)) {
+      best = { star: s, idx: i };
+      break;
+    }
+
+    // Match by HIP number
+    if (query.startsWith("hip")) {
+      const hip = query.replace("hip", "").trim();
+      if (s.hip && String(s.hip) === hip) {
+        best = { star: s, idx: i };
+        break;
+      }
+    }
+  }
+
+  if (!best) {
+    alert("Object not found.");
+    return;
+  }
+
+  const star = best.star;
+
+  // 2. Compute RA/Dec from XYZ
+  const base = xyzToRaDec(star.x0, star.y0, star.z0);
+
+  // 3. Convert RA/Dec → Alt/Az for current time/location
+  const dateCivil = getDateFromUICivil();
+  const { latDeg, lonDeg } = getLocationFromUI();
+  const { lst } = getLSTRadiansFromCivil(dateCivil, lonDeg);
+  const raRad = base.raHours * 15 * Math.PI / 180;
+  const decRad = base.decDeg * Math.PI / 180;
+  const latRad = latDeg * Math.PI / 180;
+  const H = lst - raRad;
+  const sinAlt = Math.sin(latRad) * Math.sin(decRad) +
+                 Math.cos(latRad) * Math.cos(decRad) * Math.cos(H);
+  const alt = Math.asin(sinAlt);
+  const sinAz = -Math.cos(decRad) * Math.sin(H) / Math.cos(alt);
+  const cosAz = (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
+                (Math.cos(alt) * Math.cos(latRad));
+  const az = Math.atan2(sinAz, cosAz);
+
+  // 4. Convert alt/az → XYZ
+  const x = Math.cos(alt) * Math.sin(az);
+  const y = Math.sin(alt);
+  const z = Math.cos(alt) * Math.cos(az);
+
+  // 5. Rotate the sky so the star is centered
+  sky3dCelestialSphere.rotation.x = 0;
+  sky3dCelestialSphere.rotation.y = 0;
+
+  const target = new THREE.Vector3(x, y, z).normalize();
+  const current = new THREE.Vector3(0, 0, 1);
+  const q = new THREE.Quaternion().setFromUnitVectors(current, target);
+  sky3dCelestialSphere.setRotationFromQuaternion(q);
+
+  // 6. Update right info panel
+  document.getElementById("sky3d-object-name").textContent = star.proper || "Unnamed star";
+  document.getElementById("sky3d-object-type").textContent = "Star";
+  document.getElementById("sky3d-object-ra-dec").textContent =
+    `RA: ${base.raHours.toFixed(2)}h, Dec: ${base.decDeg.toFixed(2)}°`;
+  document.getElementById("sky3d-object-alt-az").textContent =
+    `Alt: ${(alt * 180/Math.PI).toFixed(2)}°, Az: ${(az * 180/Math.PI).toFixed(2)}°`;
+  document.getElementById("sky3d-object-mag").textContent = `Mag: ${star.mag}`;
+  document.getElementById("sky3d-object-distance").textContent =
+    `Dist: ${star.dist} ly`;
+
+  document.getElementById("sky3d-center").disabled = false;
+  document.getElementById("sky3d-lock").disabled = false;
+}
+
 /* ============================================================
    Rebuild Sphere
    ============================================================ */
@@ -628,6 +709,18 @@ openBtn.onclick = () => {
 
   if (applyDT) applyDT.onclick = rebuildCelestialSphere;
   if (applyLoc) applyLoc.onclick = rebuildCelestialSphere;
+  
+  // Search wiring
+const searchBtn = document.getElementById("sky3d-search-btn");
+if (searchBtn) searchBtn.onclick = searchSky3D;
+
+const searchInput = document.getElementById("sky3d-search");
+if (searchInput) {
+  searchInput.addEventListener("keydown", e => {
+    if (e.key === "Enter") searchSky3D();
+  });
+}
+
 }
 
 /* ============================================================
