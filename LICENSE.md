@@ -28,7 +28,7 @@ make the source code of their modifications available to the user under this sam
 require a commercial license regardless.) <br>
 - any environment that generates revenue, directly or indirectly<br>
 <br>
-## 2. Allowed Uses<br>
+### 2. Allowed Uses<br>
 The following uses are permitted:<br>
 - personal use<br>
 - for use by students or instructors within an accredited academic institution for classroom purposes only <br>
