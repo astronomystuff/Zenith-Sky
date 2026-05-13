@@ -528,35 +528,20 @@ function onSky3DClick(event) {
   }, 5000);
 }
 
-function centerSkyOnAltAz(alt, az) {
-  if (!sky3dCelestialSphere) return;
-
-  sky3dCelestialSphere.rotation.set(0, 0, 0);
-  sky3dCelestialSphere.rotation.y = az;
-  sky3dCelestialSphere.rotation.x = -alt;
-
-  if (sky3dGround) {
-    sky3dGround.rotation.x = sky3dCelestialSphere.rotation.x;
-    sky3dGround.rotation.y = sky3dCelestialSphere.rotation.y;
-  }
-}
-
 function searchSky3D() {
   const query = document.getElementById("sky3d-search").value.trim().toLowerCase();
   if (!query) return;
 
-  // 1. Find matching star
+  // 1. Find matching star in base catalog
   let best = null;
   for (let i = 0; i < sky3dStarBase.length; i++) {
     const s = sky3dStarBase[i];
 
-    // Match by proper name
     if (s.proper && s.proper.toLowerCase().includes(query)) {
       best = { star: s, idx: i };
       break;
     }
 
-    // Match by HIP number
     if (query.startsWith("hip")) {
       const hip = query.replace("hip", "").trim();
       if (s.hip && String(s.hip) === hip) {
@@ -572,49 +557,75 @@ function searchSky3D() {
   }
 
   const star = best.star;
+  const starIdx = best.idx;
 
-  // 2. Compute RA/Dec from XYZ
-  const base = xyzToRaDec(star.x0, star.y0, star.z0);
+  if (!sky3dCelestialSphere) return;
 
-  // 3. Convert RA/Dec → Alt/Az for current time/location
-const dateCivil = getDateFromUICivil();
-const { latDeg, lonDeg } = getLocationFromUI();
-const { lst, dateLMT } = getLSTRadiansFromCivil(dateCivil, lonDeg);
-const years = (dateLMT.getTime() - J2000_MS) / 31557600000;
+  const points = sky3dCelestialSphere.children[0];
+  const geom = points.geometry;
+  const starIndices = geom.userData.starIndices;
+  const positions = geom.attributes.position;
 
-// Use the same proper-motion function as the sphere builder
-const pm = applyProperMotionFromXYZ(star, years);
+  // 2. Find this star in the *rendered* geometry
+  let geoIndex = -1;
+  for (let i = 0; i < starIndices.length; i++) {
+    if (starIndices[i] === starIdx) {
+      geoIndex = i;
+      break;
+    }
+  }
 
-const raRad  = pm.raHours * 15 * Math.PI / 180;
-const decRad = pm.decDeg * Math.PI / 180;
-const latRad = latDeg * Math.PI / 180;
+  if (geoIndex === -1) {
+    alert("That object is currently below the horizon or filtered out.");
+    return;
+  }
 
-// Hour angle
-const H = lst - raRad;
+  // 3. Get its rendered position
+  const vx = positions.getX(geoIndex);
+  const vy = positions.getY(geoIndex);
+  const vz = positions.getZ(geoIndex);
 
-// Altitude
-const sinAlt = Math.sin(latRad) * Math.sin(decRad) +
-               Math.cos(latRad) * Math.cos(decRad) * Math.cos(H);
-const alt = Math.asin(sinAlt);
+  const starDir = new THREE.Vector3(vx, vy, vz).normalize();
 
-// Azimuth
-const sinAz = -Math.cos(decRad) * Math.sin(H) / Math.cos(alt);
-const cosAz = (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
-              (Math.cos(alt) * Math.cos(latRad));
-const az = Math.atan2(sinAz, cosAz);
+  // 4. Rotate sphere so this direction points to camera forward (0,0,-1)
+  const from = starDir;
+  const to = new THREE.Vector3(0, 0, -1);
 
-// Store for center button
-window.sky3dSelectedAltAz = { alt, az };
+  const q = new THREE.Quaternion().setFromUnitVectors(from, to);
+  sky3dCelestialSphere.setRotationFromQuaternion(q);
 
-// Center immediately
-centerSkyOnAltAz(alt, az);
+  // Keep ground aligned
+  if (sky3dGround) {
+    sky3dGround.rotation.copy(sky3dCelestialSphere.rotation);
+  }
 
+  // 5. Compute RA/Dec/Alt/Az for info panel
+  const dateCivil = getDateFromUICivil();
+  const { latDeg, lonDeg } = getLocationFromUI();
+  const { lst, dateLMT } = getLSTRadiansFromCivil(dateCivil, lonDeg);
+  const years = (dateLMT.getTime() - J2000_MS) / 31557600000;
+  const pm = applyProperMotionFromXYZ(star, years);
 
-  // 4. Update right info panel
+  const raRad  = pm.raHours * 15 * Math.PI / 180;
+  const decRad = pm.decDeg * Math.PI / 180;
+  const latRad = latDeg * Math.PI / 180;
+  const H = lst - raRad;
+
+  const sinAlt = Math.sin(latRad) * Math.sin(decRad) +
+                 Math.cos(latRad) * Math.cos(decRad) * Math.cos(H);
+  const alt = Math.asin(sinAlt);
+
+  const sinAz = -Math.cos(decRad) * Math.sin(H) / Math.cos(alt);
+  const cosAz = (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
+                (Math.cos(alt) * Math.cos(latRad));
+  const az = Math.atan2(sinAz, cosAz);
+
+  window.sky3dSelectedAltAz = { alt, az };
+
   document.getElementById("sky3d-object-name").textContent = star.proper || "Unnamed star";
   document.getElementById("sky3d-object-type").textContent = "Star";
   document.getElementById("sky3d-object-ra-dec").textContent =
-    `RA: ${base.raHours.toFixed(2)}h, Dec: ${base.decDeg.toFixed(2)}°`;
+    `RA: ${pm.raHours.toFixed(2)}h, Dec: ${pm.decDeg.toFixed(2)}°`;
   document.getElementById("sky3d-object-alt-az").textContent =
     `Alt: ${(alt * 180/Math.PI).toFixed(2)}°, Az: ${(az * 180/Math.PI).toFixed(2)}°`;
   document.getElementById("sky3d-object-mag").textContent = `Mag: ${star.mag}`;
