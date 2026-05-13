@@ -559,8 +559,6 @@ function searchSky3D() {
   const star = best.star;
   const starIdx = best.idx;
 
-  if (!sky3dCelestialSphere) return;
-
   const points = sky3dCelestialSphere.children[0];
   const geom = points.geometry;
   const starIndices = geom.userData.starIndices;
@@ -588,13 +586,27 @@ function searchSky3D() {
   );
   points.localToWorld(pos);
 
-  // Store for center button
+  // 4. Compute direction from camera to star
+  const starDir = pos.clone().normalize();
+
+  // Camera forward direction (0,0,-1) in world space
+  const camForward = new THREE.Vector3(0, 0, -1);
+
+  // 5. Compute quaternion that rotates starDir → camForward
+  const q = new THREE.Quaternion().setFromUnitVectors(starDir, camForward);
+
+  // 6. Apply rotation to the sphere
+  sky3dCelestialSphere.quaternion.premultiply(q);
+
+  // Keep ground aligned
+  if (sky3dGround) {
+    sky3dGround.quaternion.copy(sky3dCelestialSphere.quaternion);
+  }
+
+  // 7. Store for center button
   window.sky3dSelectedWorldPos = pos.clone();
 
-  // Immediately center camera on it
-  sky3dCamera.lookAt(pos);
-
-  // 4. Info panel (you can keep your existing RA/Dec/Alt/Az code here)
+  // 8. Update info panel (unchanged)
   const dateCivil = getDateFromUICivil();
   const { latDeg, lonDeg } = getLocationFromUI();
   const { lst, dateLMT } = getLSTRadiansFromCivil(dateCivil, lonDeg);
@@ -628,7 +640,6 @@ function searchSky3D() {
   document.getElementById("sky3d-center").disabled = false;
   document.getElementById("sky3d-lock").disabled = false;
 }
-
 
 /* ============================================================
    Rebuild Sphere
