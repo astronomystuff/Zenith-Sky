@@ -566,7 +566,7 @@ function searchSky3D() {
   const starIndices = geom.userData.starIndices;
   const positions = geom.attributes.position;
 
-  // 2. Find this star in the *rendered* geometry
+  // 2. Find this star in the rendered geometry
   let geoIndex = -1;
   for (let i = 0; i < starIndices.length; i++) {
     if (starIndices[i] === starIdx) {
@@ -580,26 +580,21 @@ function searchSky3D() {
     return;
   }
 
-  // 3. Get its rendered position
-  const vx = positions.getX(geoIndex);
-  const vy = positions.getY(geoIndex);
-  const vz = positions.getZ(geoIndex);
+  // 3. Get its local position and convert to world
+  const pos = new THREE.Vector3(
+    positions.getX(geoIndex),
+    positions.getY(geoIndex),
+    positions.getZ(geoIndex)
+  );
+  points.localToWorld(pos);
 
-  const starDir = new THREE.Vector3(vx, vy, vz).normalize();
+  // Store for center button
+  window.sky3dSelectedWorldPos = pos.clone();
 
-  // 4. Rotate sphere so this direction points to camera forward (0,0,-1)
-  const from = starDir;
-  const to = new THREE.Vector3(0, 0, -1);
+  // Immediately center camera on it
+  sky3dCamera.lookAt(pos);
 
-  const q = new THREE.Quaternion().setFromUnitVectors(from, to);
-  sky3dCelestialSphere.setRotationFromQuaternion(q);
-
-  // Keep ground aligned
-  if (sky3dGround) {
-    sky3dGround.rotation.copy(sky3dCelestialSphere.rotation);
-  }
-
-  // 5. Compute RA/Dec/Alt/Az for info panel
+  // 4. Info panel (you can keep your existing RA/Dec/Alt/Az code here)
   const dateCivil = getDateFromUICivil();
   const { latDeg, lonDeg } = getLocationFromUI();
   const { lst, dateLMT } = getLSTRadiansFromCivil(dateCivil, lonDeg);
@@ -620,8 +615,6 @@ function searchSky3D() {
                 (Math.cos(alt) * Math.cos(latRad));
   const az = Math.atan2(sinAz, cosAz);
 
-  window.sky3dSelectedAltAz = { alt, az };
-
   document.getElementById("sky3d-object-name").textContent = star.proper || "Unnamed star";
   document.getElementById("sky3d-object-type").textContent = "Star";
   document.getElementById("sky3d-object-ra-dec").textContent =
@@ -635,6 +628,7 @@ function searchSky3D() {
   document.getElementById("sky3d-center").disabled = false;
   document.getElementById("sky3d-lock").disabled = false;
 }
+
 
 /* ============================================================
    Rebuild Sphere
@@ -750,9 +744,8 @@ if (searchInput) {
 const centerBtn = document.getElementById("sky3d-center");
 if (centerBtn) {
   centerBtn.onclick = () => {
-    if (!window.sky3dSelectedAltAz) return;
-    const { alt, az } = window.sky3dSelectedAltAz;
-    centerSkyOnAltAz(alt, az);
+    if (!window.sky3dSelectedWorldPos) return;
+    sky3dCamera.lookAt(window.sky3dSelectedWorldPos);
   };
 }
 
