@@ -756,7 +756,14 @@ const centerBtn = document.getElementById("sky3d-center");
 if (centerBtn) {
   centerBtn.onclick = () => {
     if (!window.sky3dSelectedWorldPos) return;
-    sky3dCamera.lookAt(window.sky3dSelectedWorldPos);
+     const pos = window.sky3dSelectedWorldPos;
+     if (!pos) return;
+      const starDir = pos.clone().normalize();
+      const camForward = new THREE.Vector3(0, 0, -1);
+      const q = new THREE.Quaternion().setFromUnitVectors(starDir, camForward);
+      sky3dCelestialSphere.quaternion.premultiply(q);
+     if (sky3dGround) {
+      sky3dGround.quaternion.copy(sky3dCelestialSphere.quaternion);
   };
 }
 
