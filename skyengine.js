@@ -373,6 +373,18 @@ function makeGround() {
   return ground;
 }
 
+function centerOnWorldPos(pos) {
+  const starDir = pos.clone().normalize();
+  const camForward = new THREE.Vector3(0, 0, -1);
+
+  const q = new THREE.Quaternion().setFromUnitVectors(starDir, camForward);
+
+  sky3dCelestialSphere.quaternion.premultiply(q);
+
+  if (sky3dGround) {
+    sky3dGround.quaternion.copy(sky3dCelestialSphere.quaternion);
+  }
+}
 
 /* ============================================================
    Build Celestial Sphere
@@ -752,49 +764,10 @@ if (searchInput) {
 }
 
 // Center on Object wiring
-const centerBtn = document.getElementById("sky3d-center");
-if (centerBtn) {
-  centerBtn.onclick = () => {
-    const pos = window.sky3dSelectedWorldPos;
-    const star = window.sky3dSelectedStar;
-    const starIdx = window.sky3dSelectedStarIdx;
-
-    if (!pos || !star) return;
-    const starDir = pos.clone().normalize();
-    const camForward = new THREE.Vector3(0, 0, -1);
-    const q = new THREE.Quaternion().setFromUnitVectors(starDir, camForward);
-    sky3dCelestialSphere.quaternion.premultiply(q);
-    if (sky3dGround) {
-      sky3dGround.quaternion.copy(sky3dCelestialSphere.quaternion);
-    }
-
-    const dateCivil = getDateFromUICivil();
-    const { latDeg, lonDeg } = getLocationFromUI();
-    const { lst, dateLMT } = getLSTRadiansFromCivil(dateCivil, lonDeg);
-    const years = (dateLMT.getTime() - J2000_MS) / 31557600000;
-    const pm = applyProperMotionFromXYZ(star, years);
-    const raRad  = pm.raHours * 15 * Math.PI / 180;
-    const decRad = pm.decDeg * Math.PI / 180;
-    const latRad = latDeg * Math.PI / 180;
-    const H = lst - raRad;
-    const sinAlt = Math.sin(latRad) * Math.sin(decRad) +
-                   Math.cos(latRad) * Math.cos(decRad) * Math.cos(H);
-    const alt = Math.asin(sinAlt);
-    const sinAz = -Math.cos(decRad) * Math.sin(H) / Math.cos(alt);
-    const cosAz = (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
-                  (Math.cos(alt) * Math.cos(latRad));
-    const az = Math.atan2(sinAz, cosAz);
-    document.getElementById("sky3d-object-name").textContent = star.proper || "Unnamed star";
-    document.getElementById("sky3d-object-type").textContent = "Star";
-    document.getElementById("sky3d-object-ra-dec").textContent =
-      `RA: ${pm.raHours.toFixed(2)}h, Dec: ${pm.decDeg.toFixed(2)}°`;
-    document.getElementById("sky3d-object-alt-az").textContent =
-      `Alt: ${(alt * 180/Math.PI).toFixed(2)}°, Az: ${(az * 180/Math.PI).toFixed(2)}°`;
-    document.getElementById("sky3d-object-mag").textContent = `Mag: ${star.mag}`;
-    document.getElementById("sky3d-object-distance").textContent =
-      `Dist: ${star.dist} ly`;
-  };
-}
+centerBtn.onclick = () => {
+  if (!window.sky3dSelectedWorldPos) return;
+  centerOnWorldPos(window.sky3dSelectedWorldPos);
+};
 
 }
 
