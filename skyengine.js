@@ -762,13 +762,7 @@ if (searchInput) {
     if (e.key === "Enter") searchSky3D();
   });
 }
-
-// Center on Object wiring
-centerBtn.onclick = () => {
-  if (!window.sky3dSelectedWorldPos) return;
-  centerOnWorldPos(window.sky3dSelectedWorldPos);
-};
-
+  
 }
 
 /* ============================================================
