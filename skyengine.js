@@ -5,7 +5,6 @@ let sky3dStarBase = [];
 let sky3dCelestialSphere = null;
 let sky3dGround = null;
 let sky3dTooltip = null;
-let sky3dRootGroup = null;
 let sky3dRaycaster = new THREE.Raycaster();
   sky3dRaycaster.params.Points.threshold = 0.01;
 let sky3dMouse = new THREE.Vector2();
@@ -88,14 +87,16 @@ class MinimalCameraControls {
     const dx = e.clientX - this.lastX;
     const dy = e.clientY - this.lastY;
 
-sky3dRootGroup.rotation.y += dx * this.rotateSpeed;
-sky3dRootGroup.rotation.x += dy * this.rotateSpeed;
+    if (sky3dCelestialSphere) {
+      sky3dCelestialSphere.rotation.y += dx * this.rotateSpeed;
+      sky3dCelestialSphere.rotation.x += dy * this.rotateSpeed;
 
-const limit = Math.PI / 2;
-sky3dRootGroup.rotation.x = Math.max(
-    -limit,
-    Math.min(limit, sky3dRootGroup.rotation.x)
-);
+      const limit = Math.PI / 2;
+      sky3dCelestialSphere.rotation.x = Math.max(
+        -limit,
+        Math.min(limit, sky3dCelestialSphere.rotation.x)
+      );
+    }
 
     this.lastX = e.clientX;
     this.lastY = e.clientY;
@@ -142,15 +143,16 @@ sky3dRootGroup.rotation.x = Math.max(
       const dx = x - this.lastX;
       const dy = y - this.lastY;
 
-sky3dRootGroup.rotation.y += dx * this.rotateSpeed;
-sky3dRootGroup.rotation.x += dy * this.rotateSpeed;
+      if (sky3dCelestialSphere) {
+        sky3dCelestialSphere.rotation.y += dx * this.rotateSpeed;
+        sky3dCelestialSphere.rotation.x += dy * this.rotateSpeed;
 
-const limit = Math.PI / 2;
-sky3dRootGroup.rotation.x = Math.max(
-    -limit,
-    Math.min(limit, sky3dRootGroup.rotation.x)
-);
-
+        const limit = Math.PI / 2;
+        sky3dCelestialSphere.rotation.x = Math.max(
+          -limit,
+          Math.min(limit, sky3dCelestialSphere.rotation.x)
+        );
+      }
 
       this.lastX = x;
       this.lastY = y;
@@ -606,7 +608,12 @@ function searchSky3D() {
   const q = new THREE.Quaternion().setFromUnitVectors(starDir, camForward);
 
   // 6. Apply rotation to the sphere
-  sky3dRootGroup.quaternion.premultiply(q);
+  sky3dCelestialSphere.quaternion.premultiply(q);
+
+  // Keep ground aligned
+  if (sky3dGround) {
+    sky3dGround.quaternion.copy(sky3dCelestialSphere.quaternion);
+  }
 
   // 7. Store for center button
   window.sky3dSelectedWorldPos = pos.clone();
@@ -660,7 +667,11 @@ function rebuildCelestialSphere() {
   const { latDeg, lonDeg } = getLocationFromUI();
 
   sky3dCelestialSphere = buildCelestialSphere(dateCivil, latDeg, lonDeg);
-  sky3dRootGroup.add(sky3dCelestialSphere);
+  sky3dScene.add(sky3dCelestialSphere);
+  if (sky3dGround) {
+  sky3dGround.rotation.x = sky3dCelestialSphere.rotation.x;
+  sky3dGround.rotation.y = sky3dCelestialSphere.rotation.y;
+  }
 }
 
 /* ============================================================
@@ -672,9 +683,7 @@ async function startSky3D() {
   sky3dRenderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   sky3dRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
   sky3dRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  sky3dRootGroup = new THREE.Group();
-  sky3dScene.add(sky3dRootGroup);
-  sky3dRootGroup.add(sky3dGround);
+  sky3dScene = new THREE.Scene();
   sky3dScene.background = new THREE.Color(0x000000);
   sky3dTooltip = document.getElementById("sky3d-tooltip");
   sky3dGround = makeGround();
