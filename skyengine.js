@@ -73,7 +73,6 @@ class MinimalCameraControls {
   /* ============================
      DESKTOP CONTROLS
   ============================ */
-
   onMouseDown(e) {
     if (e.button !== 0) return;
     this.isRotating = true;
@@ -119,7 +118,6 @@ class MinimalCameraControls {
   /* ============================
      MOBILE CONTROLS
   ============================ */
-
   onTouchStart(e) {
     if (e.touches.length === 1) {
       // One finger → rotate
@@ -185,8 +183,24 @@ class MinimalCameraControls {
    CSV Loader
    ============================================================ */
 async function loadStarCSV(url) {
-  const response = await fetch(url);
-  const text = await response.text();
+  let text;
+
+  try {
+    // Try direct fetch first
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Direct fetch failed");
+    text = await response.text();
+  } catch (err) {
+    console.warn("Direct fetch failed, falling back to Worker:", err);
+
+    const workerURL =
+      "https://astro-proxy.niamnbhakta.workers.dev/?url=" +
+      encodeURIComponent(url);
+
+    const response2 = await fetch(workerURL);
+    if (!response2.ok) throw new Error("Worker fetch failed");
+    text = await response2.text();
+  }
 
   const lines = text.split("\n");
   if (!lines.length) return [];
@@ -194,16 +208,16 @@ async function loadStarCSV(url) {
   const header = lines[0].split(",").map(h => h.replace(/"/g, "").trim());
 
   const idx = {
-  proper: header.indexOf("proper"),
-  x: header.indexOf("x0"),
-  y: header.indexOf("y0"),
-  z: header.indexOf("z0"),
-  dist: header.indexOf("dist"),
-  pmRa: header.indexOf("pm_ra"),
-  pmDec: header.indexOf("pm_dec"),
-  rv: header.indexOf("rv"),
-  mag: header.indexOf("mag")
-};
+    proper: header.indexOf("proper"),
+    x: header.indexOf("x0"),
+    y: header.indexOf("y0"),
+    z: header.indexOf("z0"),
+    dist: header.indexOf("dist"),
+    pmRa: header.indexOf("pm_ra"),
+    pmDec: header.indexOf("pm_dec"),
+    rv: header.indexOf("rv"),
+    mag: header.indexOf("mag")
+  };
 
   const stars = [];
 
@@ -215,7 +229,7 @@ async function loadStarCSV(url) {
 
     const proper = cols[idx.proper]?.trim();
     if (proper && proper.toLowerCase() === "sol") continue;
-     
+
     const x0   = parseFloat(cols[idx.x]);
     const y0   = parseFloat(cols[idx.y]);
     const z0   = parseFloat(cols[idx.z]);
@@ -240,7 +254,6 @@ async function loadStarCSV(url) {
 function xyzToRaDec(x, y, z) {
   const rLY = Math.sqrt(x * x + y * y + z * z);
   const rPC = rLY * LY_TO_PC;
-
   const ra  = Math.atan2(z, x);
   const dec = Math.asin(y / rLY);
 
