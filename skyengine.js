@@ -92,9 +92,9 @@ class MinimalCameraControls {
       sky3dRootGroup.rotation.x += dy * this.rotateSpeed;
 
       const limit = Math.PI / 2;
-      sky3dCelestialSphere.rotation.x = Math.max(
+      sky3dRootGroup.rotation.x = Math.max(
         -limit,
-        Math.min(limit, sky3dCelestialSphere.rotation.x)
+        Math.min(limit, sky3dRootGroup.rotation.x)
       );
     }
 
@@ -147,9 +147,9 @@ class MinimalCameraControls {
         sky3dRootGroup.rotation.x += dy * this.rotateSpeed;
 
         const limit = Math.PI / 2;
-        sky3dCelestialSphere.rotation.x = Math.max(
+        sky3dRootGroup.rotation.x = Math.max(
           -limit,
-          Math.min(limit, sky3dCelestialSphere.rotation.x)
+          Math.min(limit, sky3dRootGroup.rotation.x)
         );
       }
 
@@ -661,8 +661,10 @@ function searchSky3D() {
   document.getElementById("sky3d-object-distance").textContent =
     `Dist: ${star.dist} ly`;
 
-  document.getElementById("sky3d-center").disabled = false;
-  document.getElementById("sky3d-lock").disabled = false;
+  const centerBtn = document.getElementById("sky3d-center");
+  const lockBtn   = document.getElementById("sky3d-lock");
+  if (centerBtn) centerBtn.disabled = false;
+  if (lockBtn)   lockBtn.disabled = false;
 }
 
 /* ============================================================
