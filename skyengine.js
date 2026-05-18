@@ -703,6 +703,7 @@ async function startSky3D() {
   );
 sky3dCamera.position.set(0, 0, 0);
 sky3dCamera.lookAt(0, 0, -1);
+sky3dRootGroup.add(sky3dCamera);
 
   sky3dControls = new MinimalCameraControls(sky3dCamera, canvas);
   canvas.addEventListener("click", onSky3DClick);
