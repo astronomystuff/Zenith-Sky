@@ -87,7 +87,7 @@ class MinimalCameraControls {
     const dx = e.clientX - this.lastX;
     const dy = e.clientY - this.lastY;
 
-    if (sky3dCelestialSphere) {
+    if (sky3dRootGroup) {
       sky3dRootGroup.rotation.y += dx * this.rotateSpeed;
       sky3dRootGroup.rotation.x += dy * this.rotateSpeed;
 
@@ -142,7 +142,7 @@ class MinimalCameraControls {
       const dx = x - this.lastX;
       const dy = y - this.lastY;
 
-      if (sky3dCelestialSphere) {
+      if (sky3dRootGroup) {
         sky3dRootGroup.rotation.y += dx * this.rotateSpeed;
         sky3dRootGroup.rotation.x += dy * this.rotateSpeed;
 
@@ -620,12 +620,7 @@ function searchSky3D() {
   const q = new THREE.Quaternion().setFromUnitVectors(starDir, camForward);
 
   // 6. Apply rotation to the sphere
-  sky3dCelestialSphere.quaternion.premultiply(q);
-
-  // Keep ground aligned
-  if (sky3dGround) {
-    sky3dGround.quaternion.copy(sky3dCelestialSphere.quaternion);
-  }
+  sky3dRootGroup.quaternion.premultiply(q);
 
   // 7. Store for center button
   window.sky3dSelectedWorldPos = pos.clone();
@@ -682,10 +677,6 @@ function rebuildCelestialSphere() {
 
   sky3dCelestialSphere = buildCelestialSphere(dateCivil, latDeg, lonDeg);
   sky3dRootGroup.add(sky3dCelestialSphere);
-  if (sky3dGround) {
-  sky3dGround.rotation.x = sky3dCelestialSphere.rotation.x;
-  sky3dGround.rotation.y = sky3dCelestialSphere.rotation.y;
-  }
 }
 
 /* ============================================================
