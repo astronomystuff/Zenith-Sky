@@ -612,20 +612,14 @@ function searchSky3D() {
 
   // 4. Compute direction from camera to star
   const starDir = pos.clone().normalize();
+  const yaw   = Math.atan2(starDir.x, starDir.z);   // left/right
+  const pitch = Math.asin(starDir.y);               // up/down
+  sky3dRootGroup.rotation.set(-pitch, -yaw, 0);
 
-  // Camera forward direction (0,0,-1) in world space
-  const camForward = new THREE.Vector3(0, 0, -1);
-
-  // 5. Compute quaternion that rotates starDir → camForward
-  const q = new THREE.Quaternion().setFromUnitVectors(starDir, camForward);
-
-  // 6. Apply rotation to the sphere
-  sky3dRootGroup.quaternion.premultiply(q);
-
-  // 7. Store for center button
+  // 5. Store for center button
   window.sky3dSelectedWorldPos = pos.clone();
 
-  // 8. Update info panel (unchanged)
+  // 6. Update info panel
   const dateCivil = getDateFromUICivil();
   const { latDeg, lonDeg } = getLocationFromUI();
   const { lst, dateLMT } = getLSTRadiansFromCivil(dateCivil, lonDeg);
@@ -720,13 +714,10 @@ sky3dCamera.lookAt(0, 0, -1);
    Animation Loop
    ============================================================ */
 function animateSky3D() {
-    if (!sky3dModalOpen) return;
-    requestAnimationFrame(animateSky3D);
-    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(sky3dRootGroup.quaternion);
-    sky3dCamera.lookAt(forward);
-    sky3dRenderer.render(sky3dScene, sky3dCamera);
+  if (!sky3dModalOpen) return;
+  requestAnimationFrame(animateSky3D);
+  sky3dRenderer.render(sky3dScene, sky3dCamera);
 }
-
 
 /* ============================================================
    Modal Wiring
