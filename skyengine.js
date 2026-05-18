@@ -610,13 +610,15 @@ function searchSky3D() {
   );
   points.localToWorld(pos);
 
-  // 4. Compute direction from camera to star
+   // 4. Compute direction from camera to star
   const starDir = pos.clone().normalize();
-  const yaw   = Math.atan2(starDir.x, starDir.z);   // left/right
-  const pitch = Math.asin(starDir.y);               // up/down
-  sky3dRootGroup.rotation.set(-pitch, -yaw, 0);
+  const yaw   = Math.atan2(starDir.x, starDir.z);
+  const pitch = Math.asin(starDir.y);
+  sky3dRootGroup.rotation.set(0, 0, 0);
+  sky3dRootGroup.rotation.x = -pitch;
+  sky3dRootGroup.rotation.y = -yaw;
 
-  // 5. Store for center button
+  // 5. Store
   window.sky3dSelectedWorldPos = pos.clone();
 
   // 6. Update info panel
