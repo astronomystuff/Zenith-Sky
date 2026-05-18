@@ -5,6 +5,7 @@ let sky3dStarBase = [];
 let sky3dCelestialSphere = null;
 let sky3dGround = null;
 let sky3dTooltip = null;
+let sky3dRootGroup = null;
 let sky3dRaycaster = new THREE.Raycaster();
   sky3dRaycaster.params.Points.threshold = 0.01;
 let sky3dMouse = new THREE.Vector2();
@@ -87,8 +88,8 @@ class MinimalCameraControls {
     const dy = e.clientY - this.lastY;
 
     if (sky3dCelestialSphere) {
-      sky3dCelestialSphere.rotation.y += dx * this.rotateSpeed;
-      sky3dCelestialSphere.rotation.x += dy * this.rotateSpeed;
+      sky3dRootGroup.rotation.y += dx * this.rotateSpeed;
+      sky3dRootGroup.rotation.x += dy * this.rotateSpeed;
 
       const limit = Math.PI / 2;
       sky3dCelestialSphere.rotation.x = Math.max(
@@ -142,8 +143,8 @@ class MinimalCameraControls {
       const dy = y - this.lastY;
 
       if (sky3dCelestialSphere) {
-        sky3dCelestialSphere.rotation.y += dx * this.rotateSpeed;
-        sky3dCelestialSphere.rotation.x += dy * this.rotateSpeed;
+        sky3dRootGroup.rotation.y += dx * this.rotateSpeed;
+        sky3dRootGroup.rotation.x += dy * this.rotateSpeed;
 
         const limit = Math.PI / 2;
         sky3dCelestialSphere.rotation.x = Math.max(
@@ -392,11 +393,7 @@ function centerOnWorldPos(pos) {
 
   const q = new THREE.Quaternion().setFromUnitVectors(starDir, camForward);
 
-  sky3dCelestialSphere.quaternion.premultiply(q);
-
-  if (sky3dGround) {
-    sky3dGround.quaternion.copy(sky3dCelestialSphere.quaternion);
-  }
+  sky3dRootGroup.quaternion.premultiply(q);
 }
 
 /* ============================================================
@@ -682,7 +679,7 @@ function rebuildCelestialSphere() {
   const { latDeg, lonDeg } = getLocationFromUI();
 
   sky3dCelestialSphere = buildCelestialSphere(dateCivil, latDeg, lonDeg);
-  sky3dScene.add(sky3dCelestialSphere);
+  sky3dRootGroup.add(sky3dCelestialSphere);
   if (sky3dGround) {
   sky3dGround.rotation.x = sky3dCelestialSphere.rotation.x;
   sky3dGround.rotation.y = sky3dCelestialSphere.rotation.y;
@@ -702,7 +699,9 @@ async function startSky3D() {
   sky3dScene.background = new THREE.Color(0x000000);
   sky3dTooltip = document.getElementById("sky3d-tooltip");
   sky3dGround = makeGround();
-  sky3dScene.add(sky3dGround);
+  sky3dRootGroup = new THREE.Group();
+  sky3dScene.add(sky3dRootGroup);
+  sky3dRootGroup.add(sky3dGround);
   sky3dCamera = new THREE.PerspectiveCamera(
     60,
     canvas.clientWidth / canvas.clientHeight,
