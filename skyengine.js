@@ -417,8 +417,8 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
   for (let i = 0; i < sky3dStarBase.length; i++) {
   const s = sky3dStarBase[i];
   const pm = applyProperMotionFromXYZ(s, years);
-  star.raHours = pm.raHours;
-  star.decDeg = pm.decDeg;
+  s.raHours = pm.raHours;
+  s.decDeg = pm.decDeg;
   const raRad  = pm.raHours * 15 * Math.PI / 180;
   const decRad = pm.decDeg * Math.PI / 180;
 
