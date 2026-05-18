@@ -703,7 +703,6 @@ async function startSky3D() {
   );
 sky3dCamera.position.set(0, 0, 0);
 sky3dCamera.lookAt(0, 0, -1);
-sky3dRootGroup.add(sky3dCamera);
 
   sky3dControls = new MinimalCameraControls(sky3dCamera, canvas);
   canvas.addEventListener("click", onSky3DClick);
@@ -721,10 +720,13 @@ sky3dRootGroup.add(sky3dCamera);
    Animation Loop
    ============================================================ */
 function animateSky3D() {
-  if (!sky3dModalOpen) return;
-  requestAnimationFrame(animateSky3D);
-  sky3dRenderer.render(sky3dScene, sky3dCamera);
+    if (!sky3dModalOpen) return;
+    requestAnimationFrame(animateSky3D);
+    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(sky3dRootGroup.quaternion);
+    sky3dCamera.lookAt(forward);
+    sky3dRenderer.render(sky3dScene, sky3dCamera);
 }
+
 
 /* ============================================================
    Modal Wiring
