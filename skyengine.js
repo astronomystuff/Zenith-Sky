@@ -244,7 +244,12 @@ async function loadStarCSV(url) {
     const raDeg  = parseFloat(cols[idx.ra]);
     const decDeg = parseFloat(cols[idx.dec]);
 
-    if (isNaN(x0) || isNaN(y0) || isNaN(z0) || isNaN(dist) || isNaN(mag)) continue;
+  if (
+  isNaN(x0) || isNaN(y0) || isNaN(z0) ||
+  isNaN(dist) || isNaN(mag) ||
+  isNaN(raDeg) || isNaN(decDeg)
+) continue;
+
 
   stars.push({
     proper,
