@@ -209,16 +209,18 @@ async function loadStarCSV(url) {
   const header = lines[0].split(",").map(h => h.replace(/"/g, "").trim());
 
   const idx = {
-    proper: header.indexOf("proper"),
-    x: header.indexOf("x0"),
-    y: header.indexOf("y0"),
-    z: header.indexOf("z0"),
-    dist: header.indexOf("dist"),
-    pmRa: header.indexOf("pm_ra"),
-    pmDec: header.indexOf("pm_dec"),
-    rv: header.indexOf("rv"),
-    mag: header.indexOf("mag")
-  };
+  proper: header.indexOf("proper"),
+  x: header.indexOf("x0"),
+  y: header.indexOf("y0"),
+  z: header.indexOf("z0"),
+  dist: header.indexOf("dist"),
+  pmRa: header.indexOf("pm_ra"),
+  pmDec: header.indexOf("pm_dec"),
+  rv: header.indexOf("rv"),
+  mag: header.indexOf("mag"),
+  ra: header.indexOf("ra"),
+  dec: header.indexOf("dec")
+};
 
   const stars = [];
 
@@ -239,6 +241,8 @@ async function loadStarCSV(url) {
     const pmDec= parseFloat(cols[idx.pmDec]);
     const rv   = parseFloat(cols[idx.rv]);
     const mag  = parseFloat(cols[idx.mag]);
+    const raDeg  = parseFloat(cols[idx.ra]);
+    const decDeg = parseFloat(cols[idx.dec]);
 
     if (isNaN(x0) || isNaN(y0) || isNaN(z0) || isNaN(dist) || isNaN(mag)) continue;
 
@@ -250,20 +254,19 @@ async function loadStarCSV(url) {
 }
 
 /* ============================================================
-   XYZ → RA/Dec (LY → parsec)
+   XYZ → RA/Dec (parsec → parsec)
    ============================================================ */
 function xyzToRaDec(x, y, z) {
-  const rLY = Math.sqrt(x * x + y * y + z * z);
-  const rPC = rLY * LY_TO_PC;
+  const r = Math.sqrt(x * x + y * y + z * z);
   const ra  = Math.atan2(z, x);
-  const dec = Math.asin(y / rLY);
-
+  const dec = Math.asin(y / r);
   return {
     raHours: (ra < 0 ? ra + 2 * Math.PI : ra) * 12 / Math.PI,
-    decDeg: dec * 180 / Math.PI,
-    distance: rPC
+    decDeg:  dec * 180 / Math.PI,
+    distance: r
   };
 }
+l
 
 /* ============================================================
    Proper Motion + RV
@@ -277,30 +280,44 @@ function rvToParsecPerYear(rvKmPerSec) {
 }
 
 function applyProperMotionFromXYZ(star, years) {
-  const base = xyzToRaDec(star.x0, star.y0, star.z0);
+  // Base RA/Dec from catalog (J2000)
+  const ra0  = star.raHours0 * 15 * Math.PI / 180;
+  const dec0 = star.decDeg0 * Math.PI / 180;
+  const dist = star.dist; // parsecs
 
-  const ra  = base.raHours * 15 * Math.PI / 180;
-  const dec = base.decDeg * Math.PI / 180;
-  const dist = base.distance;
+  // Convert base RA/Dec to Cartesian (equatorial, in parsecs)
+  let x = dist * Math.cos(dec0) * Math.cos(ra0);
+  let y = dist * Math.sin(dec0);
+  let z = dist * Math.cos(dec0) * Math.sin(ra0);
 
-  const pmRaRad  = masToRad(star.pmRa || 0);
-  const pmDecRad = masToRad(star.pmDec || 0);
-  const rvPcy    = rvToParsecPerYear(star.rv || 0);
+  // Proper motion + radial velocity
+  const pmRaRad  = masToRad(star.pmRa || 0);      // rad/yr
+  const pmDecRad = masToRad(star.pmDec || 0);     // rad/yr
+  const rvPcy    = rvToParsecPerYear(star.rv || 0); // pc/yr
 
-  const x = dist * Math.cos(dec) * Math.cos(ra);
-  const y = dist * Math.sin(dec);
-  const z = dist * Math.cos(dec) * Math.sin(ra);
+  const vx =
+    -pmRaRad * y
+    - pmDecRad * Math.sin(ra0) * Math.sin(dec0)
+    + rvPcy * Math.cos(dec0) * Math.cos(ra0);
 
-  const vx = -pmRaRad * y - pmDecRad * Math.sin(ra) * Math.sin(dec) + rvPcy * Math.cos(dec) * Math.cos(ra);
-  const vy =  pmRaRad * x - pmDecRad * Math.cos(ra) * Math.sin(dec) + rvPcy * Math.sin(dec);
-  const vz =  pmDecRad * Math.cos(dec) + rvPcy * Math.cos(dec) * Math.sin(ra);
+  const vy =
+    pmRaRad * x
+    - pmDecRad * Math.cos(ra0) * Math.sin(dec0)
+    + rvPcy * Math.sin(dec0);
 
-  return xyzToRaDec(
-    x + vx * years,
-    y + vy * years,
-    z + vz * years
-  );
+  const vz =
+    pmDecRad * Math.cos(dec0)
+    + rvPcy * Math.cos(dec0) * Math.sin(ra0);
+
+  // Advance in time
+  x += vx * years;
+  y += vy * years;
+  z += vz * years;
+
+  // Back to RA/Dec
+  return xyzToRaDec(x, y, z);
 }
+
 
 /* ============================================================
    Civil Time → LMT → LST
