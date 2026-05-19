@@ -246,8 +246,15 @@ async function loadStarCSV(url) {
 
     if (isNaN(x0) || isNaN(y0) || isNaN(z0) || isNaN(dist) || isNaN(mag)) continue;
 
-    stars.push({ proper, x0, y0, z0, dist, pmRa, pmDec, rv, mag });
-  }
+  stars.push({
+    proper,
+    x0, y0, z0,
+    dist,
+    pmRa, pmDec, rv, mag,
+    raHours0: raDeg / 15,
+    decDeg0:  decDeg
+  });
+}
 
   console.log("Loaded stars:", stars.length);
   return stars;
