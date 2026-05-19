@@ -292,20 +292,38 @@ function rvToParsecPerYear(rvKmPerSec) {
 }
 
 function applyProperMotionFromXYZ(star, years) {
-  // Base RA/Dec from catalog (J2000)
+  // Prefer catalog RA/Dec if they exist and are finite
+  const hasCatalog =
+    Number.isFinite(star.raHours0) &&
+    Number.isFinite(star.decDeg0) &&
+    Number.isFinite(star.dist);
+
+  // If anything is missing/NaN, fall back to old XYZ-based direction, no motion
+  if (!hasCatalog) {
+    if (
+      Number.isFinite(star.x0) &&
+      Number.isFinite(star.y0) &&
+      Number.isFinite(star.z0)
+    ) {
+      return xyzToRaDec(star.x0, star.y0, star.z0);
+    }
+    // Absolute worst case: give something harmless
+    return { raHours: 0, decDeg: 0, distance: 1 };
+  }
+
   const ra0  = star.raHours0 * 15 * Math.PI / 180;
   const dec0 = star.decDeg0 * Math.PI / 180;
   const dist = star.dist; // parsecs
 
-  // Convert base RA/Dec to Cartesian (equatorial, in parsecs)
+  // Base Cartesian (equatorial, parsecs)
   let x = dist * Math.cos(dec0) * Math.cos(ra0);
   let y = dist * Math.sin(dec0);
   let z = dist * Math.cos(dec0) * Math.sin(ra0);
 
-  // Proper motion + radial velocity
-  const pmRaRad  = masToRad(star.pmRa || 0);      // rad/yr
-  const pmDecRad = masToRad(star.pmDec || 0);     // rad/yr
-  const rvPcy    = rvToParsecPerYear(star.rv || 0); // pc/yr
+  // Proper motion + radial velocity (guard NaNs)
+  const pmRaRad  = Number.isFinite(star.pmRa)  ? masToRad(star.pmRa)  : 0;
+  const pmDecRad = Number.isFinite(star.pmDec) ? masToRad(star.pmDec) : 0;
+  const rvPcy    = Number.isFinite(star.rv)    ? rvToParsecPerYear(star.rv) : 0;
 
   const vx =
     -pmRaRad * y
@@ -321,12 +339,10 @@ function applyProperMotionFromXYZ(star, years) {
     pmDecRad * Math.cos(dec0)
     + rvPcy * Math.cos(dec0) * Math.sin(ra0);
 
-  // Advance in time
   x += vx * years;
   y += vy * years;
   z += vz * years;
 
-  // Back to RA/Dec
   return xyzToRaDec(x, y, z);
 }
 
