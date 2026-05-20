@@ -604,7 +604,7 @@ function onSky3DClick(event) {
   sky3dTooltip.innerHTML =
     `<b>${star.proper || "Unnamed star"}</b><br>` +
     `Mag: ${star.mag}<br>` +
-    `Dist: ${star.dist} ly`;
+    `Dist: ${star.dist} pc`;
 
   sky3dTooltip.style.left = (event.clientX + 12) + "px";
   sky3dTooltip.style.top = (event.clientY + 12) + "px";
@@ -716,7 +716,7 @@ sky3dRootGroup.quaternion.setFromEuler(e);
     `Alt: ${(alt * 180/Math.PI).toFixed(2)}°, Az: ${(az * 180/Math.PI).toFixed(2)}°`;
   document.getElementById("sky3d-object-mag").textContent = `Mag: ${star.mag}`;
   document.getElementById("sky3d-object-distance").textContent =
-    `Dist: ${star.dist} ly`;
+    `Dist: ${star.dist} parsecs`;
 
   const centerBtn = document.getElementById("sky3d-center");
   const lockBtn   = document.getElementById("sky3d-lock");
