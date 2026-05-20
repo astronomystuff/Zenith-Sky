@@ -1727,7 +1727,7 @@ async function buildTonightSkyWindow(lat, lon, dt) {
 
   const points = samples.map(time => {
     const jd = toJulianDate(time);
-    const lst = localSiderealTime(jd, lonDeg);
+    const lst = localSiderealTime(jd, lon);
 
 const sun = computeSun(time, lat, lon);
 const sunRaRad = deg2rad(sun.raHours * 15);
