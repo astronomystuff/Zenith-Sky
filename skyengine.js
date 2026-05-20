@@ -267,7 +267,7 @@ async function loadStarCSV(url) {
     x0, y0, z0,
     dist,
     pmRa, pmDec, rv, mag,
-    raHours0: raDeg / 15,
+    raHours0: raDeg,
     decDeg0:  decDeg
   });
 }
