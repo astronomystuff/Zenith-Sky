@@ -710,7 +710,7 @@ const rollAngle = Math.acos(
 
 // Rotation direction
 const cross = projectedSkyUp.clone().cross(projectedWorldUp);
-const sign = cross.dot(camForwardWorld) < 0 ? -1 : 1;
+const sign = cross.dot(camForwardWorld) < 0 ? 1 : -1;
 
 // Rotate sky around camera forward axis
 const rollQuat = new THREE.Quaternion();
