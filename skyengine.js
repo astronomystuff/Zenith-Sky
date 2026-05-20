@@ -674,11 +674,49 @@ function searchSky3D() {
   );
   points.localToWorld(pos);
 
-  // 4. Compute direction
-  const starDir = pos.clone().normalize();
-  const camForward = new THREE.Vector3(0, 0, -1);
-  const q = new THREE.Quaternion().setFromUnitVectors(starDir, camForward);
-  sky3dRootGroup.quaternion.premultiply(q);
+// 4. Compute direction
+const starDir = pos.clone().normalize();
+const camForward = new THREE.Vector3(0, 0, -1);
+const q = new THREE.Quaternion().setFromUnitVectors(starDir, camForward);
+sky3dRootGroup.quaternion.premultiply(q);
+
+// World up
+const worldUp = new THREE.Vector3(0, 1, 0);
+
+// Camera forward in world space
+const camForwardWorld = new THREE.Vector3(0, 0, -1)
+    .applyQuaternion(sky3dCamera.quaternion)
+    .normalize();
+
+// "Up" direction in world space
+const skyUpWorld = new THREE.Vector3(0, 1, 0)
+    .applyQuaternion(sky3dRootGroup.quaternion)
+    .normalize();
+
+// Project skyUp onto plane perpendicular to camForward
+const projectedSkyUp = skyUpWorld.clone().sub(
+    camForwardWorld.clone().multiplyScalar(skyUpWorld.dot(camForwardWorld))
+).normalize();
+
+// Up 
+const projectedWorldUp = worldUp.clone().sub(
+    camForwardWorld.clone().multiplyScalar(worldUp.dot(camForwardWorld))
+).normalize();
+
+// Angle between vectors
+const rollAngle = Math.acos(
+    THREE.MathUtils.clamp(projectedSkyUp.dot(projectedWorldUp), -1, 1)
+);
+
+// Rotation direction
+const cross = projectedSkyUp.clone().cross(projectedWorldUp);
+const sign = cross.dot(camForwardWorld) < 0 ? -1 : 1;
+
+// Rotate sky around camera forward axis
+const rollQuat = new THREE.Quaternion
+    .setFromAxisAngle(camForwardWorld, rollAngle * sign);
+
+sky3dRootGroup.quaternion.premultiply(rollQuat);
 
   // 5. Store
   window.sky3dSelectedWorldPos = pos.clone();
