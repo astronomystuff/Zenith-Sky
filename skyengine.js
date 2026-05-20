@@ -287,7 +287,7 @@ function xyzToRaDec(x, y, z) {
     distance: r
   };
 }
-l
+
 
 /* ============================================================
    Proper Motion + RV
