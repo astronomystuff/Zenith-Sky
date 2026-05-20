@@ -21,6 +21,7 @@ window.sky3dRaycaster = new THREE.Raycaster();
 window.sky3dRaycaster.params.Points.threshold = 0.01;
 window.sky3dMouse = new THREE.Vector2();
 const J2000_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
+window.J2000_MS = J2000_MS;
 const LY_TO_PC = 1 / 3.26156;
 
 /* ============================================================
@@ -843,3 +844,4 @@ window.applyProperMotionFromXYZ = applyProperMotionFromXYZ;
 window.getDateFromUICivil = getDateFromUICivil;
 window.getLocationFromUI = getLocationFromUI;
 window.getLSTRadiansFromCivil = getLSTRadiansFromCivil;
+window.J2000_MS = J2000_MS;
