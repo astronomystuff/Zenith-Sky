@@ -7,17 +7,19 @@ window.onerror = function (msg, src, line, col, err) {
   );
 };
 
-let sky3dScene, sky3dCamera, sky3dRenderer;
-let sky3dModalOpen = false;
-let sky3dControls;
-let sky3dCelestialSphere = null;
-let sky3dGround = null;
-let sky3dTooltip = null;
-let sky3dRootGroup = null;
+window.sky3dScene = null;
+window.sky3dCamera = null;
+window.sky3dRenderer = null;
+window.sky3dModalOpen = false;
+window.sky3dControls = null;
+window.sky3dCelestialSphere = null;
+window.sky3dGround = null;
+window.sky3dTooltip = null;
+window.sky3dRootGroup = null;
 window.sky3dStarBase = [];
-let sky3dRaycaster = new THREE.Raycaster();
-  sky3dRaycaster.params.Points.threshold = 0.01;
-let sky3dMouse = new THREE.Vector2();
+window.sky3dRaycaster = new THREE.Raycaster();
+window.sky3dRaycaster.params.Points.threshold = 0.01;
+window.sky3dMouse = new THREE.Vector2();
 const J2000_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
 const LY_TO_PC = 1 / 3.26156;
 
