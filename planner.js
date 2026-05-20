@@ -1946,7 +1946,7 @@ const moon = computeMoon(dt, lat, lon);
 const latRad = deg2rad(lat);
 const lonRad = deg2rad(lon);
 const jd = toJulianDate(dt);
-const lst = localSiderealTime(jd, lonDeg);
+const lst = localSiderealTime(jd, lon);
 const raRad = deg2rad(moon.raHours * 15);
 const decRad = deg2rad(moon.decDeg);
 const ha = normalizeAngle(lst - raRad);
@@ -2159,7 +2159,7 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, w
 
     const points = samples.map(time => {
       const jd = toJulianDate(time);
-      const lst = localSiderealTime(jd, lonDeg);
+      const lst = localSiderealTime(jd, lon);
 
       const sun = computeSun(time, lat, lon);
       const sunRaRad = deg2rad(sun.raHours * 15);
@@ -2261,7 +2261,7 @@ async function buildPlannerPdfContent(results, lat, lon, dt, dateStr, timeStr, w
   const latRad = deg2rad(lat);
   const lonRad = deg2rad(lon);
   const jd = toJulianDate(moonDate);
-  const lst = localSiderealTime(jd, lonDeg);
+  const lst = localSiderealTime(jd, lon);
   const raRad = deg2rad(moon.raHours * 15);
   const decRad = deg2rad(moon.decDeg);
   const ha = normalizeAngle(lst - raRad);
