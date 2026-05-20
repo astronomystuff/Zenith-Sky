@@ -1,3 +1,12 @@
+window.onerror = function (msg, src, line, col, err) {
+  alert(
+    "JS ERROR:\n" +
+    msg + "\n" +
+    "Source: " + src + "\n" +
+    "Line: " + line + ", Col: " + col
+  );
+};
+
 let sky3dScene, sky3dCamera, sky3dRenderer;
 let sky3dModalOpen = false;
 let sky3dControls;
