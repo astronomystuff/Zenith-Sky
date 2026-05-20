@@ -362,20 +362,20 @@ function applyProperMotionFromXYZ(star, years) {
    Civil Time → LMT → LST
    ============================================================ */
 function toJulianDate(date) {
+  // Convert local civil time → UTC → Julian Date
   return (date.getTime() + date.getTimezoneOffset() * 60000) / 86400000 + 2440587.5;
 }
 
 function gmstFromJulian(jd) {
   const T = (jd - 2451545.0) / 36525.0;
-    let gmst =
-      280.46061837 +
-      360.98564736629 * (jd - 2451545.0) +
-      0.000387933 * T * T -
-      (T * T * T) / 38710000.0;
-    gmst = ((gmst % 360) + 360) % 360;
+  let gmst =
+    280.46061837 +
+    360.98564736629 * (jd - 2451545.0) +
+    0.000387933 * T * T -
+    (T * T * T) / 38710000.0;
+  gmst = ((gmst % 360) + 360) % 360;
   return gmst * Math.PI / 180;
 }
-
 
 function getLSTRadians(date, lonEastDeg) {
   const jd = toJulianDate(date);
@@ -383,6 +383,13 @@ function getLSTRadians(date, lonEastDeg) {
   let lst = gmst + lonEastDeg * Math.PI / 180;
   lst = ((lst % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
   return lst;
+}
+
+function getLSTRadiansFromCivil(dateCivil, lonDegUI) {
+  return {
+    lst: getLSTRadians(dateCivil, lonDegUI),
+    dateLMT: dateCivil
+  };
 }
 
 /* ============================================================
