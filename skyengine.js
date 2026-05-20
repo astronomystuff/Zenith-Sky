@@ -832,3 +832,13 @@ if (document.readyState === "loading") {
 } else {
   initSky3DModal();
 }
+
+window.sky3dStarBase = sky3dStarBase;
+window.sky3dCelestialSphere = sky3dCelestialSphere;
+window.sky3dCamera = sky3dCamera;
+window.sky3dScene = sky3dScene;
+window.sky3dRootGroup = sky3dRootGroup;
+window.applyProperMotionFromXYZ = applyProperMotionFromXYZ;
+window.getDateFromUICivil = getDateFromUICivil;
+window.getLocationFromUI = getLocationFromUI;
+window.getLSTRadiansFromCivil = getLSTRadiansFromCivil;
