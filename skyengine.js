@@ -713,10 +713,10 @@ const cross = projectedSkyUp.clone().cross(projectedWorldUp);
 const sign = cross.dot(camForwardWorld) < 0 ? -1 : 1;
 
 // Rotate sky around camera forward axis
-const rollQuat = new THREE.Quaternion
-    .setFromAxisAngle(camForwardWorld, rollAngle * sign);
-
+const rollQuat = new THREE.Quaternion();
+  rollQuat.setFromAxisAngle(camForwardWorld, rollAngle * sign);
 sky3dRootGroup.quaternion.premultiply(rollQuat);
+
 
   // 5. Store
   window.sky3dSelectedWorldPos = pos.clone();
@@ -752,9 +752,7 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   document.getElementById("sky3d-object-distance").textContent =
     `Dist: ${star.dist} parsecs`;
 
-  const centerBtn = document.getElementById("sky3d-center");
   const lockBtn   = document.getElementById("sky3d-lock");
-  if (centerBtn) centerBtn.disabled = false;
   if (lockBtn)   lockBtn.disabled = false;
 }
 
