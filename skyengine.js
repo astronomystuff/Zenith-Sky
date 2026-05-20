@@ -674,20 +674,11 @@ function searchSky3D() {
   );
   points.localToWorld(pos);
 
-  // 4. Compute star direction
-  const inv = new THREE.Matrix4().copy(sky3dRootGroup.matrixWorld).invert();
-  const starLocal = pos.clone().applyMatrix4(inv).normalize();
-  const camForwardLocal = new THREE.Vector3(0, 0, -1)
-      .applyQuaternion(sky3dCamera.quaternion)
-      .applyMatrix4(inv)
-      .normalize();
-
-  const q = new THREE.Quaternion().setFromUnitVectors(starLocal, camForwardLocal);
+  // 4. Compute direction
+  const starDir = pos.clone().normalize();
+  const camForward = new THREE.Vector3(0, 0, -1);
+  const q = new THREE.Quaternion().setFromUnitVectors(starDir, camForward);
   sky3dRootGroup.quaternion.premultiply(q);
-  const e = new THREE.Euler().setFromQuaternion(sky3dRootGroup.quaternion, "YXZ");
-  e.z = 0;
-  sky3dRootGroup.quaternion.setFromEuler(e);
-
 
   // 5. Store
   window.sky3dSelectedWorldPos = pos.clone();
