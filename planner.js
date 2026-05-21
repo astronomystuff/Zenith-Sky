@@ -1679,22 +1679,18 @@ function formatDec(deg) {
 function computeRiseSet(latDeg, decDeg, raHours, date) {
   const latRad = deg2rad(latDeg);
   const decRad = deg2rad(decDeg);
-
+  const jd = toJulianDate(date);
   const cosH = (Math.cos(deg2rad(90.833)) - Math.sin(latRad)*Math.sin(decRad)) /
                (Math.cos(latRad)*Math.cos(decRad));
 
   if (cosH < -1) return { rise: "Always Up", set: "Always Up" };
   if (cosH > 1)  return { rise: "Never Rises", set: "Never Rises" };
-
+    
   const H = rad2deg(Math.acos(cosH)) / 15;
-
   const lst0 = localSiderealTime(jd, 0); // radians
   const gmst = rad2deg(lst0) / 15;
-
-
   const riseLST = raHours - H;
   const setLST  = raHours + H;
-
   const rise = new Date(date.getTime() + (riseLST - gmst) * 3600000);
   const set  = new Date(date.getTime() + (setLST - gmst) * 3600000);
 
