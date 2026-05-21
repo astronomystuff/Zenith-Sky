@@ -55,10 +55,8 @@ class MinimalCameraControls {
   constructor(camera, domElement) {
     this.camera = camera;
     this.domElement = domElement;
-
     this.rotateSpeed = 0.005;
     this.zoomSpeed = 0.05;
-
     this.isRotating = false;
     this.lastX = 0;
     this.lastY = 0;
@@ -198,7 +196,6 @@ async function loadStarCSV(url) {
   let text;
 
   try {
-    // Try direct fetch first
     const response = await fetch(url);
     if (!response.ok) throw new Error("Direct fetch failed");
     text = await response.text();
@@ -220,18 +217,29 @@ async function loadStarCSV(url) {
   const header = lines[0].split(",").map(h => h.replace(/"/g, "").trim());
 
   const idx = {
-  proper: header.indexOf("proper"),
-  x: header.indexOf("x0"),
-  y: header.indexOf("y0"),
-  z: header.indexOf("z0"),
-  dist: header.indexOf("dist"),
-  pmRa: header.indexOf("pm_ra"),
-  pmDec: header.indexOf("pm_dec"),
-  rv: header.indexOf("rv"),
-  mag: header.indexOf("mag"),
-  ra: header.indexOf("ra"),
-  dec: header.indexOf("dec")
-};
+    id:     header.indexOf("id"),
+    tyc:    header.indexOf("tyc"),
+    gaia:   header.indexOf("gaia"),
+    hyg:    header.indexOf("hyg"),
+    hip:    header.indexOf("hip"),
+    hd:     header.indexOf("hd"),
+    hr:     header.indexOf("hr"),
+    gl:     header.indexOf("gl"),
+    bayer:  header.indexOf("bayer"),
+    flam:   header.indexOf("flam"),
+    con:    header.indexOf("con"),
+    proper: header.indexOf("proper"),
+    x:      header.indexOf("x0"),
+    y:      header.indexOf("y0"),
+    z:      header.indexOf("z0"),
+    dist:   header.indexOf("dist"),
+    pmRa:   header.indexOf("pm_ra"),
+    pmDec:  header.indexOf("pm_dec"),
+    rv:     header.indexOf("rv"),
+    mag:    header.indexOf("mag"),
+    ra:     header.indexOf("ra"),
+    dec:    header.indexOf("dec")
+  };
 
   const stars = [];
 
@@ -240,10 +248,8 @@ async function loadStarCSV(url) {
     if (!row) continue;
 
     const cols = row.split(",").map(c => c.replace(/"/g, "").trim());
-
     const proper = cols[idx.proper]?.trim();
     if (proper && proper.toLowerCase() === "sol") continue;
-
     const x0   = parseFloat(cols[idx.x]);
     const y0   = parseFloat(cols[idx.y]);
     const z0   = parseFloat(cols[idx.z]);
@@ -255,26 +261,40 @@ async function loadStarCSV(url) {
     const raDeg  = parseFloat(cols[idx.ra]);
     const decDeg = parseFloat(cols[idx.dec]);
 
-  if (
-  isNaN(x0) || isNaN(y0) || isNaN(z0) ||
-  isNaN(dist) || isNaN(mag) ||
-  isNaN(raDeg) || isNaN(decDeg)
-) continue;
+    if (
+      isNaN(x0) || isNaN(y0) || isNaN(z0) ||
+      isNaN(dist) || isNaN(mag) ||
+      isNaN(raDeg) || isNaN(decDeg)
+    ) continue;
 
+    const star = {
+      id:     cols[idx.id],
+      tyc:    cols[idx.tyc],
+      gaia:   cols[idx.gaia],
+      hyg:    cols[idx.hyg],
+      hip:    cols[idx.hip],
+      hd:     cols[idx.hd],
+      hr:     cols[idx.hr],
+      gl:     cols[idx.gl],
+      bayer:  cols[idx.bayer],
+      flam:   cols[idx.flam],
+      con:    cols[idx.con],
+      proper: cols[idx.proper],
+      x0, y0, z0,
+      dist,
+      pmRa, pmDec, rv,
+      mag,
+      raHours0: raDeg / 15,
+      decDeg0:  decDeg
+    };
 
-  stars.push({
-    proper,
-    x0, y0, z0,
-    dist,
-    pmRa, pmDec, rv, mag,
-    raHours0: raDeg,
-    decDeg0:  decDeg
-  });
-}
+    stars.push(star);
+  }
 
   console.log("Loaded stars:", stars.length);
   return stars;
 }
+
 
 /* ============================================================
    XYZ → RA/Dec (parsec → parsec)
@@ -407,7 +427,7 @@ function raDecToXYZ(raHours, decDeg) {
 }
 
 /* ============================================================
-   UI Helpers
+   Helpers
    ============================================================ */
 function getDateFromUICivil() {
   const year  = parseInt(document.getElementById("sky3d-year").value, 10);
@@ -458,6 +478,24 @@ function centerOnWorldPos(pos) {
   const q = new THREE.Quaternion().setFromUnitVectors(starDir, camForward);
 
   sky3dRootGroup.quaternion.premultiply(q);
+}
+
+function getStarName(s) {
+  if (s.proper && s.proper.trim() !== "") return s.proper;
+
+  if (s.bayer && s.bayer.trim() !== "")
+    return `${s.bayer} ${s.con}`;
+
+  if (s.flam && s.flam.trim() !== "")
+    return `${s.flam} ${s.con}`;
+
+  if (s.hd)  return `HD ${s.hd}`;
+  if (s.hip) return `HIP ${s.hip}`;
+  if (s.hr)  return `HR ${s.hr}`;
+  if (s.tyc) return `TYC ${s.tyc}`;
+  if (s.gaia) return `Gaia ${s.gaia}`;
+
+  return s.id || "Unnamed star";
 }
 
 /* ============================================================
@@ -602,7 +640,7 @@ function onSky3DClick(event) {
 
   // Show tooltip
   sky3dTooltip.innerHTML =
-    `<b>${star.proper || "Unnamed star"}</b><br>` +
+    `<b>${getStarName(star)}</b><br>` +
     `Mag: ${star.mag}<br>` +
     `Dist: ${star.dist} pc`;
 
@@ -622,22 +660,47 @@ function searchSky3D() {
 
   // 1. Find matching star in base catalog
   let best = null;
-  for (let i = 0; i < sky3dStarBase.length; i++) {
-    const s = sky3dStarBase[i];
+const q = query.toLowerCase();
 
-    if (s.proper && s.proper.toLowerCase().includes(query)) {
+for (let i = 0; i < sky3dStarBase.length; i++) {
+  const s = sky3dStarBase[i];
+
+  // Proper name
+  if (s.proper && s.proper.toLowerCase().includes(q)) {
+    best = { star: s, idx: i };
+    break;
+  }
+
+  // HIP search
+  if (q.startsWith("hip")) {
+    const hip = q.replace("hip", "").trim();
+    if (s.hip && String(s.hip) === hip) {
       best = { star: s, idx: i };
       break;
     }
+  }
 
-    if (query.startsWith("hip")) {
-      const hip = query.replace("hip", "").trim();
-      if (s.hip && String(s.hip) === hip) {
-        best = { star: s, idx: i };
-        break;
-      }
+  // Bayer search
+  if (s.bayer && `${s.bayer} ${s.con}`.toLowerCase().includes(q)) {
+    best = { star: s, idx: i };
+    break;
+  }
+
+  // Flamsteed search
+  if (s.flam && `${s.flam} ${s.con}`.toLowerCase().includes(q)) {
+    best = { star: s, idx: i };
+    break;
+  }
+
+  // HD search
+  if (q.startsWith("hd")) {
+    const hd = q.replace("hd", "").trim();
+    if (s.hd && String(s.hd) === hd) {
+      best = { star: s, idx: i };
+      break;
     }
   }
+}
 
   if (!best) {
     alert("Object not found.");
@@ -742,7 +805,7 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
                 (Math.cos(alt) * Math.cos(latRad));
   const az = Math.atan2(sinAz, cosAz);
 
-  document.getElementById("sky3d-object-name").textContent = star.proper || "Unnamed star";
+  document.getElementById("sky3d-object-name").textContent = getStarName(star);
   document.getElementById("sky3d-object-type").textContent = "Star";
   document.getElementById("sky3d-object-ra-dec").textContent =
     `RA: ${pm.raHours.toFixed(2)}h, Dec: ${pm.decDeg.toFixed(2)}°`;
