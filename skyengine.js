@@ -23,6 +23,47 @@ window.sky3dMouse = new THREE.Vector2();
 const J2000_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
 window.J2000_MS = J2000_MS;
 const LY_TO_PC = 1 / 3.26156;
+const GREEK = {
+  alf: "α", bet: "β", gam: "γ", del: "δ", eps: "ε",
+  zet: "ζ", eta: "η", the: "θ", iot: "ι", kap: "κ",
+  lam: "λ", mu: "μ", nu: "ν", xi: "ξ", omi: "ο",
+  pi: "π", rho: "ρ", sig: "σ", tau: "τ", ups: "υ",
+  phi: "φ", chi: "χ", psi: "ψ", ome: "ω"
+};
+
+const CONSTELLATION_NAMES = {
+  And: "Andromeda", Ant: "Antlia", Aps: "Apus",
+  Aqr: "Aquarius", Aql: "Aquila", Ara: "Ara",
+  Ari: "Aries", Aur: "Auriga", Boo: "Boötes",
+  Cae: "Caelum", Cam: "Camelopardalis", Cnc: "Cancer",
+  CVn: "Canes Venatici", CMa: "Canis Major", CMi: "Canis Minor",
+  Cap: "Capricornus", Car: "Carina", Cas: "Cassiopeia",
+  Cen: "Centaurus", Cep: "Cepheus", Cet: "Cetus",
+  Cha: "Chamaeleon", Cir: "Circinus", Col: "Columba",
+  Com: "Coma Berenices", CrA: "Corona Australis",
+  CrB: "Corona Borealis", Crv: "Corvus", Crt: "Crater",
+  Cru: "Crux", Cyg: "Cygnus", Del: "Delphinus",
+  Dor: "Dorado", Dra: "Draco", Equ: "Equuleus",
+  Eri: "Eridanus", For: "Fornax", Gem: "Gemini",
+  Gru: "Grus", Her: "Hercules", Hor: "Horologium",
+  Hya: "Hydra", Hyi: "Hydrus", Ind: "Indus",
+  Lac: "Lacerta", Leo: "Leo", LMi: "Leo Minor",
+  Lep: "Lepus", Lib: "Libra", Lup: "Lupus",
+  Lyn: "Lynx", Lyr: "Lyra", Men: "Mensa",
+  Mic: "Microscopium", Mon: "Monoceros", Mus: "Musca",
+  Nor: "Norma", Oct: "Octans", Oph: "Ophiuchus",
+  Ori: "Orion", Pav: "Pavo", Peg: "Pegasus",
+  Per: "Perseus", Phe: "Phoenix", Pic: "Pictor",
+  PsA: "Piscis Austrinus", Psc: "Pisces", Pup: "Puppis",
+  Pyx: "Pyxis", Ret: "Reticulum", Sge: "Sagitta",
+  Sgr: "Sagittarius", Sco: "Scorpius", Scl: "Sculptor",
+  Sct: "Scutum", Ser: "Serpens", Sex: "Sextans",
+  Tau: "Taurus", Tel: "Telescopium", TrA: "Triangulum Australe",
+  Tri: "Triangulum", Tuc: "Tucana", UMa: "Ursa Major",
+  UMi: "Ursa Minor", Vel: "Vela", Vir: "Virgo",
+  Vol: "Volans", Vul: "Vulpecula"
+};
+
 
 /* ============================================================
    Star texture (round sprite)
@@ -481,22 +522,41 @@ function centerOnWorldPos(pos) {
 }
 
 function getStarName(s) {
-  if (s.proper && s.proper.trim() !== "") return s.proper;
+  // 1. Proper name
+  if (s.proper && s.proper.trim() !== "") {
+    return s.proper;
+  }
 
-  if (s.bayer && s.bayer.trim() !== "")
-    return `${s.bayer} ${s.con}`;
+  // 2. Bayer designation (Greek letter + constellation)
+  if (s.bayer && s.bayer.trim() !== "") {
+    const greek = GREEK[s.bayer.toLowerCase()] || s.bayer;
+    return `${greek} ${s.con}`;
+  }
 
-  if (s.flam && s.flam.trim() !== "")
+  // 3. Flamsteed number
+  if (s.flam && s.flam.trim() !== "") {
     return `${s.flam} ${s.con}`;
+  }
 
-  if (s.hd)  return `HD ${s.hd}`;
+  // 4. HD catalog
+  if (s.hd) return `HD ${s.hd}`;
+
+  // 5. HIP catalog
   if (s.hip) return `HIP ${s.hip}`;
-  if (s.hr)  return `HR ${s.hr}`;
+
+  // 6. HR catalog
+  if (s.hr) return `HR ${s.hr}`;
+
+  // 7. Tycho
   if (s.tyc) return `TYC ${s.tyc}`;
+
+  // 8. Gaia
   if (s.gaia) return `Gaia ${s.gaia}`;
 
+  // 9. Fallback
   return s.id || "Unnamed star";
 }
+
 
 /* ============================================================
    Build Celestial Sphere
@@ -680,17 +740,17 @@ for (let i = 0; i < sky3dStarBase.length; i++) {
     }
   }
 
-  // Bayer search
-  if (s.bayer && `${s.bayer} ${s.con}`.toLowerCase().includes(q)) {
-    best = { star: s, idx: i };
-    break;
-  }
+// Bayer search
+if (s.bayer && `${GREEK[s.bayer] || s.bayer} ${s.con}`.toLowerCase().includes(q)) {
+  best = { star: s, idx: i };
+  break;
+}
 
-  // Flamsteed search
-  if (s.flam && `${s.flam} ${s.con}`.toLowerCase().includes(q)) {
-    best = { star: s, idx: i };
-    break;
-  }
+// Flamsteed search
+if (s.flam && `${s.flam} ${s.con}`.toLowerCase().includes(q)) {
+  best = { star: s, idx: i };
+  break;
+}
 
   // HD search
   if (q.startsWith("hd")) {
