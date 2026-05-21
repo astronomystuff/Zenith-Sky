@@ -1688,7 +1688,6 @@ function computeRiseSet(latDeg, decDeg, raHours, date) {
 
   const H = rad2deg(Math.acos(cosH)) / 15;
 
-  const lst0 = localSiderealTime(toJulianDate(date), 0);
   const lst0 = localSiderealTime(jd, 0); // radians
   const gmst = rad2deg(lst0) / 15;
 
