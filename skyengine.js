@@ -720,20 +720,19 @@ function searchSky3D() {
 
   // 1. Find matching star in base catalog
   let best = null;
-const q = query.toLowerCase();
 
 for (let i = 0; i < sky3dStarBase.length; i++) {
   const s = sky3dStarBase[i];
 
   // Proper name
-  if (s.proper && s.proper.toLowerCase().includes(q)) {
+  if (s.proper && s.proper.toLowerCase().includes(query)) {
     best = { star: s, idx: i };
     break;
   }
 
   // HIP search
-  if (q.startsWith("hip")) {
-    const hip = q.replace("hip", "").trim();
+  if (query.startsWith("hip")) {
+    const hip = query.replace("hip", "").trim();
     if (s.hip && String(s.hip) === hip) {
       best = { star: s, idx: i };
       break;
@@ -741,20 +740,20 @@ for (let i = 0; i < sky3dStarBase.length; i++) {
   }
 
 // Bayer search
-if (s.bayer && `${GREEK[s.bayer] || s.bayer} ${s.con}`.toLowerCase().includes(q)) {
+if (s.bayer && `${GREEK[s.bayer] || s.bayer} ${s.con}`.toLowerCase().includes(query)) {
   best = { star: s, idx: i };
   break;
 }
 
 // Flamsteed search
-if (s.flam && `${s.flam} ${s.con}`.toLowerCase().includes(q)) {
+if (s.flam && `${s.flam} ${s.con}`.toLowerCase().includes(query)) {
   best = { star: s, idx: i };
   break;
 }
 
   // HD search
-  if (q.startsWith("hd")) {
-    const hd = q.replace("hd", "").trim();
+  if (query.startsWith("hd")) {
+    const hd = query.replace("hd", "").trim();
     if (s.hd && String(s.hd) === hd) {
       best = { star: s, idx: i };
       break;
