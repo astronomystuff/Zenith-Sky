@@ -23,47 +23,6 @@ window.sky3dMouse = new THREE.Vector2();
 const J2000_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
 window.J2000_MS = J2000_MS;
 const LY_TO_PC = 1 / 3.26156;
-const GREEK = {
-  alf: "α", bet: "β", gam: "γ", del: "δ", eps: "ε",
-  zet: "ζ", eta: "η", the: "θ", iot: "ι", kap: "κ",
-  lam: "λ", mu: "μ", nu: "ν", xi: "ξ", omi: "ο",
-  pi: "π", rho: "ρ", sig: "σ", tau: "τ", ups: "υ",
-  phi: "φ", chi: "χ", psi: "ψ", ome: "ω"
-};
-
-const CONSTELLATION_NAMES = {
-  And: "Andromeda", Ant: "Antlia", Aps: "Apus",
-  Aqr: "Aquarius", Aql: "Aquila", Ara: "Ara",
-  Ari: "Aries", Aur: "Auriga", Boo: "Boötes",
-  Cae: "Caelum", Cam: "Camelopardalis", Cnc: "Cancer",
-  CVn: "Canes Venatici", CMa: "Canis Major", CMi: "Canis Minor",
-  Cap: "Capricornus", Car: "Carina", Cas: "Cassiopeia",
-  Cen: "Centaurus", Cep: "Cepheus", Cet: "Cetus",
-  Cha: "Chamaeleon", Cir: "Circinus", Col: "Columba",
-  Com: "Coma Berenices", CrA: "Corona Australis",
-  CrB: "Corona Borealis", Crv: "Corvus", Crt: "Crater",
-  Cru: "Crux", Cyg: "Cygnus", Del: "Delphinus",
-  Dor: "Dorado", Dra: "Draco", Equ: "Equuleus",
-  Eri: "Eridanus", For: "Fornax", Gem: "Gemini",
-  Gru: "Grus", Her: "Hercules", Hor: "Horologium",
-  Hya: "Hydra", Hyi: "Hydrus", Ind: "Indus",
-  Lac: "Lacerta", Leo: "Leo", LMi: "Leo Minor",
-  Lep: "Lepus", Lib: "Libra", Lup: "Lupus",
-  Lyn: "Lynx", Lyr: "Lyra", Men: "Mensa",
-  Mic: "Microscopium", Mon: "Monoceros", Mus: "Musca",
-  Nor: "Norma", Oct: "Octans", Oph: "Ophiuchus",
-  Ori: "Orion", Pav: "Pavo", Peg: "Pegasus",
-  Per: "Perseus", Phe: "Phoenix", Pic: "Pictor",
-  PsA: "Piscis Austrinus", Psc: "Pisces", Pup: "Puppis",
-  Pyx: "Pyxis", Ret: "Reticulum", Sge: "Sagitta",
-  Sgr: "Sagittarius", Sco: "Scorpius", Scl: "Sculptor",
-  Sct: "Scutum", Ser: "Serpens", Sex: "Sextans",
-  Tau: "Taurus", Tel: "Telescopium", TrA: "Triangulum Australe",
-  Tri: "Triangulum", Tuc: "Tucana", UMa: "Ursa Major",
-  UMi: "Ursa Minor", Vel: "Vela", Vir: "Virgo",
-  Vol: "Volans", Vul: "Vulpecula"
-};
-
 
 /* ============================================================
    Star texture (round sprite)
@@ -233,6 +192,120 @@ class MinimalCameraControls {
 /* ============================================================
    CSV Loader
    ============================================================ */
+const GREEK = {
+  alf: "α", bet: "β", gam: "γ", del: "δ", eps: "ε",
+  zet: "ζ", eta: "η", the: "θ", iot: "ι", kap: "κ",
+  lam: "λ", mu: "μ", nu: "ν", xi: "ξ", omi: "ο",
+  pi: "π", rho: "ρ", sig: "σ", tau: "τ", ups: "υ",
+  phi: "φ", chi: "χ", psi: "ψ", ome: "ω"
+};
+
+const CONSTELLATION_NAMES = {
+  And: "Andromeda",
+  Ant: "Antlia",
+  Aps: "Apus",
+  Aqr: "Aquarius",
+  Aql: "Aquila",
+  Ara: "Ara",
+  Ari: "Aries",
+  Aur: "Auriga",
+  Boo: "Boötes",
+  Cae: "Caelum",
+  Cam: "Camelopardalis",
+  Cnc: "Cancer",
+  CVn: "Canes Venatici",
+  CMa: "Canis Major",
+  CMi: "Canis Minor",
+  Cap: "Capricornus",
+  Car: "Carina",
+  Cas: "Cassiopeia",
+  Cen: "Centaurus",
+  Cep: "Cepheus",
+  Cet: "Cetus",
+  Cha: "Chamaeleon",
+  Cir: "Circinus",
+  Col: "Columba",
+  Com: "Coma Berenices",
+  CrA: "Corona Australis",
+  CrB: "Corona Borealis",
+  Crv: "Corvus",
+  Crt: "Crater",
+  Cru: "Crux",
+  Cyg: "Cygnus",
+  Del: "Delphinus",
+  Dor: "Dorado",
+  Dra: "Draco",
+  Equ: "Equuleus",
+  Eri: "Eridanus",
+  For: "Fornax",
+  Gem: "Gemini",
+  Gru: "Grus",
+  Her: "Hercules",
+  Hor: "Horologium",
+  Hya: "Hydra",
+  Hyi: "Hydrus",
+  Ind: "Indus",
+  Lac: "Lacerta",
+  Leo: "Leo",
+  LMi: "Leo Minor",
+  Lep: "Lepus",
+  Lib: "Libra",
+  Lup: "Lupus",
+  Lyn: "Lynx",
+  Lyr: "Lyra",
+  Men: "Mensa",
+  Mic: "Microscopium",
+  Mon: "Monoceros",
+  Mus: "Musca",
+  Nor: "Norma",
+  Oct: "Octans",
+  Oph: "Ophiuchus",
+  Ori: "Orion",
+  Pav: "Pavo",
+  Peg: "Pegasus",
+  Per: "Perseus",
+  Phe: "Phoenix",
+  Pic: "Pictor",
+  PsA: "Piscis Austrinus",
+  Psc: "Pisces",
+  Pup: "Puppis",
+  Pyx: "Pyxis",
+  Ret: "Reticulum",
+  Sge: "Sagitta",
+  Sgr: "Sagittarius",
+  Sco: "Scorpius",
+  Scl: "Sculptor",
+  Sct: "Scutum",
+  Ser: "Serpens",
+  Sex: "Sextans",
+  Tau: "Taurus",
+  Tel: "Telescopium",
+  TrA: "Triangulum Australe",
+  Tri: "Triangulum",
+  Tuc: "Tucana",
+  UMa: "Ursa Major",
+  UMi: "Ursa Minor",
+  Vel: "Vela",
+  Vir: "Virgo",
+  Vol: "Volans",
+  Vul: "Vulpecula"
+};
+
+function parseBayer(bayerRaw, conRaw) {
+  if (!bayerRaw) {
+    return { bayerKey: null, conCode: conRaw || null };
+  }
+
+  const parts = bayerRaw.trim().split(/\s+/);
+  const greekKey = parts[0].toLowerCase();
+  let conCode = conRaw || null;
+  if (!conCode && parts.length > 1) {
+    conCode = parts[1];
+  }
+
+  return { bayerKey: greekKey, conCode };
+}
+
 async function loadStarCSV(url) {
   let text;
 
@@ -287,7 +360,6 @@ async function loadStarCSV(url) {
   for (let i = 1; i < lines.length; i++) {
     const row = lines[i].trim();
     if (!row) continue;
-
     const cols = row.split(",").map(c => c.replace(/"/g, "").trim());
     const proper = cols[idx.proper]?.trim();
     if (proper && proper.toLowerCase() === "sol") continue;
@@ -308,19 +380,25 @@ async function loadStarCSV(url) {
       isNaN(raDeg) || isNaN(decDeg)
     ) continue;
 
+    const bayerRaw = idx.bayer >= 0 ? cols[idx.bayer] : "";
+    const conRaw   = idx.con   >= 0 ? cols[idx.con]   : "";
+    const flamRaw  = idx.flam  >= 0 ? cols[idx.flam]  : "";
+    const { bayerKey, conCode } = parseBayer(bayerRaw, conRaw);
+
     const star = {
-      id:     cols[idx.id],
-      tyc:    cols[idx.tyc],
-      gaia:   cols[idx.gaia],
-      hyg:    cols[idx.hyg],
-      hip:    cols[idx.hip],
-      hd:     cols[idx.hd],
-      hr:     cols[idx.hr],
-      gl:     cols[idx.gl],
-      bayer:  cols[idx.bayer],
-      flam:   cols[idx.flam],
-      con:    cols[idx.con],
-      proper: cols[idx.proper],
+      id:     idx.id   >= 0 ? cols[idx.id]   : null,
+      tyc:    idx.tyc  >= 0 ? cols[idx.tyc]  : null,
+      gaia:   idx.gaia >= 0 ? cols[idx.gaia] : null,
+      hyg:    idx.hyg  >= 0 ? cols[idx.hyg]  : null,
+      hip:    idx.hip  >= 0 ? cols[idx.hip]  : null,
+      hd:     idx.hd   >= 0 ? cols[idx.hd]   : null,
+      hr:     idx.hr   >= 0 ? cols[idx.hr]   : null,
+      gl:     idx.gl   >= 0 ? cols[idx.gl]   : null,
+      bayerRaw,
+      bayerKey,
+      flam: flamRaw ? flamRaw : null,
+      con:  conCode,
+      proper,
       x0, y0, z0,
       dist,
       pmRa, pmDec, rv,
@@ -335,7 +413,6 @@ async function loadStarCSV(url) {
   console.log("Loaded stars:", stars.length);
   return stars;
 }
-
 
 /* ============================================================
    XYZ → RA/Dec (parsec → parsec)
