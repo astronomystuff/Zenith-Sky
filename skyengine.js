@@ -604,11 +604,12 @@ function getStarName(s) {
     return s.proper;
   }
 
-  // 2. Bayer designation (Greek letter + constellation)
-  if (s.bayer && s.bayer.trim() !== "") {
-    const greek = GREEK[s.bayer.toLowerCase()] || s.bayer;
+// 2. Bayer designation (Greek letter + constellation)
+if (s.bayerKey && s.con) {
+    const greek = GREEK[s.bayerKey] || s.bayerKey;
     return `${greek} ${s.con}`;
-  }
+}
+
 
   // 3. Flamsteed number
   if (s.flam && s.flam.trim() !== "") {
@@ -817,9 +818,13 @@ for (let i = 0; i < sky3dStarBase.length; i++) {
   }
 
 // Bayer search
-if (s.bayer && `${GREEK[s.bayer] || s.bayer} ${s.con}`.toLowerCase().includes(query)) {
-  best = { star: s, idx: i };
-  break;
+if (s.bayerKey && s.con) {
+    const greek = GREEK[s.bayerKey] || s.bayerKey;
+    const bayerName = `${greek} ${s.con}`.toLowerCase();
+    if (bayerName.includes(query)) {
+        best = { star: s, idx: i };
+        break;
+    }
 }
 
 // Flamsteed search
