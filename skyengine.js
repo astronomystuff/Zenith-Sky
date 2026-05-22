@@ -53,14 +53,12 @@ function makeStarTexture() {
    Minimal Camera Controls — rotate sphere + zoom
    ============================================================ */
 class MinimalCameraControls {
-  this.enabled = true;
   constructor(camera, domElement) {
     this.camera = camera;
     this.domElement = domElement;
-
+    this.enabled = true;
     this.rotateSpeed = 0.005;
     this.zoomSpeed = 0.05;
-
     this.isRotating = false;
     this.lastX = 0;
     this.lastY = 0;
