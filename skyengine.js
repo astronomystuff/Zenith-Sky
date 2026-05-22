@@ -782,47 +782,50 @@ function searchSky3D() {
 
 // 4. Compute direction
 const starDir = pos.clone().normalize();
-const camForward = new THREE.Vector3(0, 0, -1);
-const q = new THREE.Quaternion().setFromUnitVectors(starDir, camForward);
+const camForwardLocal = new THREE.Vector3(0, 0, -1);
+const q = new THREE.Quaternion().setFromUnitVectors(starDir, camForwardLocal);
 sky3dRootGroup.quaternion.premultiply(q);
+
+// --- REMOVE ROLL ---
+
+// Camera forward
+const camForwardWorld = new THREE.Vector3(0, 0, -1)
+  .applyQuaternion(sky3dCamera.quaternion)
+  .normalize();
 
 // World up
 const worldUp = new THREE.Vector3(0, 1, 0);
 
-// Camera forward in world space
-const camForwardWorld = new THREE.Vector3(0, 0, -1)
-    .applyQuaternion(sky3dCamera.quaternion)
-    .normalize();
-
-// "Up" direction in world space
+// Sky's current up direction in world space
 const skyUpWorld = new THREE.Vector3(0, 1, 0)
-    .applyQuaternion(sky3dRootGroup.quaternion)
-    .normalize();
+  .applyQuaternion(sky3dRootGroup.quaternion)
+  .normalize();
 
-// Project skyUp onto plane perpendicular to camForward
+// Project skyUp
 const projectedSkyUp = skyUpWorld.clone().sub(
-    camForwardWorld.clone().multiplyScalar(skyUpWorld.dot(camForwardWorld))
+  camForwardWorld.clone().multiplyScalar(skyUpWorld.dot(camForwardWorld))
 ).normalize();
 
-// Up 
+// Project worldUp
 const projectedWorldUp = worldUp.clone().sub(
-    camForwardWorld.clone().multiplyScalar(worldUp.dot(camForwardWorld))
+  camForwardWorld.clone().multiplyScalar(worldUp.dot(camForwardWorld))
 ).normalize();
 
-// Angle between vectors
+// Angle between projected up vectors
 const rollAngle = Math.acos(
-    THREE.MathUtils.clamp(projectedSkyUp.dot(projectedWorldUp), -1, 1)
+  THREE.MathUtils.clamp(projectedSkyUp.dot(projectedWorldUp), -1, 1)
 );
 
-// Rotation direction
+// Determine rotation direction
 const cross = projectedSkyUp.clone().cross(projectedWorldUp);
-const sign = cross.dot(camForwardWorld) < 0 ? 1 : -1;
+const sign = cross.dot(camForwardWorld) < 0 ? -1 : 1;
 
 // Rotate sky around camera forward axis
-const rollQuat = new THREE.Quaternion();
-  rollQuat.setFromAxisAngle(camForwardWorld, rollAngle * sign);
-sky3dRootGroup.quaternion.premultiply(rollQuat);
+const rollQuat = new THREE.Quaternion()
+  .setFromAxisAngle(camForwardWorld, rollAngle * sign);
 
+sky3dRootGroup.quaternion.premultiply(rollQuat);
+  
 
   // 5. Store
   window.sky3dSelectedWorldPos = pos.clone();
