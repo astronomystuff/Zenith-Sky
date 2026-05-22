@@ -675,14 +675,14 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
     const cosAz = (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
                   (Math.cos(alt) * Math.cos(latRad));
     const az = Math.atan2(sinAz, cosAz);
+    const azFixed = az - Math.PI / 2;
 
     // Alt/az → XYZ
-    const x = Math.cos(alt) * Math.sin(az);
+    const x = Math.cos(alt) * Math.sin(azFixed);
     const y = Math.sin(alt);
-    const z = Math.cos(alt) * Math.cos(az);
+    const z = Math.cos(alt) * Math.cos(azFixed);
 
     chosen.push({ idx: i, x, y, z });
-  }
 
   chosen.sort((a, b) => sky3dStarBase[a.idx].mag - sky3dStarBase[b.idx].mag);
   if (chosen.length > maxPoints) chosen.length = maxPoints;
