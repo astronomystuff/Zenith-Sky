@@ -17,6 +17,7 @@ window.sky3dGround = null;
 window.sky3dTooltip = null;
 window.sky3dRootGroup = null;
 window.sky3dStarBase = [];
+window.sky3dLocked = false;
 window.sky3dRaycaster = new THREE.Raycaster();
 window.sky3dRaycaster.params.Points.threshold = 0.01;
 window.sky3dMouse = new THREE.Vector2();
@@ -52,6 +53,7 @@ function makeStarTexture() {
    Minimal Camera Controls — rotate sphere + zoom
    ============================================================ */
 class MinimalCameraControls {
+  this.enabled = true;
   constructor(camera, domElement) {
     this.camera = camera;
     this.domElement = domElement;
@@ -86,6 +88,7 @@ class MinimalCameraControls {
      DESKTOP CONTROLS
   ============================ */
   onMouseDown(e) {
+    if (!this.enabled) return;
     if (e.button !== 0) return;
     this.isRotating = true;
     this.lastX = e.clientX;
@@ -93,6 +96,7 @@ class MinimalCameraControls {
   }
 
   onMouseMove(e) {
+    if (!this.enabled) return;
     if (!this.isRotating) return;
 
     const dx = e.clientX - this.lastX;
@@ -114,10 +118,12 @@ class MinimalCameraControls {
   }
 
   onMouseUp() {
+    if (!this.enabled) return;
     this.isRotating = false;
   }
 
   onWheel(e) {
+    if (!this.enabled) return;
     e.preventDefault();
     if (!this.camera) return;
 
@@ -131,6 +137,7 @@ class MinimalCameraControls {
      MOBILE CONTROLS
   ============================ */
   onTouchStart(e) {
+    if (!this.enabled) return;
     if (e.touches.length === 1) {
       // One finger → rotate
       this.touchMode = "rotate";
@@ -144,6 +151,7 @@ class MinimalCameraControls {
   }
 
   onTouchMove(e) {
+    if (!this.enabled) return;
     e.preventDefault();
 
     if (this.touchMode === "rotate" && e.touches.length === 1) {
@@ -181,6 +189,7 @@ class MinimalCameraControls {
   }
 
   onTouchEnd() {
+    if (!this.enabled) return;
     this.touchMode = null;
   }
 
@@ -918,6 +927,20 @@ sky3dCamera.lookAt(0, 0, -1);
 
   rebuildCelestialSphere();
   animateSky3D();
+}
+
+/* ============================================================
+   Lock Button
+   ============================================================ */
+function toggleSky3DLock() {
+  sky3dLocked = !sky3dLocked;
+
+  const btn = document.getElementById("sky3d-lock");
+  btn.textContent = sky3dLocked ? "Unlock View" : "Lock View";
+
+  if (sky3dControls) {
+    sky3dControls.enabled = !sky3dLocked;
+  }
 }
 
 /* ============================================================
