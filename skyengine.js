@@ -672,7 +672,8 @@ const y = eq.y;
 const z = eq.z;
 
 chosen.push({ idx: i, x, y, z });
-
+}
+  
   chosen.sort((a, b) => sky3dStarBase[a.idx].mag - sky3dStarBase[b.idx].mag);
   if (chosen.length > maxPoints) chosen.length = maxPoints;
 
