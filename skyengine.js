@@ -491,37 +491,74 @@ function centerOnWorldPos(pos) {
 }
 
 function getStarNameFromRecord(s) {
-  // 1. Proper name
+
+  // --- Greek Letter Lookup ---
+  const GREEK = {
+    alf: "α", bet: "β", gam: "γ", del: "δ", eps: "ε",
+    zet: "ζ", eta: "η", the: "θ", iot: "ι", kap: "κ",
+    lam: "λ", mu: "μ",  nu: "ν",  xi: "ξ", omi: "ο",
+    pi:  "π", rho: "ρ", sig: "σ", tau: "τ", ups: "υ",
+    phi: "φ", chi: "χ", psi: "ψ", ome: "ω"
+  };
+
+  // --- Constellation Abbreviations ---
+  const CONST = {
+    And:"Andromeda", Ant:"Antlia", Aps:"Apus", Aqr:"Aquarius", Aql:"Aquila",
+    Ara:"Ara", Ari:"Aries", Aur:"Auriga", Boo:"Boötes", Cae:"Caelum",
+    Cam:"Camelopardalis", Cnc:"Cancer", CVn:"Canes Venatici", CMa:"Canis Major",
+    CMi:"Canis Minor", Cap:"Capricornus", Car:"Carina", Cas:"Cassiopeia",
+    Cen:"Centaurus", Cep:"Cepheus", Cet:"Cetus", Cha:"Chamaeleon",
+    Cir:"Circinus", Col:"Columba", Com:"Coma Berenices", CrA:"Corona Australis",
+    CrB:"Corona Borealis", Crv:"Corvus", Crt:"Crater", Cru:"Crux",
+    Cyg:"Cygnus", Del:"Delphinus", Dor:"Dorado", Dra:"Draco", Equ:"Equuleus",
+    Eri:"Eridanus", For:"Fornax", Gem:"Gemini", Gru:"Grus", Her:"Hercules",
+    Hor:"Horologium", Hya:"Hydra", Hyi:"Hydrus", Ind:"Indus", Lac:"Lacerta",
+    Leo:"Leo", LMi:"Leo Minor", Lep:"Lepus", Lib:"Libra", Lup:"Lupus",
+    Lyn:"Lynx", Lyr:"Lyra", Men:"Mensa", Mic:"Microscopium", Mon:"Monoceros",
+    Mus:"Musca", Nor:"Norma", Oct:"Octans", Oph:"Ophiuchus", Ori:"Orion",
+    Pav:"Pavo", Peg:"Pegasus", Per:"Perseus", Phe:"Phoenix", Pic:"Pictor",
+    PsA:"Piscis Austrinus", Psc:"Pisces", Pup:"Puppis", Pyx:"Pyxis",
+    Ret:"Reticulum", Sge:"Sagitta", Sgr:"Sagittarius", Sco:"Scorpius",
+    Scl:"Sculptor", Sct:"Scutum", Ser:"Serpens", Sex:"Sextans", Tau:"Taurus",
+    Tel:"Telescopium", TrA:"Triangulum Australe", Tri:"Triangulum",
+    Tuc:"Tucana", UMa:"Ursa Major", UMi:"Ursa Minor", Vel:"Vela",
+    Vir:"Virgo", Vol:"Volans", Vul:"Vulpecula"
+  };
+
+  // --- 1. Proper name ---
   if (s.proper && s.proper.trim() !== "") return s.proper;
 
-  // 2. Bayer
-  if (s.bayer && s.con) return `${s.bayer} ${s.con}`;
+  // --- 2. Bayer designation (Greek letter + constellation) ---
+  if (s.bayer && s.con) {
+    const greek = GREEK[s.bayer.toLowerCase()] || s.bayer;
+    return `${greek} ${s.con}`;
+  }
 
-  // 3. Flamsteed
+  // --- 3. Flamsteed number + constellation ---
   if (s.flam && s.con) return `${s.flam} ${s.con}`;
 
-  // 4. Henry Draper
+  // --- 4. HD ---
   if (s.hd) return `HD ${s.hd}`;
 
-  // 5. Hipparcos
+  // --- 5. HIP ---
   if (s.hip) return `HIP ${s.hip}`;
 
-  // 6. Harvard Revised (Bright Star Catalog)
+  // --- 6. HR ---
   if (s.hr) return `HR ${s.hr}`;
 
-  // 7. Gliese
+  // --- 7. Gliese ---
   if (s.gl) return `Gl ${s.gl}`;
 
-  // 8. Tycho
+  // --- 8. Tycho ---
   if (s.tyc) return `TYC ${s.tyc}`;
 
-  // 9. Gaia DR2/DR3
+  // --- 9. Gaia ---
   if (s.gaia) return `Gaia ${s.gaia}`;
 
-  // 10. HYG ID
+  // --- 10. HYG ---
   if (s.hyg) return `HYG ${s.hyg}`;
 
-  // 11. Fallback to internal ID
+  // --- 11. Fallback ---
   if (s.id) return `Star ${s.id}`;
 
   return "Unnamed star";
