@@ -704,11 +704,13 @@ function onSky3DClick(event) {
   const dy = event.clientY - sy;
   const dist = Math.sqrt(dx * dx + dy * dy);
 
-  // Show tooltip
-  sky3dTooltip.innerHTML =
-    `<b>${star.proper || "Unnamed star"}</b><br>` +
-    `Mag: ${star.mag}<br>` +
-    `Dist: ${star.dist} pc`;
+// Show tooltip
+const name = getStarNameFromRecord(star);
+sky3dTooltip.innerHTML =
+  `<b>${name}</b><br>` +
+  `Mag: ${star.mag}<br>` +
+  `Dist: ${star.dist} pc`;
+
 
   sky3dTooltip.style.left = (event.clientX + 12) + "px";
   sky3dTooltip.style.top = (event.clientY + 12) + "px";
@@ -846,7 +848,8 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
                 (Math.cos(alt) * Math.cos(latRad));
   const az = Math.atan2(sinAz, cosAz);
 
-  document.getElementById("sky3d-object-name").textContent = star.proper || "Unnamed star";
+document.getElementById("sky3d-object-name").textContent =
+  getStarNameFromRecord(star);
   document.getElementById("sky3d-object-type").textContent = "Star";
   document.getElementById("sky3d-object-ra-dec").textContent =
     `RA: ${pm.raHours.toFixed(2)}h, Dec: ${pm.decDeg.toFixed(2)}°`;
