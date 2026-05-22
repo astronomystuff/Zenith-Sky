@@ -680,7 +680,7 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
     // Alt/az → XYZ
     const x = Math.cos(alt) * Math.sin(azFixed);
     const y = Math.sin(alt);
-    const z = Math.cos(alt) * Math.cos(azFixed);
+    const z = -Math.cos(alt) * Math.cos(azFixed);
 
     chosen.push({ idx: i, x, y, z });
   }
