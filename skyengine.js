@@ -652,28 +652,41 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
   const chosen = [];
 
   for (let i = 0; i < sky3dStarBase.length; i++) {
-  const s = sky3dStarBase[i];
-  const pm = applyProperMotionFromXYZ(s, years);
-  s.raHours = pm.raHours;
-  s.decDeg = pm.decDeg;
-  const raRad  = pm.raHours * 15 * Math.PI / 180;
-  const decRad = pm.decDeg * Math.PI / 180;
+    const s = sky3dStarBase[i];
 
-  // Hour angle
-  const H = lst - raRad;
+    const pm = applyProperMotionFromXYZ(s, years);
+    s.raHours = pm.raHours;
+    s.decDeg = pm.decDeg;
 
-// Skip horizon/alt-az for now: plot full equatorial sphere
-if (s.mag > dynamicMagLimit) continue;
+    const raRad  = pm.raHours * 15 * Math.PI / 180;
+    const decRad = pm.decDeg * Math.PI / 180;
 
-// Use equatorial unit sphere directly
-const eq = raDecToXYZ(pm.raHours, pm.decDeg);
-const x = eq.x;
-const y = eq.y;
-const z = eq.z;
+    // Hour angle
+    const H = lst - raRad;
 
-chosen.push({ idx: i, x, y, z });
-}
-  
+    // Altitude
+    const sinAlt = Math.sin(latRad) * Math.sin(decRad) +
+                   Math.cos(latRad) * Math.cos(decRad) * Math.cos(H);
+    const alt = Math.asin(sinAlt);
+
+    // Above horizon only
+    if (alt <= 0) continue;
+    if (s.mag > dynamicMagLimit) continue;
+
+    // Azimuth
+    const cosAz = (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
+                  (Math.cos(alt) * Math.cos(latRad));
+    const sinAz = -Math.cos(decRad) * Math.sin(H) / Math.cos(alt);
+    const az = Math.atan2(sinAz, cosAz);
+
+    // Alt/az → XYZ
+    const x =  Math.cos(alt) * Math.sin(az);   // east (+X)
+    const y =  Math.sin(alt);                  // up (+Y)
+    const z = -Math.cos(alt) * Math.cos(az);   // toward camera (-Z)
+
+    chosen.push({ idx: i, x, y, z });
+  }
+
   chosen.sort((a, b) => sky3dStarBase[a.idx].mag - sky3dStarBase[b.idx].mag);
   if (chosen.length > maxPoints) chosen.length = maxPoints;
 
