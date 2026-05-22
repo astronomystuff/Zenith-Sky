@@ -643,8 +643,6 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
   const { lst, dateLMT } = getLSTRadiansFromCivil(dateCivil, lonDeg);
   const years = (dateLMT.getTime() - J2000_MS) / 31557600000;
   const latRad = latDeg * Math.PI / 180;
-
-  // Dynamic magnitude limit
   let fov = sky3dCamera ? sky3dCamera.fov : 60;
   let dynamicMagLimit = 6 - (fov - 60) * 0.08;
   dynamicMagLimit = Math.max(3, Math.min(10, dynamicMagLimit));
@@ -653,43 +651,30 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
 
   for (let i = 0; i < sky3dStarBase.length; i++) {
     const s = sky3dStarBase[i];
-
     const pm = applyProperMotionFromXYZ(s, years);
     s.raHours = pm.raHours;
     s.decDeg = pm.decDeg;
-
     const raRad  = pm.raHours * 15 * Math.PI / 180;
     const decRad = pm.decDeg * Math.PI / 180;
-
-    // Hour angle
     const H = lst - raRad;
-
-    // Altitude
     const sinAlt = Math.sin(latRad) * Math.sin(decRad) +
                    Math.cos(latRad) * Math.cos(decRad) * Math.cos(H);
     const alt = Math.asin(sinAlt);
-
-    // Above horizon only
     if (alt <= 0) continue;
     if (s.mag > dynamicMagLimit) continue;
-
-    // Azimuth
     const cosAz = (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
                   (Math.cos(alt) * Math.cos(latRad));
     const sinAz = -Math.cos(decRad) * Math.sin(H) / Math.cos(alt);
-    const az = Math.atan2(sinAz, cosAz);
-
-    // Alt/az → XYZ
-    const x =  Math.cos(alt) * Math.sin(az);   // east (+X)
-    const y =  Math.sin(alt);                  // up (+Y)
-    const z = -Math.cos(alt) * Math.cos(az);   // toward camera (-Z)
-
+    let az = Math.atan2(sinAz, cosAz);
+    az += Math.PI;
+    const x =  Math.cos(alt) * Math.sin(az);
+    const y =  Math.sin(alt);
+    const z = -Math.cos(alt) * Math.cos(az);
     chosen.push({ idx: i, x, y, z });
   }
 
   chosen.sort((a, b) => sky3dStarBase[a.idx].mag - sky3dStarBase[b.idx].mag);
   if (chosen.length > maxPoints) chosen.length = maxPoints;
-
   const positions = new Float32Array(chosen.length * 3);
   const sizes = new Float32Array(chosen.length);
   const starIndices = new Uint32Array(chosen.length);
@@ -698,11 +683,9 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
   for (let i = 0; i < chosen.length; i++) {
     const c = chosen[i];
     starIndices[i] = c.idx;
-
     positions[ptr++] = c.x;
     positions[ptr++] = c.y;
     positions[ptr++] = c.z;
-
     const mag = sky3dStarBase[c.idx].mag;
     sizes[i] = 0.0375 * Math.pow(1.5, -mag);
   }
@@ -711,7 +694,6 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
   geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute("sizeAttr", new THREE.BufferAttribute(sizes, 1));
   geometry.userData.starIndices = starIndices;
-
   const material = new THREE.PointsMaterial({
     color: 0xffffff,
     size: 1.0,
