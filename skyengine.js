@@ -639,12 +639,11 @@ if (s.bayerKey && s.con) {
 /* ============================================================
    Build Celestial Sphere
    ============================================================ */
-function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
+function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000, R = 50) {
   const { lst, dateLMT } = getLSTRadiansFromCivil(dateCivil, lonDeg);
   const years = (dateLMT.getTime() - J2000_MS) / 31557600000;
   const latRad = latDeg * Math.PI / 180;
 
-  // Dynamic magnitude limit
   let fov = sky3dCamera ? sky3dCamera.fov : 60;
   let dynamicMagLimit = 6 - (fov - 60) * 0.08;
   dynamicMagLimit = Math.max(3, Math.min(10, dynamicMagLimit));
@@ -654,18 +653,19 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
   for (let i = 0; i < sky3dStarBase.length; i++) {
     const s = sky3dStarBase[i];
 
+    // Proper Motion
     const pm = applyProperMotionFromXYZ(s, years);
-    s.raHours = pm.raHours;
-    s.decDeg = pm.decDeg;
+    const raHours = pm.raHours;
+    const decDeg  = pm.decDeg;
 
-    const raRad  = pm.raHours * 15 * Math.PI / 180;
-    const decRad = pm.decDeg * Math.PI / 180;
+    const raRad  = raHours * 15 * Math.PI / 180;
+    const decRad = decDeg * Math.PI / 180;
     const H = lst - raRad;
 
     // Altitude
     const sinAlt = Math.sin(latRad) * Math.sin(decRad) +
                    Math.cos(latRad) * Math.cos(decRad) * Math.cos(H);
-    const alt = Math.asin(sinAlt);
+    const alt = Math.asin(Math.max(-1, Math.min(1, sinAlt)));
 
     if (alt <= 0) continue;
     if (s.mag > dynamicMagLimit) continue;
@@ -677,15 +677,15 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
     const az = Math.atan2(sinAz, cosAz);
     const azFixed = az - Math.PI / 2;
 
-    // Alt/az → XYZ
-    const x = Math.cos(alt) * Math.sin(azFixed);
-    const y = Math.sin(alt);
-    const z = -Math.cos(alt) * Math.cos(azFixed);
+    // Alt/Az -> XYZ
+    const x = R * Math.cos(alt) * Math.sin(azFixed);
+    const y = R * Math.sin(alt);
+    const z = R * -Math.cos(alt) * Math.cos(azFixed);
 
-    chosen.push({ idx: i, x, y, z });
+    chosen.push({ idx: i, x, y, z, mag: s.mag });
   }
-  
-  chosen.sort((a, b) => sky3dStarBase[a.idx].mag - sky3dStarBase[b.idx].mag);
+
+  chosen.sort((a, b) => a.mag - b.mag);
   if (chosen.length > maxPoints) chosen.length = maxPoints;
 
   const positions = new Float32Array(chosen.length * 3);
@@ -738,6 +738,7 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
 
   return group;
 }
+
 
 /* ============================================================
    onSky3DClick
