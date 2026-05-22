@@ -55,8 +55,10 @@ class MinimalCameraControls {
   constructor(camera, domElement) {
     this.camera = camera;
     this.domElement = domElement;
+
     this.rotateSpeed = 0.005;
     this.zoomSpeed = 0.05;
+
     this.isRotating = false;
     this.lastX = 0;
     this.lastY = 0;
@@ -192,124 +194,11 @@ class MinimalCameraControls {
 /* ============================================================
    CSV Loader
    ============================================================ */
-const GREEK = {
-  alf: "α", bet: "β", gam: "γ", del: "δ", eps: "ε",
-  zet: "ζ", eta: "η", the: "θ", iot: "ι", kap: "κ",
-  lam: "λ", mu: "μ", nu: "ν", xi: "ξ", omi: "ο",
-  pi: "π", rho: "ρ", sig: "σ", tau: "τ", ups: "υ",
-  phi: "φ", chi: "χ", psi: "ψ", ome: "ω"
-};
-
-const CONSTELLATION_NAMES = {
-  And: "Andromeda",
-  Ant: "Antlia",
-  Aps: "Apus",
-  Aqr: "Aquarius",
-  Aql: "Aquila",
-  Ara: "Ara",
-  Ari: "Aries",
-  Aur: "Auriga",
-  Boo: "Boötes",
-  Cae: "Caelum",
-  Cam: "Camelopardalis",
-  Cnc: "Cancer",
-  CVn: "Canes Venatici",
-  CMa: "Canis Major",
-  CMi: "Canis Minor",
-  Cap: "Capricornus",
-  Car: "Carina",
-  Cas: "Cassiopeia",
-  Cen: "Centaurus",
-  Cep: "Cepheus",
-  Cet: "Cetus",
-  Cha: "Chamaeleon",
-  Cir: "Circinus",
-  Col: "Columba",
-  Com: "Coma Berenices",
-  CrA: "Corona Australis",
-  CrB: "Corona Borealis",
-  Crv: "Corvus",
-  Crt: "Crater",
-  Cru: "Crux",
-  Cyg: "Cygnus",
-  Del: "Delphinus",
-  Dor: "Dorado",
-  Dra: "Draco",
-  Equ: "Equuleus",
-  Eri: "Eridanus",
-  For: "Fornax",
-  Gem: "Gemini",
-  Gru: "Grus",
-  Her: "Hercules",
-  Hor: "Horologium",
-  Hya: "Hydra",
-  Hyi: "Hydrus",
-  Ind: "Indus",
-  Lac: "Lacerta",
-  Leo: "Leo",
-  LMi: "Leo Minor",
-  Lep: "Lepus",
-  Lib: "Libra",
-  Lup: "Lupus",
-  Lyn: "Lynx",
-  Lyr: "Lyra",
-  Men: "Mensa",
-  Mic: "Microscopium",
-  Mon: "Monoceros",
-  Mus: "Musca",
-  Nor: "Norma",
-  Oct: "Octans",
-  Oph: "Ophiuchus",
-  Ori: "Orion",
-  Pav: "Pavo",
-  Peg: "Pegasus",
-  Per: "Perseus",
-  Phe: "Phoenix",
-  Pic: "Pictor",
-  PsA: "Piscis Austrinus",
-  Psc: "Pisces",
-  Pup: "Puppis",
-  Pyx: "Pyxis",
-  Ret: "Reticulum",
-  Sge: "Sagitta",
-  Sgr: "Sagittarius",
-  Sco: "Scorpius",
-  Scl: "Sculptor",
-  Sct: "Scutum",
-  Ser: "Serpens",
-  Sex: "Sextans",
-  Tau: "Taurus",
-  Tel: "Telescopium",
-  TrA: "Triangulum Australe",
-  Tri: "Triangulum",
-  Tuc: "Tucana",
-  UMa: "Ursa Major",
-  UMi: "Ursa Minor",
-  Vel: "Vela",
-  Vir: "Virgo",
-  Vol: "Volans",
-  Vul: "Vulpecula"
-};
-
-function parseBayer(bayerRaw, conRaw) {
-  if (!bayerRaw) {
-    return { bayerKey: null, conCode: conRaw || null };
-  }
-
-  const parts = bayerRaw.trim().split(/\s+/);
-  const greekKey = parts[0].toLowerCase();
-  let conCode = conRaw || null;
-  if (!conCode && parts.length > 1) {
-    conCode = parts[1];
-  }
-
-  return { bayerKey: greekKey, conCode };
-}
-
 async function loadStarCSV(url) {
   let text;
 
   try {
+    // Try direct fetch first
     const response = await fetch(url);
     if (!response.ok) throw new Error("Direct fetch failed");
     text = await response.text();
@@ -331,38 +220,30 @@ async function loadStarCSV(url) {
   const header = lines[0].split(",").map(h => h.replace(/"/g, "").trim());
 
   const idx = {
-    id:     header.indexOf("id"),
-    tyc:    header.indexOf("tyc"),
-    gaia:   header.indexOf("gaia"),
-    hyg:    header.indexOf("hyg"),
-    hip:    header.indexOf("hip"),
-    hd:     header.indexOf("hd"),
-    hr:     header.indexOf("hr"),
-    gl:     header.indexOf("gl"),
-    bayer:  header.indexOf("bayer"),
-    flam:   header.indexOf("flam"),
-    con:    header.indexOf("con"),
-    proper: header.indexOf("proper"),
-    x:      header.indexOf("x0"),
-    y:      header.indexOf("y0"),
-    z:      header.indexOf("z0"),
-    dist:   header.indexOf("dist"),
-    pmRa:   header.indexOf("pm_ra"),
-    pmDec:  header.indexOf("pm_dec"),
-    rv:     header.indexOf("rv"),
-    mag:    header.indexOf("mag"),
-    ra:     header.indexOf("ra"),
-    dec:    header.indexOf("dec")
-  };
+  proper: header.indexOf("proper"),
+  x: header.indexOf("x0"),
+  y: header.indexOf("y0"),
+  z: header.indexOf("z0"),
+  dist: header.indexOf("dist"),
+  pmRa: header.indexOf("pm_ra"),
+  pmDec: header.indexOf("pm_dec"),
+  rv: header.indexOf("rv"),
+  mag: header.indexOf("mag"),
+  ra: header.indexOf("ra"),
+  dec: header.indexOf("dec")
+};
 
   const stars = [];
 
   for (let i = 1; i < lines.length; i++) {
     const row = lines[i].trim();
     if (!row) continue;
+
     const cols = row.split(",").map(c => c.replace(/"/g, "").trim());
+
     const proper = cols[idx.proper]?.trim();
     if (proper && proper.toLowerCase() === "sol") continue;
+
     const x0   = parseFloat(cols[idx.x]);
     const y0   = parseFloat(cols[idx.y]);
     const z0   = parseFloat(cols[idx.z]);
@@ -374,41 +255,22 @@ async function loadStarCSV(url) {
     const raDeg  = parseFloat(cols[idx.ra]);
     const decDeg = parseFloat(cols[idx.dec]);
 
-    if (
-      isNaN(x0) || isNaN(y0) || isNaN(z0) ||
-      isNaN(dist) || isNaN(mag) ||
-      isNaN(raDeg) || isNaN(decDeg)
-    ) continue;
+  if (
+  isNaN(x0) || isNaN(y0) || isNaN(z0) ||
+  isNaN(dist) || isNaN(mag) ||
+  isNaN(raDeg) || isNaN(decDeg)
+) continue;
 
-    const bayerRaw = idx.bayer >= 0 ? cols[idx.bayer] : "";
-    const conRaw   = idx.con   >= 0 ? cols[idx.con]   : "";
-    const flamRaw  = idx.flam  >= 0 ? cols[idx.flam]  : "";
-    const { bayerKey, conCode } = parseBayer(bayerRaw, conRaw);
 
-    const star = {
-      id:     idx.id   >= 0 ? cols[idx.id]   : null,
-      tyc:    idx.tyc  >= 0 ? cols[idx.tyc]  : null,
-      gaia:   idx.gaia >= 0 ? cols[idx.gaia] : null,
-      hyg:    idx.hyg  >= 0 ? cols[idx.hyg]  : null,
-      hip:    idx.hip  >= 0 ? cols[idx.hip]  : null,
-      hd:     idx.hd   >= 0 ? cols[idx.hd]   : null,
-      hr:     idx.hr   >= 0 ? cols[idx.hr]   : null,
-      gl:     idx.gl   >= 0 ? cols[idx.gl]   : null,
-      bayerRaw,
-      bayerKey,
-      flam: flamRaw ? flamRaw : null,
-      con:  conCode,
-      proper,
-      x0, y0, z0,
-      dist,
-      pmRa, pmDec, rv,
-      mag,
-      raHours0: raDeg / 15,
-      decDeg0:  decDeg
-    };
-
-    stars.push(star);
-  }
+  stars.push({
+    proper,
+    x0, y0, z0,
+    dist,
+    pmRa, pmDec, rv, mag,
+    raHours0: raDeg,
+    decDeg0:  decDeg
+  });
+}
 
   console.log("Loaded stars:", stars.length);
   return stars;
@@ -545,7 +407,7 @@ function raDecToXYZ(raHours, decDeg) {
 }
 
 /* ============================================================
-   Helpers
+   UI Helpers
    ============================================================ */
 function getDateFromUICivil() {
   const year  = parseInt(document.getElementById("sky3d-year").value, 10);
@@ -598,52 +460,15 @@ function centerOnWorldPos(pos) {
   sky3dRootGroup.quaternion.premultiply(q);
 }
 
-function getStarName(s) {
-  // 1. Proper name
-  if (s.proper && s.proper.trim() !== "") {
-    return s.proper;
-  }
-
-// 2. Bayer designation (Greek letter + constellation)
-if (s.bayerKey && s.con) {
-    const greek = GREEK[s.bayerKey] || s.bayerKey;
-    return `${greek} ${s.con}`;
-}
-
-
-  // 3. Flamsteed number
-  if (s.flam && s.flam.trim() !== "") {
-    return `${s.flam} ${s.con}`;
-  }
-
-  // 4. HD catalog
-  if (s.hd) return `HD ${s.hd}`;
-
-  // 5. HIP catalog
-  if (s.hip) return `HIP ${s.hip}`;
-
-  // 6. HR catalog
-  if (s.hr) return `HR ${s.hr}`;
-
-  // 7. Tycho
-  if (s.tyc) return `TYC ${s.tyc}`;
-
-  // 8. Gaia
-  if (s.gaia) return `Gaia ${s.gaia}`;
-
-  // 9. Fallback
-  return s.id || "Unnamed star";
-}
-
-
 /* ============================================================
    Build Celestial Sphere
    ============================================================ */
-function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000, R = 50) {
+function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
   const { lst, dateLMT } = getLSTRadiansFromCivil(dateCivil, lonDeg);
   const years = (dateLMT.getTime() - J2000_MS) / 31557600000;
   const latRad = latDeg * Math.PI / 180;
 
+  // Dynamic magnitude limit
   let fov = sky3dCamera ? sky3dCamera.fov : 60;
   let dynamicMagLimit = 6 - (fov - 60) * 0.08;
   dynamicMagLimit = Math.max(3, Math.min(10, dynamicMagLimit));
@@ -651,41 +476,38 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000, R =
   const chosen = [];
 
   for (let i = 0; i < sky3dStarBase.length; i++) {
-    const s = sky3dStarBase[i];
+  const s = sky3dStarBase[i];
+  const pm = applyProperMotionFromXYZ(s, years);
+  s.raHours = pm.raHours;
+  s.decDeg = pm.decDeg;
+  const raRad  = pm.raHours * 15 * Math.PI / 180;
+  const decRad = pm.decDeg * Math.PI / 180;
 
-    // Proper Motion
-    const pm = applyProperMotionFromXYZ(s, years);
-    const raHours = pm.raHours;
-    const decDeg  = pm.decDeg;
+  // Hour angle
+  const H = lst - raRad;
 
-    const raRad  = raHours * 15 * Math.PI / 180;
-    const decRad = decDeg * Math.PI / 180;
-    const H = lst - raRad;
+  // Altitude
+  const sinAlt = Math.sin(latRad) * Math.sin(decRad) +
+                 Math.cos(latRad) * Math.cos(decRad) * Math.cos(H);
+  const alt = Math.asin(sinAlt);
+  if (alt <= 0) continue;
+  if (s.mag > dynamicMagLimit) continue;
 
-    // Altitude
-    const sinAlt = Math.sin(latRad) * Math.sin(decRad) +
-                   Math.cos(latRad) * Math.cos(decRad) * Math.cos(H);
-    const alt = Math.asin(Math.max(-1, Math.min(1, sinAlt)));
+  // Azimuth
+  const cosAz = (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
+                (Math.cos(alt) * Math.cos(latRad));
+  const sinAz = -Math.cos(decRad) * Math.sin(H) / Math.cos(alt);
+  const az = Math.atan2(sinAz, cosAz);
 
-    if (alt <= 0) continue;
-    if (s.mag > dynamicMagLimit) continue;
+  // Convert alt/az → XYZ
+  const x = Math.cos(alt) * Math.sin(az);
+  const y = Math.sin(alt);
+  const z = Math.cos(alt) * Math.cos(az);
 
-    // Azimuth
-    const sinAz = -Math.cos(decRad) * Math.sin(H) / Math.cos(alt);
-    const cosAz = (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
-                  (Math.cos(alt) * Math.cos(latRad));
-    const az = Math.atan2(sinAz, cosAz);
-    const azFixed = az - Math.PI / 2;
+  chosen.push({ idx: i, x, y, z });
+}
 
-    // Alt/Az -> XYZ
-    const x = R * Math.cos(alt) * Math.sin(azFixed);
-    const y = R * Math.sin(alt);
-    const z = R * -Math.cos(alt) * Math.cos(azFixed);
-
-    chosen.push({ idx: i, x, y, z, mag: s.mag });
-  }
-
-  chosen.sort((a, b) => a.mag - b.mag);
+  chosen.sort((a, b) => sky3dStarBase[a.idx].mag - sky3dStarBase[b.idx].mag);
   if (chosen.length > maxPoints) chosen.length = maxPoints;
 
   const positions = new Float32Array(chosen.length * 3);
@@ -780,7 +602,7 @@ function onSky3DClick(event) {
 
   // Show tooltip
   sky3dTooltip.innerHTML =
-    `<b>${getStarName(star)}</b><br>` +
+    `<b>${star.proper || "Unnamed star"}</b><br>` +
     `Mag: ${star.mag}<br>` +
     `Dist: ${star.dist} pc`;
 
@@ -800,50 +622,22 @@ function searchSky3D() {
 
   // 1. Find matching star in base catalog
   let best = null;
+  for (let i = 0; i < sky3dStarBase.length; i++) {
+    const s = sky3dStarBase[i];
 
-for (let i = 0; i < sky3dStarBase.length; i++) {
-  const s = sky3dStarBase[i];
-
-  // Proper name
-  if (s.proper && s.proper.toLowerCase().includes(query)) {
-    best = { star: s, idx: i };
-    break;
-  }
-
-  // HIP search
-  if (query.startsWith("hip")) {
-    const hip = query.replace("hip", "").trim();
-    if (s.hip && String(s.hip) === hip) {
+    if (s.proper && s.proper.toLowerCase().includes(query)) {
       best = { star: s, idx: i };
       break;
     }
-  }
 
-// Bayer search
-if (s.bayerKey && s.con) {
-    const greek = GREEK[s.bayerKey] || s.bayerKey;
-    const bayerName = `${greek} ${s.con}`.toLowerCase();
-    if (bayerName.includes(query)) {
+    if (query.startsWith("hip")) {
+      const hip = query.replace("hip", "").trim();
+      if (s.hip && String(s.hip) === hip) {
         best = { star: s, idx: i };
         break;
-    }
-}
-
-// Flamsteed search
-if (s.flam && `${s.flam} ${s.con}`.toLowerCase().includes(query)) {
-  best = { star: s, idx: i };
-  break;
-}
-
-  // HD search
-  if (query.startsWith("hd")) {
-    const hd = query.replace("hd", "").trim();
-    if (s.hd && String(s.hd) === hd) {
-      best = { star: s, idx: i };
-      break;
+      }
     }
   }
-}
 
   if (!best) {
     alert("Object not found.");
@@ -948,7 +742,7 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
                 (Math.cos(alt) * Math.cos(latRad));
   const az = Math.atan2(sinAz, cosAz);
 
-  document.getElementById("sky3d-object-name").textContent = getStarName(star);
+  document.getElementById("sky3d-object-name").textContent = star.proper || "Unnamed star";
   document.getElementById("sky3d-object-type").textContent = "Star";
   document.getElementById("sky3d-object-ra-dec").textContent =
     `RA: ${pm.raHours.toFixed(2)}h, Dec: ${pm.decDeg.toFixed(2)}°`;
