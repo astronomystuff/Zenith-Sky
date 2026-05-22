@@ -198,7 +198,6 @@ async function loadStarCSV(url) {
   let text;
 
   try {
-    // Try direct fetch first
     const response = await fetch(url);
     if (!response.ok) throw new Error("Direct fetch failed");
     text = await response.text();
@@ -219,19 +218,35 @@ async function loadStarCSV(url) {
 
   const header = lines[0].split(",").map(h => h.replace(/"/g, "").trim());
 
+  // Build index map
   const idx = {
-  proper: header.indexOf("proper"),
-  x: header.indexOf("x0"),
-  y: header.indexOf("y0"),
-  z: header.indexOf("z0"),
-  dist: header.indexOf("dist"),
-  pmRa: header.indexOf("pm_ra"),
-  pmDec: header.indexOf("pm_dec"),
-  rv: header.indexOf("rv"),
-  mag: header.indexOf("mag"),
-  ra: header.indexOf("ra"),
-  dec: header.indexOf("dec")
-};
+    id:     header.indexOf("id"),
+    tyc:    header.indexOf("tyc"),
+    gaia:   header.indexOf("gaia"),
+    hyg:    header.indexOf("hyg"),
+    hip:    header.indexOf("hip"),
+    hd:     header.indexOf("hd"),
+    hr:     header.indexOf("hr"),
+    gl:     header.indexOf("gl"),
+    bayer:  header.indexOf("bayer"),
+    flam:   header.indexOf("flam"),
+    con:    header.indexOf("con"),
+    proper: header.indexOf("proper"),
+    ra:     header.indexOf("ra"),
+    dec:    header.indexOf("dec"),
+    dist:   header.indexOf("dist"),
+    x:      header.indexOf("x0"),
+    y:      header.indexOf("y0"),
+    z:      header.indexOf("z0"),
+    mag:    header.indexOf("mag"),
+    rv:     header.indexOf("rv"),
+    pmRa:   header.indexOf("pm_ra"),
+    pmDec:  header.indexOf("pm_dec"),
+    vx:     header.indexOf("vx"),
+    vy:     header.indexOf("vy"),
+    vz:     header.indexOf("vz"),
+    spect:  header.indexOf("spect")
+  };
 
   const stars = [];
 
@@ -241,7 +256,7 @@ async function loadStarCSV(url) {
 
     const cols = row.split(",").map(c => c.replace(/"/g, "").trim());
 
-    const proper = cols[idx.proper]?.trim();
+    const proper = cols[idx.proper];
     if (proper && proper.toLowerCase() === "sol") continue;
 
     const x0   = parseFloat(cols[idx.x]);
@@ -255,26 +270,41 @@ async function loadStarCSV(url) {
     const raDeg  = parseFloat(cols[idx.ra]);
     const decDeg = parseFloat(cols[idx.dec]);
 
-  if (
-  isNaN(x0) || isNaN(y0) || isNaN(z0) ||
-  isNaN(dist) || isNaN(mag) ||
-  isNaN(raDeg) || isNaN(decDeg)
-) continue;
+    if (
+      isNaN(x0) || isNaN(y0) || isNaN(z0) ||
+      isNaN(dist) || isNaN(mag) ||
+      isNaN(raDeg) || isNaN(decDeg)
+    ) continue;
 
-
-  stars.push({
-    proper,
-    x0, y0, z0,
-    dist,
-    pmRa, pmDec, rv, mag,
-    raHours0: raDeg,
-    decDeg0:  decDeg
-  });
-}
+    stars.push({
+      id:     cols[idx.id],
+      tyc:    cols[idx.tyc],
+      gaia:   cols[idx.gaia],
+      hyg:    cols[idx.hyg],
+      hip:    cols[idx.hip],
+      hd:     cols[idx.hd],
+      hr:     cols[idx.hr],
+      gl:     cols[idx.gl],
+      bayer:  cols[idx.bayer],
+      flam:   cols[idx.flam],
+      con:    cols[idx.con],
+      proper: cols[idx.proper],
+      x0, y0, z0,
+      dist,
+      raHours0: raDeg,
+      decDeg0:  decDeg,
+      pmRa, pmDec, rv, mag,
+      vx: parseFloat(cols[idx.vx]),
+      vy: parseFloat(cols[idx.vy]),
+      vz: parseFloat(cols[idx.vz]),
+      spect: cols[idx.spect]
+    });
+  }
 
   console.log("Loaded stars:", stars.length);
   return stars;
 }
+
 
 /* ============================================================
    XYZ → RA/Dec (parsec → parsec)
@@ -407,7 +437,7 @@ function raDecToXYZ(raHours, decDeg) {
 }
 
 /* ============================================================
-   UI Helpers
+   Helpers
    ============================================================ */
 function getDateFromUICivil() {
   const year  = parseInt(document.getElementById("sky3d-year").value, 10);
@@ -458,6 +488,43 @@ function centerOnWorldPos(pos) {
   const q = new THREE.Quaternion().setFromUnitVectors(starDir, camForward);
 
   sky3dRootGroup.quaternion.premultiply(q);
+}
+
+function getStarNameFromRecord(s) {
+  // 1. Proper name
+  if (s.proper && s.proper.trim() !== "") return s.proper;
+
+  // 2. Bayer
+  if (s.bayer && s.con) return `${s.bayer} ${s.con}`;
+
+  // 3. Flamsteed
+  if (s.flam && s.con) return `${s.flam} ${s.con}`;
+
+  // 4. Henry Draper
+  if (s.hd) return `HD ${s.hd}`;
+
+  // 5. Hipparcos
+  if (s.hip) return `HIP ${s.hip}`;
+
+  // 6. Harvard Revised (Bright Star Catalog)
+  if (s.hr) return `HR ${s.hr}`;
+
+  // 7. Gliese
+  if (s.gl) return `Gl ${s.gl}`;
+
+  // 8. Tycho
+  if (s.tyc) return `TYC ${s.tyc}`;
+
+  // 9. Gaia DR2/DR3
+  if (s.gaia) return `Gaia ${s.gaia}`;
+
+  // 10. HYG ID
+  if (s.hyg) return `HYG ${s.hyg}`;
+
+  // 11. Fallback to internal ID
+  if (s.id) return `Star ${s.id}`;
+
+  return "Unnamed star";
 }
 
 /* ============================================================
