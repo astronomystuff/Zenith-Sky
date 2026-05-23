@@ -56,6 +56,7 @@ class MinimalCameraControls {
   constructor(camera, domElement) {
     this.camera = camera;
     this.domElement = domElement;
+    if (window.sky3dLocked) return;
     this.enabled = true;
     this.rotateSpeed = 0.005;
     this.zoomSpeed = 0.05;
@@ -86,6 +87,7 @@ class MinimalCameraControls {
      DESKTOP CONTROLS
   ============================ */
   onMouseDown(e) {
+    if (window.sky3dLocked) return;
     if (!this.enabled) return;
     if (e.button !== 0) return;
     this.isRotating = true;
@@ -94,6 +96,7 @@ class MinimalCameraControls {
   }
 
   onMouseMove(e) {
+    if (window.sky3dLocked) return;
     if (!this.enabled) return;
     if (!this.isRotating) return;
 
@@ -116,11 +119,13 @@ class MinimalCameraControls {
   }
 
   onMouseUp() {
+    if (window.sky3dLocked) return;
     if (!this.enabled) return;
     this.isRotating = false;
   }
 
   onWheel(e) {
+    if (window.sky3dLocked) return;
     if (!this.enabled) return;
     e.preventDefault();
     if (!this.camera) return;
@@ -135,6 +140,7 @@ class MinimalCameraControls {
      MOBILE CONTROLS
   ============================ */
   onTouchStart(e) {
+    if (window.sky3dLocked) return;
     if (!this.enabled) return;
     if (e.touches.length === 1) {
       // One finger → rotate
@@ -149,6 +155,7 @@ class MinimalCameraControls {
   }
 
   onTouchMove(e) {
+    if (window.sky3dLocked) return;
     if (!this.enabled) return;
     e.preventDefault();
 
@@ -187,6 +194,7 @@ class MinimalCameraControls {
   }
 
   onTouchEnd() {
+    if (window.sky3dLocked) return;
     if (!this.enabled) return;
     this.touchMode = null;
   }
