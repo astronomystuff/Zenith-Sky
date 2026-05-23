@@ -63,9 +63,7 @@ class MinimalCameraControls {
     this.isRotating = false;
     this.lastX = 0;
     this.lastY = 0;
-
-    // Touch state
-    this.touchMode = null; // "rotate" or "pinch"
+    this.touchMode = null;
     this.lastTouchDist = 0;
 
     // Desktop
@@ -83,24 +81,59 @@ class MinimalCameraControls {
     domElement.addEventListener("touchcancel", () => this.onTouchEnd());
   }
 
-    setLocked(state) {
+  /* ============================================================
+     LOCK / UNLOCK SYSTEM
+     ============================================================ */
+  setLocked(state) {
     this.locked = state;
+
+    if (state) {
+      if (!this._originalHandlers) {
+        this._originalHandlers = {
+          onMouseDown: this.onMouseDown,
+          onMouseMove: this.onMouseMove,
+          onMouseUp: this.onMouseUp,
+          onWheel: this.onWheel,
+          onTouchStart: this.onTouchStart,
+          onTouchMove: this.onTouchMove,
+          onTouchEnd: this.onTouchEnd
+        };
+      }
+
+      this.onMouseDown  = function(){};
+      this.onMouseMove  = function(){};
+      this.onMouseUp    = function(){};
+      this.onWheel      = function(){};
+      this.onTouchStart = function(){};
+      this.onTouchMove  = function(){};
+      this.onTouchEnd   = function(){};
+
+    } else {
+      if (this._originalHandlers) {
+        this.onMouseDown  = this._originalHandlers.onMouseDown;
+        this.onMouseMove  = this._originalHandlers.onMouseMove;
+        this.onMouseUp    = this._originalHandlers.onMouseUp;
+        this.onWheel      = this._originalHandlers.onWheel;
+        this.onTouchStart = this._originalHandlers.onTouchStart;
+        this.onTouchMove  = this._originalHandlers.onTouchMove;
+        this.onTouchEnd   = this._originalHandlers.onTouchEnd;
+      }
+    }
   }
 
   /* ============================
      DESKTOP CONTROLS
   ============================ */
   onMouseDown(e) {
-    if (this.locked) return;
     if (!this.enabled) return;
     if (e.button !== 0) return;
+
     this.isRotating = true;
     this.lastX = e.clientX;
     this.lastY = e.clientY;
   }
 
   onMouseMove(e) {
-    if (this.locked) return;
     if (!this.enabled) return;
     if (!this.isRotating) return;
 
@@ -123,13 +156,11 @@ class MinimalCameraControls {
   }
 
   onMouseUp() {
-    if (this.locked) return;
     if (!this.enabled) return;
     this.isRotating = false;
   }
 
   onWheel(e) {
-    if (this.locked) return;
     if (!this.enabled) return;
     e.preventDefault();
     if (!this.camera) return;
@@ -144,22 +175,20 @@ class MinimalCameraControls {
      MOBILE CONTROLS
   ============================ */
   onTouchStart(e) {
-    if (this.locked) return;
     if (!this.enabled) return;
+
     if (e.touches.length === 1) {
-      // One finger → rotate
       this.touchMode = "rotate";
       this.lastX = e.touches[0].clientX;
       this.lastY = e.touches[0].clientY;
+
     } else if (e.touches.length === 2) {
-      // Two fingers → pinch zoom
       this.touchMode = "pinch";
       this.lastTouchDist = this.getTouchDistance(e);
     }
   }
 
   onTouchMove(e) {
-    if (this.locked) return;
     if (!this.enabled) return;
     e.preventDefault();
 
@@ -189,7 +218,7 @@ class MinimalCameraControls {
       const newDist = this.getTouchDistance(e);
       const delta = this.lastTouchDist - newDist;
 
-      this.camera.fov += delta * 0.15; // pinch zoom sensitivity
+      this.camera.fov += delta * 0.15;
       this.camera.fov = Math.max(20, Math.min(100, this.camera.fov));
       this.camera.updateProjectionMatrix();
 
@@ -198,7 +227,6 @@ class MinimalCameraControls {
   }
 
   onTouchEnd() {
-    if (this.locked) return;
     if (!this.enabled) return;
     this.touchMode = null;
   }
