@@ -944,8 +944,18 @@ function toggleSky3DLock() {
   const btn = document.getElementById("sky3d-lock");
   btn.textContent = sky3dLocked ? "Unlock View" : "Lock View";
 
-  if (sky3dControls) {
-    sky3dControls.enabled = !sky3dLocked;
+  if (sky3dLocked) {
+    sky3dRootGroup.rotation.set(0, 0, 0);
+
+    sky3dRootGroup.userData.lockQuat = sky3dRootGroup.quaternion.clone();
+    if (sky3dControls) sky3dControls.enabled = false;
+  } else {
+    if (sky3dRootGroup.userData.lockQuat) {
+      sky3dRootGroup.quaternion.copy(sky3dRootGroup.userData.lockQuat);
+      sky3dRootGroup.rotation.setFromQuaternion(sky3dRootGroup.quaternion);
+    }
+
+    if (sky3dControls) sky3dControls.enabled = true;
   }
 }
 
