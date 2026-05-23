@@ -965,8 +965,14 @@ function toggleSky3DLock() {
 function animateSky3D() {
   if (!sky3dModalOpen) return;
   requestAnimationFrame(animateSky3D);
+
+  if (sky3dLocked && sky3dRootGroup.userData.lockQuat) {
+    sky3dRootGroup.quaternion.copy(sky3dRootGroup.userData.lockQuat);
+  }
+
   sky3dRenderer.render(sky3dScene, sky3dCamera);
 }
+
 
 /* ============================================================
    Modal Wiring
