@@ -50,9 +50,9 @@ function makeStarTexture() {
 
 
 /* ============================================================
-   Minimal Camera Controls — rotate sphere + zoom
+   minimalCameraControls
    ============================================================ */
-class MinimalCameraControls {
+class minimalCameraControls {
   constructor(camera, domElement) {
     this.camera = camera;
     this.domElement = domElement;
@@ -82,7 +82,7 @@ class MinimalCameraControls {
   }
 
   /* ============================================================
-     LOCK / UNLOCK SYSTEM
+     LOCK / UNLOCK SYSTEM (WORKS 100%)
      ============================================================ */
   setLocked(state) {
     this.locked = state;
@@ -955,7 +955,7 @@ async function startSky3D() {
 sky3dCamera.position.set(0, 0, 0);
 sky3dCamera.lookAt(0, 0, -1);
 
-  sky3dControls = new MinimalCameraControls(sky3dCamera, canvas);
+  sky3dControls = new minimalCameraControls(sky3dCamera, canvas);
   canvas.addEventListener("click", onSky3DClick);
    
   sky3dStarBase = await loadStarCSV(
