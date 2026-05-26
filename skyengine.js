@@ -52,6 +52,7 @@ function normalizeSpectral(raw) {
   return s;
 }
 
+
 function colorForSpectralType(raw) {
   if (!raw) return 0xffffff;
 
@@ -108,25 +109,22 @@ function colorForSpectralType(raw) {
 }
 
 
-function makeStarTexture(color) {
+
+function makeStarTexture() {
   const size = 64;
   const canvas = document.createElement("canvas");
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext("2d");
 
-  const r = (color >> 16) & 255;
-  const g = (color >> 8) & 255;
-  const b = color & 255;
-
   const grad = ctx.createRadialGradient(
     size/2, size/2, 0,
     size/2, size/2, size/2
   );
 
-  grad.addColorStop(0.0, `rgba(${r},${g},${b},1)`);
-  grad.addColorStop(0.4, `rgba(${r},${g},${b},0.6)`);
-  grad.addColorStop(1.0, `rgba(${r},${g},${b},0)`);
+  grad.addColorStop(0.0, "rgba(255,255,255,1)");
+  grad.addColorStop(0.4, "rgba(255,255,255,0.6)");
+  grad.addColorStop(1.0, "rgba(255,255,255,0)");
 
   ctx.fillStyle = grad;
   ctx.beginPath();
@@ -140,7 +138,6 @@ function makeStarTexture(color) {
 
   return texture;
 }
-
 
 /* ============================================================
    minimalCameraControls
