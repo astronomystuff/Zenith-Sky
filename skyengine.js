@@ -732,7 +732,7 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
     transparent: true,
     alphaTest: 0.5,
     depthTest: true,
-    depthWrite: false
+    depthWrite: false,
     vertexColors: true
   });
 
