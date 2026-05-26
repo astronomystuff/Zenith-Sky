@@ -720,6 +720,23 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
     sizes[i] = 0.0375 * Math.pow(1.5, -mag);
   }
 
+  const colors = new Float32Array(chosen.length * 3);
+
+for (let i = 0; i < chosen.length; i++) {
+  const star = sky3dStarBase[chosen[i].idx];
+  const hex = colorForSpectralType(star.spect);
+
+  const r = ((hex >> 16) & 255) / 255;
+  const g = ((hex >> 8) & 255) / 255;
+  const b = (hex & 255) / 255;
+
+  colors[i*3]   = r;
+  colors[i*3+1] = g;
+  colors[i*3+2] = b;
+}
+
+  geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute("sizeAttr", new THREE.BufferAttribute(sizes, 1));
