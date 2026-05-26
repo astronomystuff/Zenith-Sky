@@ -26,16 +26,109 @@ window.J2000_MS = J2000_MS;
 const LY_TO_PC = 1 / 3.26156;
 
 /* ============================================================
-   Star texture (round sprite)
+   Star texture
    ============================================================ */
-function makeStarTexture() {
+function normalizeSpectral(raw) {
+  if (!raw) return "";
+  let s = raw.trim();
+
+  // Remove leading parentheses or colon
+  s = s.replace(/^[(:]+/, "");
+
+  // Remove leading "d" only if followed by a letter
+  if (/^d[A-Za-z]/.test(s)) s = s.slice(1);
+
+  // Remove "k-" metallicity prefix
+  if (s.startsWith("k-") || s.startsWith("K-")) {
+    s = s.slice(2); // remove "k-"
+  }
+
+  // Do NOT remove "p" unless the whole thing is "pec"
+  if (s.toLowerCase() === "pec") return "pec";
+
+  // 0 → O
+  if (s.startsWith("0")) return "O" + s.slice(1);
+
+  return s;
+}
+
+function colorForSpectralType(raw) {
+  if (!raw) return 0xffffff;
+
+  const s = normalizeSpectral(raw);
+  const first = s[0].toUpperCase();
+
+  // OBAFGKM
+  const canonical = {
+    O: 0x9bb0ff,
+    B: 0xaabfff,
+    A: 0xcad7ff,
+    F: 0xfbf8ff,
+    G: 0xfff4e8,
+    K: 0xffddb4,
+    M: 0xffbd6f
+  };
+  if (canonical[first]) return canonical[first];
+
+  // Carbon stars (R)
+  if (first === "R") return 0x8b0000;
+
+  // S-type stars
+  if (first === "S") return 0xff8c4a;
+
+  // Wolf-Rayet
+  if (first === "W") return 0x7f00ff;
+
+  // White dwarfs
+  if (first === "D") return 0xd0e0ff;
+
+  // N-type
+  if (first === "N") {
+    if (s.includes("C")) return 0x8b0000; // carbon-N
+    if (s.includes("NEB")) return 0xffffff; // nebular central star
+    if (s.includes("NOV") || s.includes("0v") || s.includes("var"))
+      return 0xd0e0ff; // nova / variable
+    return 0xffffff;
+  }
+
+  // P-type inspection
+  if (first === "P") {
+    if (s.includes("PLANETARY")) return 0xd0e0ff;
+    return 0xffffff;
+  }
+
+  // E-type
+  if (first === "E") return 0xffffff;
+
+  // k-type already normalized
+  if (first === "M") return canonical.M;
+  if (first === "K") return canonical.K;
+
+  return 0xffffff;
+}
+
+
+function makeStarTexture(color) {
   const size = 64;
   const canvas = document.createElement("canvas");
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext("2d");
 
-  ctx.fillStyle = "white";
+  const r = (color >> 16) & 255;
+  const g = (color >> 8) & 255;
+  const b = color & 255;
+
+  const grad = ctx.createRadialGradient(
+    size/2, size/2, 0,
+    size/2, size/2, size/2
+  );
+
+  grad.addColorStop(0.0, `rgba(${r},${g},${b},1)`);
+  grad.addColorStop(0.4, `rgba(${r},${g},${b},0.6)`);
+  grad.addColorStop(1.0, `rgba(${r},${g},${b},0)`);
+
+  ctx.fillStyle = grad;
   ctx.beginPath();
   ctx.arc(size/2, size/2, size/2, 0, Math.PI * 2);
   ctx.fill();
