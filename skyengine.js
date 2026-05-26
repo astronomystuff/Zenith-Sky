@@ -81,51 +81,10 @@ class minimalCameraControls {
     domElement.addEventListener("touchcancel", () => this.onTouchEnd());
   }
 
-  /* ============================================================
-     LOCK / UNLOCK SYSTEM (WORKS 100%)
-     ============================================================ */
-  setLocked(state) {
-    this.locked = state;
-
-    if (state) {
-      if (!this._originalHandlers) {
-        this._originalHandlers = {
-          onMouseDown: this.onMouseDown,
-          onMouseMove: this.onMouseMove,
-          onMouseUp: this.onMouseUp,
-          onWheel: this.onWheel,
-          onTouchStart: this.onTouchStart,
-          onTouchMove: this.onTouchMove,
-          onTouchEnd: this.onTouchEnd
-        };
-      }
-
-      this.onMouseDown  = function(){};
-      this.onMouseMove  = function(){};
-      this.onMouseUp    = function(){};
-      this.onWheel      = function(){};
-      this.onTouchStart = function(){};
-      this.onTouchMove  = function(){};
-      this.onTouchEnd   = function(){};
-
-    } else {
-      if (this._originalHandlers) {
-        this.onMouseDown  = this._originalHandlers.onMouseDown;
-        this.onMouseMove  = this._originalHandlers.onMouseMove;
-        this.onMouseUp    = this._originalHandlers.onMouseUp;
-        this.onWheel      = this._originalHandlers.onWheel;
-        this.onTouchStart = this._originalHandlers.onTouchStart;
-        this.onTouchMove  = this._originalHandlers.onTouchMove;
-        this.onTouchEnd   = this._originalHandlers.onTouchEnd;
-      }
-    }
-  }
-
   /* ============================
      DESKTOP CONTROLS
   ============================ */
   onMouseDown(e) {
-    if (!this.enabled) return;
     if (e.button !== 0) return;
 
     this.isRotating = true;
@@ -134,7 +93,6 @@ class minimalCameraControls {
   }
 
   onMouseMove(e) {
-    if (!this.enabled) return;
     if (!this.isRotating) return;
 
     const dx = e.clientX - this.lastX;
@@ -156,12 +114,10 @@ class minimalCameraControls {
   }
 
   onMouseUp() {
-    if (!this.enabled) return;
     this.isRotating = false;
   }
 
   onWheel(e) {
-    if (!this.enabled) return;
     e.preventDefault();
     if (!this.camera) return;
 
@@ -175,8 +131,6 @@ class minimalCameraControls {
      MOBILE CONTROLS
   ============================ */
   onTouchStart(e) {
-    if (!this.enabled) return;
-
     if (e.touches.length === 1) {
       this.touchMode = "rotate";
       this.lastX = e.touches[0].clientX;
@@ -189,7 +143,6 @@ class minimalCameraControls {
   }
 
   onTouchMove(e) {
-    if (!this.enabled) return;
     e.preventDefault();
 
     if (this.touchMode === "rotate" && e.touches.length === 1) {
@@ -227,7 +180,6 @@ class minimalCameraControls {
   }
 
   onTouchEnd() {
-    if (!this.enabled) return;
     this.touchMode = null;
   }
 
@@ -956,6 +908,7 @@ sky3dCamera.position.set(0, 0, 0);
 sky3dCamera.lookAt(0, 0, -1);
 
   sky3dControls = new minimalCameraControls(sky3dCamera, canvas);
+  installSky3DLockSystem();
   canvas.addEventListener("click", onSky3DClick);
    
   sky3dStarBase = await loadStarCSV(
@@ -970,16 +923,62 @@ sky3dCamera.lookAt(0, 0, -1);
 /* ============================================================
    Lock Button
    ============================================================ */
-function toggleSky3DLock() {
-  sky3dLocked = !sky3dLocked;
-
+function installSky3DLockSystem() {
+  const controls = window.sky3dControls;
   const btn = document.getElementById("sky3d-lock");
-  btn.textContent = sky3dLocked ? "Unlock View" : "Lock View";
 
-  if (sky3dControls) {
-    sky3dControls.setLocked(sky3dLocked);
+  if (!controls || !btn) return;
+
+  btn.disabled = false;
+
+  if (!controls._originalHandlers) {
+    controls._originalHandlers = {
+      onMouseDown:  controls.onMouseDown,
+      onMouseMove:  controls.onMouseMove,
+      onMouseUp:    controls.onMouseUp,
+      onWheel:      controls.onWheel,
+      onTouchStart: controls.onTouchStart,
+      onTouchMove:  controls.onTouchMove,
+      onTouchEnd:   controls.onTouchEnd
+    };
   }
+
+  function lockSky3D() {
+    controls.onMouseDown  = function(){};
+    controls.onMouseMove  = function(){};
+    controls.onMouseUp    = function(){};
+    controls.onWheel      = function(){};
+    controls.onTouchStart = function(){};
+    controls.onTouchMove  = function(){};
+    controls.onTouchEnd   = function(){};
+    window.sky3dLocked = true;
+  }
+
+  function unlockSky3D() {
+    const h = controls._originalHandlers;
+    controls.onMouseDown  = h.onMouseDown;
+    controls.onMouseMove  = h.onMouseMove;
+    controls.onMouseUp    = h.onMouseUp;
+    controls.onWheel      = h.onWheel;
+    controls.onTouchStart = h.onTouchStart;
+    controls.onTouchMove  = h.onTouchMove;
+    controls.onTouchEnd   = h.onTouchEnd;
+    window.sky3dLocked = false;
+  }
+
+  btn.onclick = () => {
+    if (!window.sky3dLocked) {
+      lockSky3D();
+      btn.textContent = "Unlock View";
+    } else {
+      unlockSky3D();
+      btn.textContent = "Lock View";
+    }
+  };
+
+  btn.textContent = window.sky3dLocked ? "Unlock View" : "Lock View";
 }
+
 
 /* ============================================================
    Animation Loop
