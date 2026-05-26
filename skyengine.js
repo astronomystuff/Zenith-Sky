@@ -726,7 +726,6 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
   geometry.userData.starIndices = starIndices;
 
   const material = new THREE.PointsMaterial({
-    color: 0xffffff,
     size: 1.0,
     sizeAttenuation: true,
     map: makeStarTexture(),
@@ -734,6 +733,7 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
     alphaTest: 0.5,
     depthTest: true,
     depthWrite: false
+    vertexColors: true
   });
 
   material.onBeforeCompile = (shader) => {
