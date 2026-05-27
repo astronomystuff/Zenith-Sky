@@ -822,6 +822,9 @@ function searchSky3D() {
 
   const star = sky3dStarBase[ best.idx ];
   window.sky3dSelectedStar = star;
+  window.sky3dLastPM = pm;
+  window.sky3dLastLST = lst;
+  window.sky3dLastLat = latDeg;
   const starIdx = best.idx;
 
   const points = sky3dCelestialSphere.children[0];
