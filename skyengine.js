@@ -399,15 +399,18 @@ async function loadStarCSV(url) {
    XYZ → RA/Dec (parsec → parsec)
    ============================================================ */
 function xyzToRaDec(x, y, z) {
-  const r = Math.sqrt(x * x + y * y + z * z);
-  const ra  = Math.atan2(z, x);
+  const r = Math.sqrt(x*x + y*y + z*z);
+  let ra = Math.atan2(z, x);
+  if (ra < 0) ra += 2 * Math.PI;
   const dec = Math.asin(y / r);
+
   return {
-    raHours: (ra < 0 ? ra + 2 * Math.PI : ra) * 12 / Math.PI,
-    decDeg:  dec * 180 / Math.PI,
-    distance: r
+    raDeg:  ra * 180 / Math.PI,
+    decDeg: dec * 180 / Math.PI,
+    dist:   r
   };
 }
+
 
 
 /* ============================================================
