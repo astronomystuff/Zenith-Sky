@@ -401,14 +401,14 @@ async function loadStarCSV(url) {
    ============================================================ */
 function xyzToRaDec(x, y, z) {
   const r = Math.sqrt(x*x + y*y + z*z);
-  let ra = Math.atan2(y, x);
+  let ra = Math.atan2(z, x);
   if (ra < 0) ra += 2 * Math.PI;
-  const dec = Math.asin(z / r);
+  const dec = Math.asin(y / r);
 
   return {
-    raDeg:  ra * 180 / Math.PI,
+    raDeg: ra * 180 / Math.PI,
     decDeg: dec * 180 / Math.PI,
-    dist:   r
+    dist: r
   };
 }
 
@@ -1139,4 +1139,5 @@ window.getLSTRadiansFromCivil = getLSTRadiansFromCivil;
 window.J2000_MS = J2000_MS;
 window.buildCelestialSphere = buildCelestialSphere;
 window.xyzToRaDec = xyzToRaDec;
+window.raDecToXYZ = raDecToXYZ;
 window.applyProperMotionFromXYZ = applyProperMotionFromXYZ;
