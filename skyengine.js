@@ -745,7 +745,7 @@ geometry.userData.starIndices = starIndices;
     alphaTest: 0.5,
     depthTest: true,
     depthWrite: false,
-    vertexColors: true
+    vertexColors: true,
     blending: THREE.MultiplyBlending
   });
 
