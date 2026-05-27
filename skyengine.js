@@ -705,17 +705,17 @@ geometry.setAttribute("sizeAttr", new THREE.BufferAttribute(sizes, 1));
 geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 geometry.userData.starIndices = starIndices;
 
-  const material = new THREE.PointsMaterial({
-    size: 1.5,
-    sizeAttenuation: true,
-    map: makeStarTexture(),
-    transparent: true,
-    alphaTest: 0.5,
-    depthTest: true,
-    depthWrite: false,
-    vertexColors: true,
-    blending: THREE.MultiplyBlending
-  });
+const material = new THREE.PointsMaterial({
+  size: 1.5,
+  sizeAttenuation: true,
+  map: makeStarTexture(),
+  transparent: false,
+  alphaTest: 0.0,
+  depthTest: true,
+  depthWrite: false,
+  vertexColors: true,
+  blending: THREE.AdditiveBlending
+});
 
   material.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader.replace(
