@@ -820,7 +820,8 @@ function searchSky3D() {
     return;
   }
 
-  const star = best.star;
+  const star = sky3dStarBase[ best.idx ];
+  window.sky3dSelectedStar = star;
   const starIdx = best.idx;
 
   const points = sky3dCelestialSphere.children[0];
