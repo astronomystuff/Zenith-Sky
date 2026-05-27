@@ -703,44 +703,39 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
   chosen.sort((a, b) => sky3dStarBase[a.idx].mag - sky3dStarBase[b.idx].mag);
   if (chosen.length > maxPoints) chosen.length = maxPoints;
 
-  const positions = new Float32Array(chosen.length * 3);
-  const sizes = new Float32Array(chosen.length);
-  const starIndices = new Uint32Array(chosen.length);
+const positions = new Float32Array(chosen.length * 3);
+const sizes = new Float32Array(chosen.length);
+const starIndices = new Uint32Array(chosen.length);
+const colors = new Float32Array(chosen.length * 3);
 
-  let ptr = 0;
-  for (let i = 0; i < chosen.length; i++) {
-    const c = chosen[i];
-    starIndices[i] = c.idx;
-
-    positions[ptr++] = c.x;
-    positions[ptr++] = c.y;
-    positions[ptr++] = c.z;
-
-    const mag = sky3dStarBase[c.idx].mag;
-    sizes[i] = 0.0375 * Math.pow(1.5, -mag);
-  }
-
-  const colors = new Float32Array(chosen.length * 3);
-
+let ptr = 0;
 for (let i = 0; i < chosen.length; i++) {
-  const star = sky3dStarBase[chosen[i].idx];
+  const c = chosen[i];
+  const star = sky3dStarBase[c.idx];
+
+  starIndices[i] = c.idx;
+
+  // Position
+  positions[ptr++] = c.x;
+  positions[ptr++] = c.y;
+  positions[ptr++] = c.z;
+
+  // Size
+  const mag = star.mag;
+  sizes[i] = 0.0375 * Math.pow(1.5, -mag);
+
+  // Color
   const hex = colorForSpectralType(star.spect);
-
-  const r = ((hex >> 16) & 255) / 255;
-  const g = ((hex >> 8) & 255) / 255;
-  const b = (hex & 255) / 255;
-
-  colors[i*3]   = r;
-  colors[i*3+1] = g;
-  colors[i*3+2] = b;
+  colors[i*3]   = ((hex >> 16) & 255) / 255;
+  colors[i*3+1] = ((hex >> 8)  & 255) / 255;
+  colors[i*3+2] = ( hex        & 255) / 255;
 }
 
-  geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-  geometry.setAttribute("sizeAttr", new THREE.BufferAttribute(sizes, 1));
-  geometry.userData.starIndices = starIndices;
+const geometry = new THREE.BufferGeometry();
+geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+geometry.setAttribute("sizeAttr", new THREE.BufferAttribute(sizes, 1));
+geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+geometry.userData.starIndices = starIndices;
 
   const material = new THREE.PointsMaterial({
     size: 1.0,
