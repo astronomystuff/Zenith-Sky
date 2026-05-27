@@ -422,56 +422,21 @@ function rvToParsecPerYear(rvKmPerSec) {
 }
 
 function applyProperMotionFromXYZ(star, years) {
-  // Prefer catalog RA/Dec if they exist and are finite
-  const hasCatalog =
-    Number.isFinite(star.raDeg0) &&
-    Number.isFinite(star.decDeg0) &&
-    Number.isFinite(star.dist);
+  const hasXYZ =
+    Number.isFinite(star.x0) &&
+    Number.isFinite(star.y0) &&
+    Number.isFinite(star.z0) &&
+    Number.isFinite(star.vx) &&
+    Number.isFinite(star.vy) &&
+    Number.isFinite(star.vz);
 
-  // If anything is missing/NaN, fall back to XYZ-based direction
-  if (!hasCatalog) {
-    if (
-      Number.isFinite(star.x0) &&
-      Number.isFinite(star.y0) &&
-      Number.isFinite(star.z0)
-    ) {
-      return xyzToRaDec(star.x0, star.y0, star.z0);
-    }
-    // Absolute worst case: give something harmless
-    return { raDeg: 0, decDeg: 0, distance: 1 };
+  if (!hasXYZ) {
+    return xyzToRaDec(star.x0, star.y0, star.z0);
   }
 
-  const ra0 = star.raDeg0 * Math.PI / 180;
-  const dec0 = star.decDeg0 * Math.PI / 180;
-  const dist = star.dist; // parsecs
-
-  // Base Cartesian (equatorial, parsecs)
-  let x = dist * Math.cos(dec0) * Math.cos(ra0);
-  let y = dist * Math.sin(dec0);
-  let z = dist * Math.cos(dec0) * Math.sin(ra0);
-
-  // Proper motion + radial velocity (guard NaNs)
-  const pmRaRad  = Number.isFinite(star.pmRa)  ? masToRad(star.pmRa)  : 0;
-  const pmDecRad = Number.isFinite(star.pmDec) ? masToRad(star.pmDec) : 0;
-  const rvPcy    = Number.isFinite(star.rv)    ? rvToParsecPerYear(star.rv) : 0;
-
-  const vx =
-    -pmRaRad * y
-    - pmDecRad * Math.sin(ra0) * Math.sin(dec0)
-    + rvPcy * Math.cos(dec0) * Math.cos(ra0);
-
-  const vy =
-    pmRaRad * x
-    - pmDecRad * Math.cos(ra0) * Math.sin(dec0)
-    + rvPcy * Math.sin(dec0);
-
-  const vz =
-    pmDecRad * Math.cos(dec0)
-    + rvPcy * Math.cos(dec0) * Math.sin(ra0);
-
-  x += vx * years;
-  y += vy * years;
-  z += vz * years;
+  const x = star.x0 + star.vx * years;
+  const y = star.y0 + star.vy * years;
+  const z = star.z0 + star.vz * years;
 
   return xyzToRaDec(x, y, z);
 }
