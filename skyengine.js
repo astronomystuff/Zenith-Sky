@@ -401,16 +401,15 @@ async function loadStarCSV(url) {
    ============================================================ */
 function xyzToRaDec(x, y, z) {
   const r = Math.sqrt(x*x + y*y + z*z);
-  let ra = Math.atan2(z, x);
+  let ra = Math.atan2(y, x);
   if (ra < 0) ra += 2 * Math.PI;
-  const dec = Math.asin(y / r);
+  const dec = Math.asin(z / r);
 
   return {
     raDeg: ra * 180 / Math.PI,
     decDeg: dec * 180 / Math.PI,
     dist: r
   };
-}
 
 
 /* ============================================================
@@ -493,10 +492,12 @@ function raDecToXYZ(raDeg, decDeg) {
   const ra  = raDeg * Math.PI / 180;
   const dec = decDeg * Math.PI / 180;
 
+  const cosDec = Math.cos(dec);
+
   return {
-    x: Math.cos(dec) * Math.cos(ra),
-    y: Math.sin(dec),
-    z: Math.cos(dec) * Math.sin(ra)
+    x: cosDec * Math.cos(ra),
+    y: cosDec * Math.sin(ra),
+    z: Math.sin(dec)
   };
 }
 
