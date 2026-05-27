@@ -428,21 +428,28 @@ function applyProperMotionFromXYZ(star, years) {
   const hasXYZ =
     Number.isFinite(star.x0) &&
     Number.isFinite(star.y0) &&
-    Number.isFinite(star.z0) &&
+    Number.isFinite(star.z0);
+
+  const hasVel =
     Number.isFinite(star.vx) &&
     Number.isFinite(star.vy) &&
     Number.isFinite(star.vz);
 
-  if (!hasXYZ) {
+  if (!hasXYZ || !hasVel) {
     return xyzToRaDec(star.x0, star.y0, star.z0);
   }
 
-  const x = star.x0 + star.vx * years;
-  const y = star.y0 + star.vy * years;
-  const z = star.z0 + star.vz * years;
+  const vx_pcyr = star.vx / 977792.221;
+  const vy_pcyr = star.vy / 977792.221;
+  const vz_pcyr = star.vz / 977792.221;
+
+  const x = star.x0 + vx_pcyr * years;
+  const y = star.y0 + vy_pcyr * years;
+  const z = star.z0 + vz_pcyr * years;
 
   return xyzToRaDec(x, y, z);
 }
+
 
 
 /* ============================================================
