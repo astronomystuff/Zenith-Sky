@@ -1132,3 +1132,6 @@ window.getDateFromUICivil = getDateFromUICivil;
 window.getLocationFromUI = getLocationFromUI;
 window.getLSTRadiansFromCivil = getLSTRadiansFromCivil;
 window.J2000_MS = J2000_MS;
+window.buildCelestialSphere = buildCelestialSphere;
+window.xyzToRaDec = xyzToRaDec;
+window.applyProperMotionFromXYZ = applyProperMotionFromXYZ;
