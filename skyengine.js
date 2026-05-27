@@ -925,7 +925,7 @@ document.getElementById("sky3d-object-name").textContent =
   getStarNameFromRecord(star);
   document.getElementById("sky3d-object-type").textContent = "Star";
   document.getElementById("sky3d-object-ra-dec").textContent =
-    `RA: ${pm.raHours.toFixed(2)}h, Dec: ${pm.decDeg.toFixed(2)}°`;
+    `RA: ${(pm.raDeg / 15).toFixed(2)}h, Dec: ${pm.decDeg.toFixed(2)}°`;
   document.getElementById("sky3d-object-alt-az").textContent =
     `Alt: ${(alt * 180/Math.PI).toFixed(2)}°, Az: ${(az * 180/Math.PI).toFixed(2)}°`;
   document.getElementById("sky3d-object-mag").textContent = `Mag: ${star.mag}`;
