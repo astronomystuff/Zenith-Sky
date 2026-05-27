@@ -122,8 +122,8 @@ function makeStarTexture() {
     size/2, size/2, size/2
   );
 
-  grad.addColorStop(0.0, "rgba(255,255,255,1)");
-  grad.addColorStop(0.4, "rgba(255,255,255,0.6)");
+  grad.addColorStop(0.0, "rgba(255,255,255,0.35)");
+  grad.addColorStop(0.4, "rgba(255,255,255,0.15)");
   grad.addColorStop(1.0, "rgba(255,255,255,0)");
 
   ctx.fillStyle = grad;
@@ -738,7 +738,7 @@ geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 geometry.userData.starIndices = starIndices;
 
   const material = new THREE.PointsMaterial({
-    size: 1.0,
+    size: 1.5,
     sizeAttenuation: true,
     map: makeStarTexture(),
     transparent: true,
@@ -746,6 +746,7 @@ geometry.userData.starIndices = starIndices;
     depthTest: true,
     depthWrite: false,
     vertexColors: true
+    blending: THREE.MultiplyBlending
   });
 
   material.onBeforeCompile = (shader) => {
