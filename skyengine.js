@@ -380,7 +380,7 @@ async function loadStarCSV(url) {
       proper: cols[idx.proper],
       x0, y0, z0,
       dist,
-      raHours0: raDeg,
+      raDeg0: raDeg,
       decDeg0:  decDeg,
       pmRa, pmDec, rv, mag,
       vx: parseFloat(cols[idx.vx]),
@@ -403,9 +403,9 @@ function xyzToRaDec(x, y, z) {
   const ra  = Math.atan2(z, x);
   const dec = Math.asin(y / r);
   return {
-    raHours: (ra < 0 ? ra + 2 * Math.PI : ra) * 12 / Math.PI,
-    decDeg:  dec * 180 / Math.PI,
-    distance: r
+  raDeg: (ra < 0 ? ra + 2 * Math.PI : ra) * 180 / Math.PI,
+  decDeg: dec * 180 / Math.PI,
+  distance: r
   };
 }
 
@@ -421,61 +421,39 @@ function rvToParsecPerYear(rvKmPerSec) {
   return rvKmPerSec / 977792.221;
 }
 
-function applyProperMotionFromXYZ(star, years) {
-  // Prefer catalog RA/Dec if they exist and are finite
-  const hasCatalog =
-    Number.isFinite(star.raHours0) &&
-    Number.isFinite(star.decDeg0) &&
-    Number.isFinite(star.dist);
+const KM_S_TO_PC_YR = 1 / 977792.221;
 
-  // If anything is missing/NaN, fall back to old XYZ-based direction, no motion
-  if (!hasCatalog) {
-    if (
-      Number.isFinite(star.x0) &&
-      Number.isFinite(star.y0) &&
-      Number.isFinite(star.z0)
-    ) {
-      return xyzToRaDec(star.x0, star.y0, star.z0);
-    }
-    // Absolute worst case: give something harmless
-    return { raHours: 0, decDeg: 0, distance: 1 };
+function applyProperMotionFromXYZ(star, years) {
+  
+  // Require valid base position
+  const hasPosition =
+    Number.isFinite(star.x0) &&
+    Number.isFinite(star.y0) &&
+    Number.isFinite(star.z0);
+
+  if (!hasPosition) {
+    return { raDeg: 0, decDeg: 0, distance: 1 };
   }
 
-  const ra0  = star.raHours0 * 15 * Math.PI / 180;
-  const dec0 = star.decDeg0 * Math.PI / 180;
-  const dist = star.dist; // parsecs
+  // Base position (parsecs)
+  let x = star.x0;
+  let y = star.y0;
+  let z = star.z0;
 
-  // Base Cartesian (equatorial, parsecs)
-  let x = dist * Math.cos(dec0) * Math.cos(ra0);
-  let y = dist * Math.sin(dec0);
-  let z = dist * Math.cos(dec0) * Math.sin(ra0);
+  // Propagate using Cartesian velocity
+  if (
+    Number.isFinite(star.vx) &&
+    Number.isFinite(star.vy) &&
+    Number.isFinite(star.vz)
+  ) {
 
-  // Proper motion + radial velocity (guard NaNs)
-  const pmRaRad  = Number.isFinite(star.pmRa)  ? masToRad(star.pmRa)  : 0;
-  const pmDecRad = Number.isFinite(star.pmDec) ? masToRad(star.pmDec) : 0;
-  const rvPcy    = Number.isFinite(star.rv)    ? rvToParsecPerYear(star.rv) : 0;
-
-  const vx =
-    -pmRaRad * y
-    - pmDecRad * Math.sin(ra0) * Math.sin(dec0)
-    + rvPcy * Math.cos(dec0) * Math.cos(ra0);
-
-  const vy =
-    pmRaRad * x
-    - pmDecRad * Math.cos(ra0) * Math.sin(dec0)
-    + rvPcy * Math.sin(dec0);
-
-  const vz =
-    pmDecRad * Math.cos(dec0)
-    + rvPcy * Math.cos(dec0) * Math.sin(ra0);
-
-  x += vx * years;
-  y += vy * years;
-  z += vz * years;
+    x += star.vx * KM_S_TO_PC_YR * years;
+    y += star.vy * KM_S_TO_PC_YR * years;
+    z += star.vz * KM_S_TO_PC_YR * years;
+  }
 
   return xyzToRaDec(x, y, z);
 }
-
 
 /* ============================================================
    Civil Time → LMT → LST
@@ -514,8 +492,8 @@ function getLSTRadiansFromCivil(dateCivil, lonDegUI) {
 /* ============================================================
    RA/Dec → Unit Sphere XYZ
    ============================================================ */
-function raDecToXYZ(raHours, decDeg) {
-  const ra = raHours * 15 * Math.PI / 180;
+function raDecToXYZ(raDeg, decDeg) {
+  const ra = raDeg * Math.PI / 180;
   const dec = decDeg * Math.PI / 180;
 
   return {
@@ -671,9 +649,9 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
   for (let i = 0; i < sky3dStarBase.length; i++) {
   const s = sky3dStarBase[i];
   const pm = applyProperMotionFromXYZ(s, years);
-  s.raHours = pm.raHours;
+  s.raDeg = pm.raDeg;
   s.decDeg = pm.decDeg;
-  const raRad  = pm.raHours * 15 * Math.PI / 180;
+  const raRad = pm.raDeg * Math.PI / 180;
   const decRad = pm.decDeg * Math.PI / 180;
 
   // Hour angle
@@ -742,7 +720,7 @@ const material = new THREE.PointsMaterial({
   sizeAttenuation: true,
   map: makeStarTexture(),
   transparent: false,
-  alphaTest: 0.5,
+  alphaTest: 0.0,
   depthTest: true,
   depthWrite: false,
   vertexColors: true,
@@ -939,7 +917,7 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   const years = (dateLMT.getTime() - J2000_MS) / 31557600000;
   const pm = applyProperMotionFromXYZ(star, years);
 
-  const raRad  = pm.raHours * 15 * Math.PI / 180;
+  const raRad = pm.raDeg * Math.PI / 180;
   const decRad = pm.decDeg * Math.PI / 180;
   const latRad = latDeg * Math.PI / 180;
   const H = lst - raRad;
@@ -956,8 +934,9 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
 document.getElementById("sky3d-object-name").textContent =
   getStarNameFromRecord(star);
   document.getElementById("sky3d-object-type").textContent = "Star";
+  const raHoursDisplay = pm.raDeg / 15;
   document.getElementById("sky3d-object-ra-dec").textContent =
-    `RA: ${pm.raHours.toFixed(2)}h, Dec: ${pm.decDeg.toFixed(2)}°`;
+    `RA: ${raHoursDisplay.toFixed(2)}h, Dec: ${pm.decDeg.toFixed(2)}°`;
   document.getElementById("sky3d-object-alt-az").textContent =
     `Alt: ${(alt * 180/Math.PI).toFixed(2)}°, Az: ${(az * 180/Math.PI).toFixed(2)}°`;
   document.getElementById("sky3d-object-mag").textContent = `Mag: ${star.mag}`;
@@ -1166,5 +1145,4 @@ window.getLSTRadiansFromCivil = getLSTRadiansFromCivil;
 window.J2000_MS = J2000_MS;
 window.buildCelestialSphere = buildCelestialSphere;
 window.xyzToRaDec = xyzToRaDec;
-window.applyProperMotionFromXYZ = applyProperMotionFromXYZ;
 window.raDecToXYZ= raDecToXYZ;
