@@ -356,8 +356,9 @@ async function loadStarCSV(url) {
     const pmDec= parseFloat(cols[idx.pmDec]);
     const rv   = parseFloat(cols[idx.rv]);
     const mag  = parseFloat(cols[idx.mag]);
-    const raDeg  = parseFloat(cols[idx.ra]);
-    const decDeg = parseFloat(cols[idx.dec]);
+    const raHours = parseFloat(cols[idx.ra]);
+    const raDeg   = raHours * 15;
+    const decDeg  = parseFloat(cols[idx.dec]);
 
     if (
       isNaN(x0) || isNaN(y0) || isNaN(z0) ||
@@ -400,9 +401,9 @@ async function loadStarCSV(url) {
    ============================================================ */
 function xyzToRaDec(x, y, z) {
   const r = Math.sqrt(x*x + y*y + z*z);
-  let ra = Math.atan2(z, x);
+  let ra = Math.atan2(y, x);
   if (ra < 0) ra += 2 * Math.PI;
-  const dec = Math.asin(y / r);
+  const dec = Math.asin(z / r);
 
   return {
     raDeg:  ra * 180 / Math.PI,
@@ -410,7 +411,6 @@ function xyzToRaDec(x, y, z) {
     dist:   r
   };
 }
-
 
 
 /* ============================================================
