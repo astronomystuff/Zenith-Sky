@@ -380,7 +380,7 @@ async function loadStarCSV(url) {
       proper: cols[idx.proper],
       x0, y0, z0,
       dist,
-      raHours0: raDeg,
+      raDeg0: raDeg,
       decDeg0:  decDeg,
       pmRa, pmDec, rv, mag,
       vx: parseFloat(cols[idx.vx]),
@@ -424,11 +424,11 @@ function rvToParsecPerYear(rvKmPerSec) {
 function applyProperMotionFromXYZ(star, years) {
   // Prefer catalog RA/Dec if they exist and are finite
   const hasCatalog =
-    Number.isFinite(star.raHours0) &&
+    Number.isFinite(star.raDeg0) &&
     Number.isFinite(star.decDeg0) &&
     Number.isFinite(star.dist);
 
-  // If anything is missing/NaN, fall back to old XYZ-based direction, no motion
+  // If anything is missing/NaN, fall back to XYZ-based direction
   if (!hasCatalog) {
     if (
       Number.isFinite(star.x0) &&
@@ -438,10 +438,10 @@ function applyProperMotionFromXYZ(star, years) {
       return xyzToRaDec(star.x0, star.y0, star.z0);
     }
     // Absolute worst case: give something harmless
-    return { raHours: 0, decDeg: 0, distance: 1 };
+    return { raDeg: 0, decDeg: 0, distance: 1 };
   }
 
-  const ra0  = star.raHours0 * 15 * Math.PI / 180;
+  const ra0 = star.raDeg0 * Math.PI / 180;
   const dec0 = star.decDeg0 * Math.PI / 180;
   const dist = star.dist; // parsecs
 
@@ -514,8 +514,8 @@ function getLSTRadiansFromCivil(dateCivil, lonDegUI) {
 /* ============================================================
    RA/Dec → Unit Sphere XYZ
    ============================================================ */
-function raDecToXYZ(raHours, decDeg) {
-  const ra = raHours * 15 * Math.PI / 180;
+function raDecToXYZ(raDeg, decDeg) {
+  const ra  = raDeg * Math.PI / 180;
   const dec = decDeg * Math.PI / 180;
 
   return {
@@ -671,9 +671,9 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
   for (let i = 0; i < sky3dStarBase.length; i++) {
   const s = sky3dStarBase[i];
   const pm = applyProperMotionFromXYZ(s, years);
-  s.raHours = pm.raHours;
+  s.raDeg = pm.raDeg;
   s.decDeg = pm.decDeg;
-  const raRad  = pm.raHours * 15 * Math.PI / 180;
+  const raRad  = pm.raDeg * Math.PI / 180;
   const decRad = pm.decDeg * Math.PI / 180;
 
   // Hour angle
@@ -939,7 +939,7 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   const years = (dateLMT.getTime() - J2000_MS) / 31557600000;
   const pm = applyProperMotionFromXYZ(star, years);
 
-  const raRad  = pm.raHours * 15 * Math.PI / 180;
+  const raRad  = pm.raDeg * Math.PI / 180;
   const decRad = pm.decDeg * Math.PI / 180;
   const latRad = latDeg * Math.PI / 180;
   const H = lst - raRad;
