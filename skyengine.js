@@ -719,13 +719,14 @@ const material = new THREE.PointsMaterial({
   size: 1.5,
   sizeAttenuation: true,
   map: makeStarTexture(),
-  transparent: false,
-  alphaTest: 0.0,
+  transparent: true,
+  alphaTest: 0.5,
   depthTest: true,
   depthWrite: false,
   vertexColors: true,
   blending: THREE.AdditiveBlending
 });
+
 
   material.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader.replace(
