@@ -643,8 +643,8 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
 
   // Dynamic magnitude limit
   let fov = sky3dCamera ? sky3dCamera.fov : 60;
-  let dynamicMagLimit = 6 - (fov - 60) * 0.08;
-  dynamicMagLimit = Math.max(3, Math.min(10, dynamicMagLimit));
+  let dynamicMagLimit = 6 + 1.8 * Math.log2(60 / fov);
+  dynamicMagLimit = Math.max(2, Math.min(15, dynamicMagLimit));
 
   const chosen = [];
 
