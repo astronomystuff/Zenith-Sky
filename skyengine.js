@@ -79,7 +79,7 @@ function colorForSpectralType(raw) {
   if (first === "S") return 0xff8c4a;
 
   // Wolf-Rayet
-  if (first === "W") return 0x7f00ff;
+  if (first === "W") return 0x6A00FF;
 
   // White dwarfs
   if (first === "D") return 0xd0e0ff;
