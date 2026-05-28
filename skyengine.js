@@ -23,6 +23,7 @@ window.sky3dRaycaster.params.Points.threshold = 0.01;
 window.sky3dMouse = new THREE.Vector2();
 const J2000_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
 window.J2000_MS = J2000_MS;
+window.sky3dStarTexture = makeStarTexture();
 const LY_TO_PC = 1 / 3.26156;
 
 /* ============================================================
@@ -122,8 +123,9 @@ function makeStarTexture() {
     size/2, size/2, size/2
   );
 
-  grad.addColorStop(0.0, "rgba(255,255,255,0.35)");
-  grad.addColorStop(0.4, "rgba(255,255,255,0.15)");
+  grad.addColorStop(0.0, "rgba(255,255,255,1.0)");
+  grad.addColorStop(0.15, "rgba(255,255,255,0.9)");
+  grad.addColorStop(0.4, "rgba(255,255,255,0.35)");
   grad.addColorStop(1.0, "rgba(255,255,255,0)");
 
   ctx.fillStyle = grad;
@@ -700,7 +702,10 @@ for (let i = 0; i < chosen.length; i++) {
 
   // Size
   const mag = star.mag;
-  sizes[i] = 0.0375 * Math.pow(1.5, -mag);
+  sizes[i] = Math.max(
+  1.0,
+  6 * Math.pow(1.32, -star.mag)
+  );
 
   // Color
   const hex = colorForSpectralType(star.spect);
@@ -720,7 +725,6 @@ const material = new THREE.PointsMaterial({
   sizeAttenuation: true,
   map: makeStarTexture(),
   transparent: true,
-  alphaTest: 0.5,
   depthTest: true,
   depthWrite: false,
   vertexColors: true,
