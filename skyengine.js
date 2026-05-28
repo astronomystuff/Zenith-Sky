@@ -956,6 +956,13 @@ function rebuildCelestialSphere() {
   if (!sky3dScene || sky3dStarBase.length === 0) return;
 
   if (sky3dCelestialSphere) {
+    sky3dCelestialSphere.traverse(obj => {
+      if (obj.isPoints) {
+        obj.geometry.dispose();
+        obj.material.dispose();
+      }
+    });
+
     sky3dScene.remove(sky3dCelestialSphere);
   }
 
