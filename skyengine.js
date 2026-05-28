@@ -10,7 +10,7 @@ window.onerror = function (msg, src, line, col, err) {
 window.sky3dScene = null;
 window.sky3dCamera = null;
 window.sky3dRenderer = null;
-window.sky3dModalOpen = false;
+window.sky3dModalOpen = false;x
 window.sky3dControls = null;
 window.sky3dCelestialSphere = null;
 window.sky3dGround = null;
@@ -702,10 +702,7 @@ for (let i = 0; i < chosen.length; i++) {
 
   // Size
   const mag = star.mag;
-  sizes[i] = Math.max(
-  1.0,
-  6 * Math.pow(1.32, -star.mag)
-  );
+  sizes[i] = 0.0375 * Math.pow(1.5, -mag);
 
   // Color
   const hex = colorForSpectralType(star.spect);
