@@ -963,7 +963,7 @@ function rebuildCelestialSphere() {
       }
     });
 
-    sky3dScene.remove(sky3dCelestialSphere);
+    sky3dRootGroup.remove(sky3dCelestialSphere);
   }
 
   const dateCivil = getDateFromUICivil();
