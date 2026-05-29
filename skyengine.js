@@ -19,7 +19,8 @@ window.sky3dRootGroup = null;
 window.sky3dStarBase = [];
 let sky3dLocked = false;
 window.sky3dRaycaster = new THREE.Raycaster();
-window.sky3dRaycaster.params.Points.threshold = 0.01;
+window.sky3dRaycaster.params.Points.threshold =
+  0.015 * (sky3dCamera.fov / 60);
 window.sky3dMouse = new THREE.Vector2();
 const J2000_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
 window.J2000_MS = J2000_MS;
