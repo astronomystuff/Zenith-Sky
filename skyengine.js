@@ -716,7 +716,7 @@ for (let i = 0; i < chosen.length; i++) {
 
   // Size
   const mag = star.mag;
-  sizes[i] = 0.0375 * Math.pow(1.5, -mag);
+  sizes[i] = 0.001 + 0.0375 * Math.pow(1.5, -0.9 * mag);
 
   // Color
   const hex = colorForSpectralType(star.spect);
