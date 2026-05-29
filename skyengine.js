@@ -216,8 +216,6 @@ class minimalCameraControls {
     this.onZoom(delta);
   }
 
-
-
   /* ============================
      MOBILE CONTROLS
   ============================ */
@@ -276,12 +274,15 @@ class minimalCameraControls {
     return Math.sqrt(dx * dx + dy * dy);
   }
 
-onZoom(delta) {
-  this.camera.fov = Math.max(1, this.camera.fov + delta);
-  this.camera.updateProjectionMatrix();
-  rebuildCelestialSphere();
-}
-
+  onZoom(delta) {
+    this.camera.fov = Math.max(1, Math.min(180, this.camera.fov + delta));
+    this.camera.updateProjectionMatrix();
+    const now = performance.now();
+    if (now - this.lastRebuild > 50) {
+      this.lastRebuild = now;
+      rebuildCelestialSphere();
+    }
+  }
 }
 
 /* ============================================================
