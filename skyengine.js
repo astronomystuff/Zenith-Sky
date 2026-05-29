@@ -282,6 +282,11 @@ class minimalCameraControls {
       this.lastRebuild = now;
       rebuildCelestialSphere();
     }
+
+    clearTimeout(this.finalRebuildTimer);
+    this.finalRebuildTimer = setTimeout(() => {
+      rebuildCelestialSphere();
+    }, 120);
   }
 }
 
