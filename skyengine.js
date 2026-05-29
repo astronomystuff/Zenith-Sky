@@ -19,8 +19,6 @@ window.sky3dRootGroup = null;
 window.sky3dStarBase = [];
 let sky3dLocked = false;
 window.sky3dRaycaster = new THREE.Raycaster();
-window.sky3dRaycaster.params.Points.threshold =
-  0.015 * (sky3dCamera.fov / 60);
 window.sky3dMouse = new THREE.Vector2();
 const J2000_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
 window.J2000_MS = J2000_MS;
@@ -285,6 +283,8 @@ class minimalCameraControls {
   onZoom(delta) {
     this.camera.fov = Math.max(1, Math.min(180, this.camera.fov + delta));
     this.camera.updateProjectionMatrix();
+    window.sky3dRaycaster.params.Points.threshold =
+      0.015 * (this.camera.fov / 60);
     const now = performance.now();
     if (now - this.lastRebuild > 50) {
       this.lastRebuild = now;
@@ -1009,8 +1009,10 @@ async function startSky3D() {
     0.1,
     10
   );
-sky3dCamera.position.set(0, 0, 0);
-sky3dCamera.lookAt(0, 0, -1);
+  window.sky3dRaycaster.params.Points.threshold =
+    0.015 * (sky3dCamera.fov / 60);
+  sky3dCamera.position.set(0, 0, 0);
+  sky3dCamera.lookAt(0, 0, -1);
 
   sky3dControls = new minimalCameraControls(sky3dCamera, canvas);
   installSky3DLockSystem();
