@@ -558,8 +558,6 @@ function makeGround() {
   });
 
   const ground = new THREE.Mesh(geometry, material);
-
-  ground.rotation.x = Math.PI / 2;
   ground.renderOrder = 999;
 
   return ground;
