@@ -157,6 +157,8 @@ class minimalCameraControls {
     this.lastY = 0;
     this.touchMode = null;
     this.lastTouchDist = 0;
+    this.lastRebuild = 0;
+    this.finalRebuildTimer = null;
 
     // Desktop
     domElement.addEventListener("mousedown", e => this.onMouseDown(e));
@@ -191,8 +193,10 @@ class minimalCameraControls {
     const dy = e.clientY - this.lastY;
 
     if (sky3dRootGroup) {
-      sky3dRootGroup.rotation.y += dx * this.rotateSpeed;
-      sky3dRootGroup.rotation.x += dy * this.rotateSpeed;
+      const fovFactor = this.camera.fov / 60;
+      const rotSpeed = this.rotateSpeed * fovFactor;
+      sky3dRootGroup.rotation.y += dx * rotSpeed;
+      sky3dRootGroup.rotation.x += dy * rotSpeed;
 
       const limit = Math.PI / 2;
       sky3dRootGroup.rotation.x = Math.max(
@@ -242,8 +246,11 @@ class minimalCameraControls {
       const dy = y - this.lastY;
 
       if (sky3dRootGroup) {
-        sky3dRootGroup.rotation.y += dx * this.rotateSpeed;
-        sky3dRootGroup.rotation.x += dy * this.rotateSpeed;
+      const fovFactor = this.camera.fov / 60;
+      const rotSpeed = this.rotateSpeed * fovFactor;
+      sky3dRootGroup.rotation.y += dx * rotSpeed;
+      sky3dRootGroup.rotation.x += dy * rotSpeed;
+
 
         const limit = Math.PI / 2;
         sky3dRootGroup.rotation.x = Math.max(
