@@ -477,7 +477,33 @@ function applyProperMotionFromXYZ(star, years) {
    Civil Time → LMT → LST
    ============================================================ */
 function toJulianDate(date) {
-  // Convert local civil time → UTC → Julian Date
+  const year = date.getUTCFullYear();
+
+  if (year < 1 || year > 275000) {
+    const y = year;
+    const m = date.getUTCMonth() + 1;
+    const d = date.getUTCDate();
+    const hh = date.getUTCHours();
+    const mm = date.getUTCMinutes();
+    const ss = date.getUTCSeconds();
+
+    let Y = y;
+    let M = m;
+
+    if (M <= 2) {
+      Y -= 1;
+      M += 12;
+    }
+
+    const A = Math.floor(Y / 100);
+    const B = 2 - A + Math.floor(A / 4);
+
+    return Math.floor(365.25 * (Y + 4716))
+         + Math.floor(30.6001 * (M + 1))
+         + d + B - 1524.5
+         + (hh + mm/60 + ss/3600) / 24;
+  }
+
   return (date.getTime() + date.getTimezoneOffset() * 60000) / 86400000 + 2440587.5;
 }
 
