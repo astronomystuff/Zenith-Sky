@@ -734,14 +734,13 @@ geometry.userData.starIndices = starIndices;
 const material = new THREE.PointsMaterial({
   size: 1.5,
   sizeAttenuation: true,
-  map: makeStarTexture(),
+  map: window.sky3dStarTexture,
   transparent: true,
   depthTest: true,
   depthWrite: false,
   vertexColors: true,
   blending: THREE.AdditiveBlending
 });
-
 
   material.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader.replace(
