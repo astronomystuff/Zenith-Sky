@@ -46,6 +46,21 @@ async function loadAllVSOP() {
     VSOP.Neptune = await loadVSOP87BFile("vsop/VSOP87B.nep");
 }
 
+function parseVSOP87B2Line(line) {
+    const parts = line.trim().split(/\s+/);
+    if (parts.length < 6) return null;
+
+    const C  = Number(parts[parts.length - 1]);
+    const B  = Number(parts[parts.length - 2]);
+    const AR = Number(parts[parts.length - 3]);
+    const AB = Number(parts[parts.length - 4]);
+    const AL = Number(parts[parts.length - 5]);
+
+    if (![AL, AB, AR, B, C].every(Number.isFinite)) return null;
+
+    return { AL, AB, AR, B, C };
+}
+
 async function loadVSOP87BFile(url) {
     const text  = await fetch(url).then(r => r.text());
     const lines = text.split(/\r?\n/);
@@ -62,31 +77,22 @@ async function loadVSOP87BFile(url) {
         const trimmed = line.trim();
         if (!trimmed) continue;
 
-        // detect "*T**0", "*T**1", ...
         const headerMatch = line.match(/\*T\*\*(\d)/);
         if (headerMatch) {
             currentPower = Number(headerMatch[1]);
             continue;
         }
-
         if (currentPower === null) continue;
         if (!/^\s*\d+/.test(line)) continue;
 
-        const nums = trimmed.split(/\s+/).map(Number);
-        if (nums.length < 19) continue;
+        const coeffs = parseVSOP87B2Line(line);
+        if (!coeffs) continue;
 
-        const A_L = nums[14];
-        const A_B = nums[15];
-        const A_R = nums[16];
-        const B   = nums[17];
-        const C   = nums[18];
+        const { AL, AB, AR, B, C } = coeffs;
 
-        // skip any malformed row
-        if (![A_L, A_B, A_R, B, C].every(Number.isFinite)) continue;
-
-        tables[`L${currentPower}`].push([A_L, B, C]);
-        tables[`B${currentPower}`].push([A_B, B, C]);
-        tables[`R${currentPower}`].push([A_R, B, C]);
+        tables[`L${currentPower}`].push([AL, B, C]);
+        tables[`B${currentPower}`].push([AB, B, C]);
+        tables[`R${currentPower}`].push([AR, B, C]);
     }
 
     return tables;
