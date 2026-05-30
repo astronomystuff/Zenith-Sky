@@ -25,57 +25,6 @@ window.J2000_MS = J2000_MS;
 window.sky3dStarTexture = makeStarTexture();
 const LY_TO_PC = 1 / 3.26156;
 
-// --- J2000 Orbital Catalog (heliocentric ecliptic) ---
-const Bodies_J2000 = {
-    Sun:       { a:0, e:0, i:0, Omega:0, omega:0, M0:0, epoch:2451545.0, n:0, period:0, mass:1.98847e30, GM:1.32712440018e11 },
-    Mercury:   { a:0.387098, e:0.205630, i:7.0049,  Omega:48.331,  omega:29.124,  M0:174.796, epoch:2451545.0, n:4.092334,  period:87.969,  mass:3.3011e23,   GM:2.2032e4 },
-    Venus:     { a:0.723332, e:0.006772, i:3.3947,  Omega:76.680,  omega:54.884,  M0:50.115,  epoch:2451545.0, n:1.602130,  period:224.701, mass:4.8675e24,   GM:3.24859e5 },
-    Earth:     { a:1.000000, e:0.016710, i:0.00005, Omega:-11.260, omega:102.947, M0:357.517, epoch:2451545.0, n:0.985607,  period:365.256, mass:5.97237e24,  GM:3.986004418e5 },
-    Mars:      { a:1.523679, e:0.093400, i:1.8506,  Omega:49.558,  omega:286.502, M0:19.373,  epoch:2451545.0, n:0.524039,  period:686.980, mass:6.4171e23,   GM:4.282837e4 },
-    Jupiter:   { a:5.20260,  e:0.048498, i:1.3030,  Omega:100.464, omega:273.867, M0:20.020,  epoch:2451545.0, n:0.083056,  period:4332.589, mass:1.8982e27,   GM:1.26686534e8 },
-    Saturn:    { a:9.55491,  e:0.055508, i:2.4894,  Omega:113.665, omega:339.392, M0:317.020, epoch:2451545.0, n:0.033439,  period:10759.22, mass:5.6834e26,   GM:3.7931187e7 },
-    Uranus:    { a:19.2184,  e:0.046295, i:0.7730,  Omega:74.006,  omega:96.998,  M0:142.238, epoch:2451545.0, n:0.011731,  period:30685.4, mass:8.6810e25,   GM:5.793939e6 },
-    Neptune:   { a:30.1104,  e:0.008988, i:1.7700,  Omega:131.784, omega:272.846, M0:256.228, epoch:2451545.0, n:0.005981,  period:60189.0, mass:1.02413e26,  GM:6.836529e6 },
-    Pluto:     { a:39.6,  e:0.252,  i:17.1, Omega:110,   omega:114,   M0:356.5, epoch:2451545.0, n:0.00396,   period:91000,  mass:1.303e22,  GM:8.71e2 },
-    Makemake:  { a:45.5,  e:0.16,   i:29,   Omega:79.3,  omega:297,   M0:138.6, epoch:2451545.0, n:0.00321,   period:112000, mass:3.1e21,    GM:2.06e2 },
-    Haumea:    { a:43,    e:0.196,  i:28.2, Omega:122,   omega:241,   M0:189.1, epoch:2451545.0, n:0.00349,   period:103000, mass:4.01e21,   GM:2.67e2 },
-    Eris:      { a:68,    e:0.437,  i:43.9, Omega:36,    omega:151,   M0:194.4, epoch:2451545.0, n:0.00176,   period:205000, mass:1.66e22,   GM:1.11e3 },
-    Sedna:     { a:550,   e:0.861,  i:11.9, Omega:144,   omega:311,   M0:358.3, epoch:2451545.0, n:0.0000765, period:4710000, mass:2.0e21,   GM:1.3e2 },
-    Gonggong:  { a:66.9,  e:0.503,  i:30.9, Omega:337,   omega:207,   M0:94.0,  epoch:2451545.0, n:0.0018,    period:200000, mass:1.75e21,   GM:1.16e2 },
-    Quaoar:    { a:43.1,  e:0.0358, i:7.99, Omega:189,   omega:164,   M0:258.1, epoch:2451545.0, n:0.00348,   period:104000, mass:1.4e21,    GM:9.3e1 },
-    Orcus:     { a:39.3,  e:0.222,  i:20.6, Omega:268,   omega:73.7,  M0:150.3, epoch:2451545.0, n:0.004,     period:90100,  mass:6.4e20,    GM:4.3e1 },
-    Salacia:   { a:42.1,  e:0.103,  i:23.9, Omega:280,   omega:309,   M0:98.9,  epoch:2451545.0, n:0.00361,   period:99800,  mass:4.66e20,   GM:3.1e1 },
-    Mani:      { a:41.6,  e:0.149,  i:17.7, Omega:216,   omega:215,   M0:195.3, epoch:2451545.0, n:0.00367,   period:98000,  mass:3.0e20,    GM:2.0e1 },
-    Varuna:    { a:43.2,  e:0.0525, i:17.1, Omega:97.2,  omega:273,   M0:82.2,  epoch:2451545.0, n:0.00347,   period:104000, mass:3.0e20,    GM:2.0e1 },
-    Ixion:     { a:39.4,  e:0.244,  i:19.7, Omega:71.1,  omega:301,   M0:255.3, epoch:2451545.0, n:0.00399,   period:90200,  mass:2.4e20,    GM:1.6e1 },
-    Ceres:     { a:2.77,  e:0.0796, i:10.6, Omega:80.2,  omega:73.3,  M0:207.4, epoch:2451545.0, n:0.214,     period:1680,   mass:9.393e20,  GM:6.263e1 },
-    Vesta:     { a:2.36,  e:0.0902, i:7.14, Omega:104,   omega:152,   M0:335.7, epoch:2451545.0, n:0.272,     period:1330,   mass:2.590e20,  GM:1.73e1 },
-    Pallas:    { a:2.77,  e:0.231,  i:34.9, Omega:173,   omega:311,   M0:348.5, epoch:2451545.0, n:0.214,     period:1680,   mass:2.11e20,   GM:1.41e1 },
-    Juno:      { a:2.67,  e:0.256,  i:13,   Omega:170,   omega:248,   M0:241.0, epoch:2451545.0, n:0.226,     period:1590,   mass:2.67e19,   GM:1.78e0 },
-    Iris:      { a:2.39,  e:0.23,   i:5.52, Omega:259,   omega:145,   M0:57.1,  epoch:2451545.0, n:0.267,     period:1350,   mass:1.0e19,    GM:6.7e-1 },
-    Hygiea:    { a:3.15,  e:0.108,  i:3.83, Omega:283,   omega:313,   M0:352.8, epoch:2451545.0, n:0.176,     period:2040,   mass:8.67e19,   GM:5.79e0 },
-    Interamnia:{ a:3.06,  e:0.155,  i:17.3, Omega:280,   omega:94.1,  M0:244.2, epoch:2451545.0, n:0.184,     period:1950,   mass:3.5e19,    GM:2.34e0 },
-    Eunomia:   { a:2.64,  e:0.188,  i:11.8, Omega:293,   omega:98.5,  M0:108.7, epoch:2451545.0, n:0.229,     period:1570,   mass:3.1e19,    GM:2.07e0 },
-    Psyche:    { a:2.92,  e:0.134,  i:3.1,  Omega:150,   omega:230,   M0:337.9, epoch:2451545.0, n:0.197,     period:1830,   mass:2.3e19,    GM:1.54e0 },
-    Europa:    { a:3.09,  e:0.112,  i:7.48, Omega:129,   omega:343,   M0:41.6,  epoch:2451545.0, n:0.181,     period:1990,   mass:2.5e19,    GM:1.67e0 },
-    Metis:     { a:2.39,  e:0.123,  i:5.58, Omega:68.9,  omega:5.9,   M0:194.4, epoch:2451545.0, n:0.267,     period:1350,   mass:1.0e19,    GM:6.7e-1 },
-    Davida:    { a:3.16,  e:0.19,   i:16,   Omega:108,   omega:337,   M0:180.5, epoch:2451545.0, n:0.175,     period:2060,   mass:3.9e19,    GM:2.61e0 },
-    Cybele:    { a:3.41,  e:0.128,  i:3.56, Omega:155,   omega:104,   M0:228.5, epoch:2451545.0, n:0.157,     period:2300,   mass:1.7e19,    GM:1.13e0 },
-    Hebe:      { a:2.43,  e:0.202,  i:14.7, Omega:139,   omega:240,   M0:45.1,  epoch:2451545.0, n:0.261,     period:1380,   mass:1.3e19,    GM:8.7e-1 },
-    Flora:     { a:2.20,  e:0.156,  i:5.89, Omega:111,   omega:285,   M0:223.4, epoch:2451545.0, n:0.302,     period:1190,   mass:8.0e18,    GM:5.3e-1 },
-    Parthenope:{ a:2.45,  e:0.10,   i:4.64, Omega:125,   omega:196,   M0:263.9, epoch:2451545.0, n:0.257,     period:1400,   mass:6.0e18,    GM:4.0e-1 },
-    Victoria:  { a:2.33,  e:0.22,   i:8.37, Omega:235,   omega:69.5,  M0:347.2, epoch:2451545.0, n:0.276,     period:1300,   mass:5.0e18,    GM:3.3e-1 },
-    Sylvia:    { a:3.48,  e:0.0943, i:10.9, Omega:73,    omega:266,   M0:97.8,  epoch:2451545.0, n:0.152,     period:2380,   mass:1.48e19,   GM:9.9e-1 },
-    Fortuna:   { a:2.44,  e:0.158,  i:1.57, Omega:211,   omega:183,   M0:177.0, epoch:2451545.0, n:0.258,     period:1390,   mass:7.0e18,    GM:4.7e-1 },
-    Melpomene: { a:2.30,  e:0.218,  i:10.1, Omega:150,   omega:228,   M0:71.1,  epoch:2451545.0, n:0.283,     period:1270,   mass:5.0e18,    GM:3.3e-1 },
-    Eros:      { a:1.46,  e:0.223,  i:10.8, Omega:304,   omega:179,   M0:55.9,  epoch:2451545.0, n:0.56,      period:643,    mass:6.69e15,   GM:4.46e-4 },
-    R̛̝͏̷̸̡̽̕͏͏̷̷̷̟̻̜̽̽̽͏͏̷̸̤̰̽͏̷̸̟̫͏͏̷̳͏̸T̷̬̽̽͏̸͏͏͏̸̷̷̷̸̰̓̕͏̸̙̓̕͏͏̸̟̽͏͏̸̸̷̢̖̽̽̽̕Ą̷̠̕͏̸̸̡̽̾̽͏̸̡͏͏̷̸̷̸̸̷̪̯̘̽̽̽̽̿̽Q̸̷̸̷̩̽͏̷̷̸̮̓̓̽̽͏̭̝̭̖̕͏̡͏̽̽̿̚͏̗͏̷̤̽̚X͏͏̷̸̷̙̳̽͏̷̷̸̷̷̸̷̢̤̰̾̽̽͏̷̸̷̸̢̧̲̽͏͏̷̸̲̻̠̽̽̽J͏̷̸̷̷̢̡̜̤̜̯̽̾̽͏̷̸̧̨̳̬̣̣̽̽̿̕͏̸̞̗D̸͏̷̷̷̘̽͏̸̷̲̽͏̷̷̗̳̽͏̸̷̷̷̨̢̖̠̣̬̤̽̽̑̑͏̜̮̽:   { a:0.922, e:0.191, i:3.34,  Omega:204,   omega:127,   M0:257.4, epoch:2451545.0, n:1.11,      period:324,    mass:6.1e10,    GM:4.07e-9 }
-};
-
-function getBody(name) {
-    return Bodies_J2000[name] || null;
-}
-
 /* ============================================================
    Star texture
    ============================================================ */
@@ -724,286 +673,122 @@ function getStarNameFromRecord(s) {
   return "Unnamed star";
 }
 
-// ==============================================
-// ============ computeBodyPosition =============
-// ==============================================
-function computeBodyPosition(name, JDdatetime, latDeg, lonDeg) {
-    const AU_KM   = 149597870.7;
-    const JD0     = 2451545.0;
-    const R_EARTH = 6378.137;
-    const OBLIQ   = 23.439291 * Math.PI/180; // J2000 obliquity
-    const C_KM_S  = 299792.458;              // speed of light
+async function horizonsStateVector(name, JD) {
 
-    function deg2rad(d){return d*Math.PI/180;}
-    function rad2deg(r){return r*180/Math.PI;}
+    const jdString = JD.toFixed(6);
 
-    // ---------------- Kepler solver ----------------
-    function solveKepler(M,e){
-        let E=M;
-        for(let k=0;k<20;k++){
-            const f=E-e*Math.sin(E)-M;
-            const fp=1-e*Math.cos(E);
-            const dE=-f/fp;
-            E+=dE;
-            if(Math.abs(dE)<1e-12)break;
-        }
-        return E;
-    }
+    const url =
+        "https://ssd.jpl.nasa.gov/api/horizons.api?" +
+        `format=json&COMMAND='${name}'&OBJ_DATA='NO'&MAKE_EPHEM='YES'` +
+        "&EPHEM_TYPE='VECTORS'&CENTER='500@10'" +
+        `&TLIST='${jdString}'`;
 
-// ---------------- Elements → heliocentric XYZV ----------------
-function elementsToHeliocentric(body, JDref){
-    if(body.a===0) return {r:[0,0,0],v:[0,0,0]};
+    const data = await fetch(url).then(r => r.json());
 
-    const a_km = body.a * AU_KM;
-    const e = body.e;
-    const i = deg2rad(body.i);
-    const O = deg2rad(body.Omega);
-    const w = deg2rad(body.omega);
-
-    const epoch = body.epoch || JD0;
-    const days  = JDref - epoch;
-    const Mdeg  = body.M0 + (body.n || 0)*days; // n in deg/day
-    const M     = deg2rad(((Mdeg % 360)+360)%360);
-
-    const E  = solveKepler(M,e);
-
-    const cosE=Math.cos(E), sinE=Math.sin(E);
-    const r_orb = a_km*(1-e*cosE);
-    const x_orb = a_km*(cosE-e);
-    const y_orb = a_km*Math.sqrt(1-e*e)*sinE;
-
-    const mu = Bodies_J2000.Sun.GM;
-    const fac = Math.sqrt(mu*a_km)/r_orb;
-    const vx_orb = -fac*sinE;
-    const vy_orb =  fac*Math.sqrt(1-e*e)*cosE;
-
-    const cosO=Math.cos(O), sinO=Math.sin(O);
-    const cosi=Math.cos(i), sini=Math.sin(i);
-    const cosw=Math.cos(w), sinw=Math.sin(w);
-
-    function rot(x,y,z){
-        let x1=x*cosw - y*sinw;
-        let y1=x*sinw + y*cosw;
-        let z1=z;
-
-        let x2=x1;
-        let y2=y1*cosi;
-        let z2=y1*sini;
-
-        let x3=x2*cosO - y2*sinO;
-        let y3=x2*sinO + y2*cosO;
-        let z3=z2;
-
-        return [x3,y3,z3];
-    }
+    const vec = data.result[0].vector;
 
     return {
-        r: rot(x_orb,y_orb,0),
-        v: rot(vx_orb,vy_orb,0)
+        x: vec.x,   // AU
+        y: vec.y,
+        z: vec.z
     };
 }
 
+function toObserverRADEC(x, y, z, JD, latDeg, lonDeg) {
 
-    // ---------------- Heliocentric → barycentric (CM shift) ----------------
-    function toBarycentric(state, bodyNames){
-        let Mtot = 0;
-        let Rcm = [0,0,0];
-        let Vcm = [0,0,0];
+    const earth = VSOP87.Earth(JD);
+    const obs = observerPosition(earth, JD, latDeg, lonDeg);
+    const dx = x - obs.x;
+    const dy = y - obs.y;
+    const dz = z - obs.z;
+    const {ra, dec} = eclipticToEquatorial(dx, dy, dz);
 
-        for(let i=0;i<bodyNames.length;i++){
-            const m = Bodies_J2000[bodyNames[i]].mass;
-            Mtot += m;
-            Rcm[0] += m*state.r[i][0];
-            Rcm[1] += m*state.r[i][1];
-            Rcm[2] += m*state.r[i][2];
-            Vcm[0] += m*state.v[i][0];
-            Vcm[1] += m*state.v[i][1];
-            Vcm[2] += m*state.v[i][2];
-        }
-
-        Rcm[0] /= Mtot; Rcm[1] /= Mtot; Rcm[2] /= Mtot;
-        Vcm[0] /= Mtot; Vcm[1] /= Mtot; Vcm[2] /= Mtot;
-
-        for(let i=0;i<bodyNames.length;i++){
-            state.r[i][0] -= Rcm[0];
-            state.r[i][1] -= Rcm[1];
-            state.r[i][2] -= Rcm[2];
-            state.v[i][0] -= Vcm[0];
-            state.v[i][1] -= Vcm[1];
-            state.v[i][2] -= Vcm[2];
-        }
-    }
-
-    // ---------------- N-body accelerations + Sun 1PN GR patch ----------------
-    function accelerations(state, bodyNames){
-        const N=bodyNames.length;
-        const a=new Array(N).fill(0).map(()=>[0,0,0]);
-
-        const sunIndex = bodyNames.indexOf("Sun");
-        const GM_sun   = Bodies_J2000.Sun.GM;
-        const c2       = C_KM_S*C_KM_S;
-
-        // Newtonian N-body
-        for(let i=0;i<N;i++){
-            const [xi,yi,zi]=state.r[i];
-            for(let j=0;j<N;j++){
-                if(i===j) continue;
-                const GM = Bodies_J2000[bodyNames[j]].GM;
-                const [xj,yj,zj]=state.r[j];
-                const dx=xj-xi, dy=yj-yi, dz=zj-zi;
-                const r2=dx*dx+dy*dy+dz*dz;
-                const invR=1/Math.sqrt(r2);
-                const invR3=invR*invR*invR;
-                a[i][0]+=GM*dx*invR3;
-                a[i][1]+=GM*dy*invR3;
-                a[i][2]+=GM*dz*invR3;
-            }
-        }
-
-        // 1PN Schwarzschild-like correction around Sun only (approximate)
-        for(let i=0;i<N;i++){
-            if(i===sunIndex) continue;
-
-            const rx = state.r[i][0] - state.r[sunIndex][0];
-            const ry = state.r[i][1] - state.r[sunIndex][1];
-            const rz = state.r[i][2] - state.r[sunIndex][2];
-            const r2 = rx*rx + ry*ry + rz*rz;
-            const r  = Math.sqrt(r2);
-
-            const vx = state.v[i][0] - state.v[sunIndex][0];
-            const vy = state.v[i][1] - state.v[sunIndex][1];
-            const vz = state.v[i][2] - state.v[sunIndex][2];
-            const v2 = vx*vx + vy*vy + vz*vz;
-            const rv = rx*vx + ry*vy + rz*vz;
-
-            const pref = GM_sun/(c2*r2*r); // GM/c^2 r^3
-
-            const factor_r = (4*GM_sun/r - v2);
-            const factor_v = 4*rv;
-
-            const ax_GR = pref*(factor_r*rx + factor_v*vx);
-            const ay_GR = pref*(factor_r*ry + factor_v*vy);
-            const az_GR = pref*(factor_r*rz + factor_v*vz);
-
-            a[i][0] += ax_GR;
-            a[i][1] += ay_GR;
-            a[i][2] += az_GR;
-        }
-
-        return a;
-    }
-
-    // ---------------- Leapfrog integrator ----------------
-    function integrate(state, bodyNames, JDtarget){
-        const tTotal=(JDtarget-JD0)*86400;
-        if(tTotal===0) return;
-
-        const dtBase = 21600; // 6h
-        const steps  = Math.max(1, Math.floor(Math.abs(tTotal)/dtBase));
-        const dt     = tTotal/steps;
-
-        function step(dtStep){
-            const a0=accelerations(state,bodyNames);
-
-            for(let i=0;i<bodyNames.length;i++){
-                state.v[i][0]+=0.5*dtStep*a0[i][0];
-                state.v[i][1]+=0.5*dtStep*a0[i][1];
-                state.v[i][2]+=0.5*dtStep*a0[i][2];
-            }
-
-            for(let i=0;i<bodyNames.length;i++){
-                state.r[i][0]+=dtStep*state.v[i][0];
-                state.r[i][1]+=dtStep*state.v[i][1];
-                state.r[i][2]+=dtStep*state.v[i][2];
-            }
-
-            const a1=accelerations(state,bodyNames);
-
-            for(let i=0;i<bodyNames.length;i++){
-                state.v[i][0]+=0.5*dtStep*a1[i][0];
-                state.v[i][1]+=0.5*dtStep*a1[i][1];
-                state.v[i][2]+=0.5*dtStep*a1[i][2];
-            }
-        }
-
-        for(let s=0;s<steps;s++) step(dt);
-    }
-
-    // ---------------- Observer position ----------------
-    function observerPosition(earthR, JD, latDeg, lonDeg){
-        const lat=deg2rad(latDeg);
-        const lon=deg2rad(lonDeg);
-
-        const T=(JD-JD0)/36525;
-        let GMST=280.46061837 + 360.98564736629*(JD-JD0)
-                + 0.000387933*T*T - T*T*T/38710000;
-        GMST=((GMST%360)+360)%360;
-        const theta=deg2rad(GMST)+lon;
-
-        const cosLat=Math.cos(lat), sinLat=Math.sin(lat);
-        const cosTh=Math.cos(theta), sinTh=Math.sin(theta);
-
-        const x_site=R_EARTH*cosLat*cosTh;
-        const y_site=R_EARTH*cosLat*sinTh;
-        const z_site=R_EARTH*sinLat;
-
-        return {
-            x:earthR[0]+x_site,
-            y:earthR[1]+y_site,
-            z:earthR[2]+z_site
-        };
-    }
-
-    // ---------------- Ecliptic → Equatorial + RA/Dec ----------------
-    function toRaDec(dx,dy,dz){
-        const cosE=Math.cos(OBLIQ), sinE=Math.sin(OBLIQ);
-
-        const x=dx;
-        const y=dy*cosE - dz*sinE;
-        const z=dy*sinE + dz*cosE;
-
-        const rxy=Math.sqrt(x*x+y*y);
-        let ra=Math.atan2(y,x);
-        let dec=Math.atan2(z,rxy);
-        if(ra<0) ra+=2*Math.PI;
-
-        return {ra:rad2deg(ra), dec:rad2deg(dec)};
-    }
-
- // ---------------- Build initial heliocentric state ----------------
-const massiveNames=[
-    "Sun","Mercury","Venus","Earth","Mars",
-    "Jupiter","Saturn","Uranus","Neptune"
-];
-
-const bodySet=new Set(massiveNames);
-bodySet.add(name);
-const bodyNames=Array.from(bodySet);
-
-const state={r:[],v:[]};
-for(const b of bodyNames){
-    const s=elementsToHeliocentric(Bodies_J2000[b], JD0); // <-- pass JD0
-    state.r.push(s.r);
-    state.v.push(s.v);
+    return {ra, dec};
 }
 
-    // ---------------- Convert to barycentric ----------------
-    toBarycentric(state,bodyNames);
+function observerPosition(earth, JD, latDeg, lonDeg) {
+    const R_EARTH_AU = 6378.137 / 149597870.7;
+    const lat = latDeg * Math.PI/180;
+    const lon = lonDeg * Math.PI/180;
 
-    // ---------------- Integrate to target JD ----------------
-    integrate(state,bodyNames,JDdatetime);
+    // GMST
+    const T = (JD - 2451545.0) / 36525;
+    let GMST = 280.46061837 +
+               360.98564736629*(JD - 2451545.0) +
+               0.000387933*T*T -
+               T*T*T/38710000;
+    GMST = ((GMST % 360) + 360) % 360;
+    const theta = GMST * Math.PI/180 + lon;
+    const cosLat = Math.cos(lat), sinLat = Math.sin(lat);
+    const cosTh  = Math.cos(theta), sinTh = Math.sin(theta);
 
-    // ---------------- Observer + target ----------------
-    const earthIndex=bodyNames.indexOf("Earth");
-    const earthR=state.r[earthIndex];
-    const obs=observerPosition(earthR,JDdatetime,latDeg,lonDeg);
+    const x_site = R_EARTH_AU * cosLat * cosTh;
+    const y_site = R_EARTH_AU * cosLat * sinTh;
+    const z_site = R_EARTH_AU * sinLat;
 
-    const idx=bodyNames.indexOf(name);
-    const dx=state.r[idx][0]-obs.x;
-    const dy=state.r[idx][1]-obs.y;
-    const dz=state.r[idx][2]-obs.z;
+    return {
+        x: earth.x + x_site,
+        y: earth.y + y_site,
+        z: earth.z + z_site
+    };
+}
 
-    return toRaDec(dx,dy,dz);
+function eclipticToEquatorial(x, y, z) {
+    const eps = 23.439291 * Math.PI/180; // J2000 obliquity
+    const cosE = Math.cos(eps), sinE = Math.sin(eps);
+    const xe = x;
+    const ye = y*cosE - z*sinE;
+    const ze = y*sinE + z*cosE;
+    const rxy = Math.sqrt(xe*xe + ye*ye);
+    let ra  = Math.atan2(ye, xe);
+    let dec = Math.atan2(ze, rxy);
+    if (ra < 0) ra += 2*Math.PI;
+
+    return {
+        ra:  ra * 180/Math.PI,
+        dec: dec * 180/Math.PI
+    };
+}
+
+function VSOP87_Planet(name, JD) {
+    switch(name) {
+        case "Mercury": return VSOP87_Mercury(JD);
+        case "Venus":   return VSOP87_Venus(JD);
+        case "Earth":   return VSOP87_Earth(JD);
+        case "Mars":    return VSOP87_Mars(JD);
+        case "Jupiter": return VSOP87_Jupiter(JD);
+        case "Saturn":  return VSOP87_Saturn(JD);
+        case "Uranus":  return VSOP87_Uranus(JD);
+        case "Neptune": return VSOP87_Neptune(JD);
+        default:
+            throw new Error("Unknown planet for VSOP87: " + name);
+    }
+}
+
+// ==============================================
+// ============ computeBodyPosition =============
+// ==============================================
+async function computeBodyPosition(name, JD, latDeg, lonDeg) {
+    const planets = [
+        "Mercury","Venus","Earth","Mars",
+        "Jupiter","Saturn","Uranus","Neptune"
+    ];
+
+    // 1. VSOP
+    if (planets.includes(name)) {
+        const {x, y, z} = VSOP87_Planet(name, JD);   // AU
+        return toObserverRADEC(x, y, z, JD, latDeg, lonDeg);
+    }
+
+    // 2. Pluto
+    if (name === "Pluto") {
+        const {x, y, z} = VSOP87_Pluto(JD);
+        return toObserverRADEC(x, y, z, JD, latDeg, lonDeg);
+    }
+
+    // 3. Horizons API
+    const {x, y, z} = await horizonsStateVector(name, JD);
+    return toObserverRADEC(x, y, z, JD, latDeg, lonDeg);
 }
 
 /* ============================================================
