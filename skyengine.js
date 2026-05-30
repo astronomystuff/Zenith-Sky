@@ -36,14 +36,14 @@ const VSOP = {
 };
 
 async function loadAllVSOP() {
-    VSOP.Mercury = await loadVSOP87BFile("/vsop/VSOP87B.mer");
-    VSOP.Venus   = await loadVSOP87BFile("/vsop/VSOP87B.ven");
-    VSOP.Earth   = await loadVSOP87BFile("/vsop/VSOP87B.ear");
-    VSOP.Mars    = await loadVSOP87BFile("/vsop/VSOP87B.mar");
-    VSOP.Jupiter = await loadVSOP87BFile("/vsop/VSOP87B.jup");
-    VSOP.Saturn  = await loadVSOP87BFile("/vsop/VSOP87B.sat");
-    VSOP.Uranus  = await loadVSOP87BFile("/vsop/VSOP87B.ura");
-    VSOP.Neptune = await loadVSOP87BFile("/vsop/VSOP87B.nep");
+    VSOP.Mercury = await loadVSOP87BFile("vsop/VSOP87B.mer");
+    VSOP.Venus   = await loadVSOP87BFile("vsop/VSOP87B.ven");
+    VSOP.Earth   = await loadVSOP87BFile("vsop/VSOP87B.ear");
+    VSOP.Mars    = await loadVSOP87BFile("vsop/VSOP87B.mar");
+    VSOP.Jupiter = await loadVSOP87BFile("vsop/VSOP87B.jup");
+    VSOP.Saturn  = await loadVSOP87BFile("vsop/VSOP87B.sat");
+    VSOP.Uranus  = await loadVSOP87BFile("vsop/VSOP87B.ura");
+    VSOP.Neptune = await loadVSOP87BFile("vsop/VSOP87B.nep");
 }
 
 async function loadVSOP87BFile(url) {
@@ -756,8 +756,7 @@ async function horizonsStateVector(name, JD) {
 }
 
 function toObserverRADEC(x, y, z, JD, latDeg, lonDeg) {
-
-    const earth = VSOP87.Earth(JD);
+    const earth = VSOP87_Earth(JD);
     const obs = observerPosition(earth, JD, latDeg, lonDeg);
     const dx = x - obs.x;
     const dy = y - obs.y;
