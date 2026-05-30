@@ -731,199 +731,275 @@ function computeBodyPosition(name, JDdatetime, latDeg, lonDeg) {
     const AU_KM   = 149597870.7;
     const JD0     = 2451545.0;
     const R_EARTH = 6378.137;
+    const OBLIQ   = 23.439291 * Math.PI/180; // J2000 obliquity
+    const C_KM_S  = 299792.458;              // speed of light
 
-    function deg2rad(d) { return d * Math.PI / 180; }
-    function rad2deg(r) { return r * 180 / Math.PI; }
+    function deg2rad(d){return d*Math.PI/180;}
+    function rad2deg(r){return r*180/Math.PI;}
 
-    // ---------- Kepler solver ----------
-    function solveKepler(M, e) {
-        let E = M;
-        for (let k = 0; k < 20; k++) {
-            const f  = E - e * Math.sin(E) - M;
-            const fp = 1 - e * Math.cos(E);
-            const dE = -f / fp;
-            E += dE;
-            if (Math.abs(dE) < 1e-12) break;
+    // ---------------- Kepler solver ----------------
+    function solveKepler(M,e){
+        let E=M;
+        for(let k=0;k<20;k++){
+            const f=E-e*Math.sin(E)-M;
+            const fp=1-e*Math.cos(E);
+            const dE=-f/fp;
+            E+=dE;
+            if(Math.abs(dE)<1e-12)break;
         }
         return E;
     }
 
-    // ---------- Elements → heliocentric XYZV at J2000 ----------
-    function elementsToStateAtJ2000(body) {
-        if (body.a === 0) return { r:[0,0,0], v:[0,0,0] };
+    // ---------------- Elements → heliocentric XYZV ----------------
+    function elementsToHeliocentric(body){
+        if(body.a===0) return {r:[0,0,0],v:[0,0,0]};
 
-        const a_AU = body.a;
-        const e    = body.e;
-        const i    = deg2rad(body.i);
-        const Omega = deg2rad(body.Omega);
-        const omega = deg2rad(body.omega);
+        const a_km = body.a * AU_KM;
+        const e = body.e;
+        const i = deg2rad(body.i);
+        const O = deg2rad(body.Omega);
+        const w = deg2rad(body.omega);
 
-        const M0  = deg2rad(body.M0);
-        const M   = ((M0 % (2*Math.PI)) + 2*Math.PI) % (2*Math.PI);
-        const E   = solveKepler(M, e);
-        const cosE = Math.cos(E), sinE = Math.sin(E);
+        const M0 = deg2rad(body.M0);
+        const M  = ((M0 % (2*Math.PI))+2*Math.PI)% (2*Math.PI);
+        const E  = solveKepler(M,e);
 
-        const a_km = a_AU * AU_KM;
-        const r_orb = a_km * (1 - e * cosE);
-        const x_orb = a_km * (cosE - e);
-        const y_orb = a_km * Math.sqrt(1 - e*e) * sinE;
+        const cosE=Math.cos(E), sinE=Math.sin(E);
+        const r_orb = a_km*(1-e*cosE);
+        const x_orb = a_km*(cosE-e);
+        const y_orb = a_km*Math.sqrt(1-e*e)*sinE;
 
-        const mu = Bodies_J2000.Sun.GM; // km^3/s^2
-        const fac = Math.sqrt(mu * a_km) / r_orb;
-        const vx_orb = -fac * sinE;
-        const vy_orb =  fac * Math.sqrt(1 - e*e) * cosE;
+        const mu = Bodies_J2000.Sun.GM;
+        const fac = Math.sqrt(mu*a_km)/r_orb;
+        const vx_orb = -fac*sinE;
+        const vy_orb =  fac*Math.sqrt(1-e*e)*cosE;
 
-        const cosO = Math.cos(Omega), sinO = Math.sin(Omega);
-        const cosi = Math.cos(i),     sini = Math.sin(i);
-        const cosw = Math.cos(omega), sinw = Math.sin(omega);
+        const cosO=Math.cos(O), sinO=Math.sin(O);
+        const cosi=Math.cos(i), sini=Math.sin(i);
+        const cosw=Math.cos(w), sinw=Math.sin(w);
 
-        function rotate(x, y, z) {
-            let x1 =  x * cosw - y * sinw;
-            let y1 =  x * sinw + y * cosw;
-            let z1 =  z;
+        function rot(x,y,z){
+            let x1=x*cosw - y*sinw;
+            let y1=x*sinw + y*cosw;
+            let z1=z;
 
-            let x2 = x1;
-            let y2 = y1 * cosi;
-            let z2 = y1 * sini;
+            let x2=x1;
+            let y2=y1*cosi;
+            let z2=y1*sini;
 
-            let x3 = x2 * cosO - y2 * sinO;
-            let y3 = x2 * sinO + y2 * cosO;
-            let z3 = z2;
+            let x3=x2*cosO - y2*sinO;
+            let y3=x2*sinO + y2*cosO;
+            let z3=z2;
 
-            return [x3, y3, z3];
+            return [x3,y3,z3];
         }
-
-        const r = rotate(x_orb,  y_orb,  0);
-        const v = rotate(vx_orb, vy_orb, 0);
-
-        return { r, v };
-    }
-
-    // ---------- N-body accelerations (tugs from big bodies only) ----------
-    function computeAccelerations(state, bodyNames, massiveNames) {
-        const N = bodyNames.length;
-        const a = new Array(N).fill(0).map(() => [0,0,0]);
-
-        for (let i = 0; i < N; i++) {
-            const [xi, yi, zi] = state.r[i];
-            for (let j = 0; j < N; j++) {
-                if (i === j) continue;
-                const nameJ = bodyNames[j];
-                if (!massiveNames.includes(nameJ)) continue; // only big tuggers
-
-                const [xj, yj, zj] = state.r[j];
-                const dx = xj - xi, dy = yj - yi, dz = zj - zi;
-                const r2 = dx*dx + dy*dy + dz*dz;
-                const invR = 1 / Math.sqrt(r2);
-                const invR3 = invR * invR * invR;
-                const GMj = Bodies_J2000[nameJ].GM;
-
-                a[i][0] += GMj * dx * invR3;
-                a[i][1] += GMj * dy * invR3;
-                a[i][2] += GMj * dz * invR3;
-            }
-        }
-        return a;
-    }
-
-    // ---------- Leapfrog integrator ----------
-    function integrateFromJ2000(state, bodyNames, massiveNames, JDtarget) {
-        const tTotal = (JDtarget - JD0) * 86400; // seconds
-        if (tTotal === 0) return;
-
-        const dtSign = tTotal > 0 ? 1 : -1;
-        const dt = dtSign * 86400; // 1 day steps
-        const steps = Math.round(tTotal / dt);
-
-        for (let s = 0; s < Math.abs(steps); s++) {
-            const a0 = computeAccelerations(state, bodyNames, massiveNames);
-
-            for (let i = 0; i < bodyNames.length; i++) {
-                state.v[i][0] += 0.5 * dt * a0[i][0];
-                state.v[i][1] += 0.5 * dt * a0[i][1];
-                state.v[i][2] += 0.5 * dt * a0[i][2];
-            }
-
-            for (let i = 0; i < bodyNames.length; i++) {
-                state.r[i][0] += dt * state.v[i][0];
-                state.r[i][1] += dt * state.v[i][1];
-                state.r[i][2] += dt * state.v[i][2];
-            }
-
-            const a1 = computeAccelerations(state, bodyNames, massiveNames);
-
-            for (let i = 0; i < bodyNames.length; i++) {
-                state.v[i][0] += 0.5 * dt * a1[i][0];
-                state.v[i][1] += 0.5 * dt * a1[i][1];
-                state.v[i][2] += 0.5 * dt * a1[i][2];
-            }
-        }
-    }
-
-    // ---------- Observer from Earth's state ----------
-    function computeObserverFromState(earthR, JD, latDeg, lonDeg) {
-        const lat = deg2rad(latDeg);
-        const lon = deg2rad(lonDeg);
-
-        const T = (JD - JD0) / 36525.0;
-        let GMST = 280.46061837
-                 + 360.98564736629 * (JD - JD0)
-                 + 0.000387933 * T*T
-                 - T*T*T / 38710000.0;
-        GMST = ((GMST % 360) + 360) % 360;
-        const theta = deg2rad(GMST) + lon;
-
-        const cosLat = Math.cos(lat), sinLat = Math.sin(lat);
-        const cosTh  = Math.cos(theta), sinTh = Math.sin(theta);
-
-        const x_site = R_EARTH * cosLat * cosTh;
-        const y_site = R_EARTH * cosLat * sinTh;
-        const z_site = R_EARTH * sinLat;
 
         return {
-            x: earthR[0] + x_site,
-            y: earthR[1] + y_site,
-            z: earthR[2] + z_site
+            r: rot(x_orb,y_orb,0),
+            v: rot(vx_orb,vy_orb,0)
         };
     }
 
-    // ---------- RA/Dec ----------
-    function toRaDec(dx, dy, dz) {
-        const rxy = Math.sqrt(dx*dx + dy*dy);
-        let ra  = Math.atan2(dy, dx);
-        let dec = Math.atan2(dz, rxy);
-        if (ra < 0) ra += 2*Math.PI;
-        return { ra: rad2deg(ra), dec: rad2deg(dec) };
+    // ---------------- Heliocentric → barycentric (CM shift) ----------------
+    function toBarycentric(state, bodyNames){
+        let Mtot = 0;
+        let Rcm = [0,0,0];
+        let Vcm = [0,0,0];
+
+        for(let i=0;i<bodyNames.length;i++){
+            const m = Bodies_J2000[bodyNames[i]].mass;
+            Mtot += m;
+            Rcm[0] += m*state.r[i][0];
+            Rcm[1] += m*state.r[i][1];
+            Rcm[2] += m*state.r[i][2];
+            Vcm[0] += m*state.v[i][0];
+            Vcm[1] += m*state.v[i][1];
+            Vcm[2] += m*state.v[i][2];
+        }
+
+        Rcm[0] /= Mtot; Rcm[1] /= Mtot; Rcm[2] /= Mtot;
+        Vcm[0] /= Mtot; Vcm[1] /= Mtot; Vcm[2] /= Mtot;
+
+        for(let i=0;i<bodyNames.length;i++){
+            state.r[i][0] -= Rcm[0];
+            state.r[i][1] -= Rcm[1];
+            state.r[i][2] -= Rcm[2];
+            state.v[i][0] -= Vcm[0];
+            state.v[i][1] -= Vcm[1];
+            state.v[i][2] -= Vcm[2];
+        }
     }
 
-    // ---------- Build body list ----------
-    const massiveNames = ['Sun','Venus','Earth','Jupiter','Saturn','Uranus','Neptune'];
-    const bodySet = new Set(massiveNames);
-    bodySet.add(name);
-    const bodyNames = Array.from(bodySet);
+    // ---------------- N-body accelerations + 1PN Sun GR ----------------
+    function accelerations(state, bodyNames){
+        const N=bodyNames.length;
+        const a=new Array(N).fill(0).map(()=>[0,0,0]);
 
-    // ---------- Initial state at J2000 ----------
-    const state = { r: [], v: [] };
-    for (const b of bodyNames) {
-        const s = elementsToStateAtJ2000(Bodies_J2000[b]);
+        const sunIndex = bodyNames.indexOf("Sun");
+        const GM_sun   = Bodies_J2000.Sun.GM;
+        const c2       = C_KM_S*C_KM_S;
+
+        // Newtonian N-body
+        for(let i=0;i<N;i++){
+            const [xi,yi,zi]=state.r[i];
+            for(let j=0;j<N;j++){
+                if(i===j) continue;
+                const GM = Bodies_J2000[bodyNames[j]].GM;
+                const [xj,yj,zj]=state.r[j];
+                const dx=xj-xi, dy=yj-yi, dz=zj-zi;
+                const r2=dx*dx+dy*dy+dz*dz;
+                const invR=1/Math.sqrt(r2);
+                const invR3=invR*invR*invR;
+                a[i][0]+=GM*dx*invR3;
+                a[i][1]+=GM*dy*invR3;
+                a[i][2]+=GM*dz*invR3;
+            }
+        }
+
+        // 1PN Schwarzschild-like correction around Sun only
+        for(let i=0;i<N;i++){
+            if(i===sunIndex) continue;
+
+            const rx = state.r[i][0] - state.r[sunIndex][0];
+            const ry = state.r[i][1] - state.r[sunIndex][1];
+            const rz = state.r[i][2] - state.r[sunIndex][2];
+            const r2 = rx*rx + ry*ry + rz*rz;
+            const r  = Math.sqrt(r2);
+
+            const vx = state.v[i][0] - state.v[sunIndex][0];
+            const vy = state.v[i][1] - state.v[sunIndex][1];
+            const vz = state.v[i][2] - state.v[sunIndex][2];
+            const v2 = vx*vx + vy*vy + vz*vz;
+            const rv = rx*vx + ry*vy + rz*vz;
+
+            const pref = GM_sun/(c2*r2*r); // GM/c^2 r^3
+
+            const factor_r = (4*GM_sun/r - v2); // multiplies r-vector
+            const factor_v = 4*rv;              // multiplies v-vector
+
+            const ax_GR = pref*(factor_r*rx + factor_v*vx);
+            const ay_GR = pref*(factor_r*ry + factor_v*vy);
+            const az_GR = pref*(factor_r*rz + factor_v*vz);
+
+            a[i][0] += ax_GR;
+            a[i][1] += ay_GR;
+            a[i][2] += az_GR;
+        }
+
+        return a;
+    }
+
+    // ---------------- Leapfrog integrator ----------------
+    function integrate(state, bodyNames, JDtarget){
+        const tTotal=(JDtarget-JD0)*86400;
+        if(tTotal===0) return;
+
+        const dtBase = 21600; // 6h
+        const steps  = Math.max(1, Math.floor(Math.abs(tTotal)/dtBase));
+        const dt     = tTotal/steps;
+
+        function step(dtStep){
+            const a0=accelerations(state,bodyNames);
+
+            for(let i=0;i<bodyNames.length;i++){
+                state.v[i][0]+=0.5*dtStep*a0[i][0];
+                state.v[i][1]+=0.5*dtStep*a0[i][1];
+                state.v[i][2]+=0.5*dtStep*a0[i][2];
+            }
+
+            for(let i=0;i<bodyNames.length;i++){
+                state.r[i][0]+=dtStep*state.v[i][0];
+                state.r[i][1]+=dtStep*state.v[i][1];
+                state.r[i][2]+=dtStep*state.v[i][2];
+            }
+
+            const a1=accelerations(state,bodyNames);
+
+            for(let i=0;i<bodyNames.length;i++){
+                state.v[i][0]+=0.5*dtStep*a1[i][0];
+                state.v[i][1]+=0.5*dtStep*a1[i][1];
+                state.v[i][2]+=0.5*dtStep*a1[i][2];
+            }
+        }
+
+        for(let s=0;s<steps;s++) step(dt);
+    }
+
+    // ---------------- Observer position ----------------
+    function observerPosition(earthR, JD, latDeg, lonDeg){
+        const lat=deg2rad(latDeg);
+        const lon=deg2rad(lonDeg);
+
+        const T=(JD-JD0)/36525;
+        let GMST=280.46061837 + 360.98564736629*(JD-JD0)
+                + 0.000387933*T*T - T*T*T/38710000;
+        GMST=((GMST%360)+360)%360;
+        const theta=deg2rad(GMST)+lon;
+
+        const cosLat=Math.cos(lat), sinLat=Math.sin(lat);
+        const cosTh=Math.cos(theta), sinTh=Math.sin(theta);
+
+        const x_site=R_EARTH*cosLat*cosTh;
+        const y_site=R_EARTH*cosLat*sinTh;
+        const z_site=R_EARTH*sinLat;
+
+        return {
+            x:earthR[0]+x_site,
+            y:earthR[1]+y_site,
+            z:earthR[2]+z_site
+        };
+    }
+
+    // ---------------- Ecliptic → Equatorial + RA/Dec ----------------
+    function toRaDec(dx,dy,dz){
+        const cosE=Math.cos(OBLIQ), sinE=Math.sin(OBLIQ);
+
+        const x=dx;
+        const y=dy*cosE - dz*sinE;
+        const z=dy*sinE + dz*cosE;
+
+        const rxy=Math.sqrt(x*x+y*y);
+        let ra=Math.atan2(y,x);
+        let dec=Math.atan2(z,rxy);
+        if(ra<0) ra+=2*Math.PI;
+
+        return {ra:rad2deg(ra), dec:rad2deg(dec)};
+    }
+
+    // ---------------- Build initial heliocentric state ----------------
+    const massiveNames=[
+        "Sun","Mercury","Venus","Earth","Mars",
+        "Jupiter","Saturn","Uranus","Neptune"
+    ];
+
+    const bodySet=new Set(massiveNames);
+    bodySet.add(name);
+    const bodyNames=Array.from(bodySet);
+
+    const state={r:[],v:[]};
+    for(const b of bodyNames){
+        const s=elementsToHeliocentric(Bodies_J2000[b]);
         state.r.push(s.r);
         state.v.push(s.v);
     }
 
-    // ---------- Integrate to JDdatetime ----------
-    integrateFromJ2000(state, bodyNames, massiveNames, JDdatetime);
+    // ---------------- Convert to barycentric ----------------
+    toBarycentric(state,bodyNames);
 
-    // ---------- Observer + target ----------
-    const earthIndex = bodyNames.indexOf('Earth');
-    const earthR = state.r[earthIndex];
-    const obs = computeObserverFromState(earthR, JDdatetime, latDeg, lonDeg);
+    // ---------------- Integrate to target JD ----------------
+    integrate(state,bodyNames,JDdatetime);
 
-    const idx = bodyNames.indexOf(name);
-    const dx = state.r[idx][0] - obs.x;
-    const dy = state.r[idx][1] - obs.y;
-    const dz = state.r[idx][2] - obs.z;
+    // ---------------- Observer + target ----------------
+    const earthIndex=bodyNames.indexOf("Earth");
+    const earthR=state.r[earthIndex];
+    const obs=observerPosition(earthR,JDdatetime,latDeg,lonDeg);
 
-    return toRaDec(dx, dy, dz);
+    const idx=bodyNames.indexOf(name);
+    const dx=state.r[idx][0]-obs.x;
+    const dy=state.r[idx][1]-obs.y;
+    const dz=state.r[idx][2]-obs.z;
+
+    return toRaDec(dx,dy,dz);
 }
 
 
@@ -1449,5 +1525,5 @@ window.getLSTRadiansFromCivil = getLSTRadiansFromCivil;
 window.J2000_MS = J2000_MS;
 window.buildCelestialSphere = buildCelestialSphere;
 window.xyzToRaDec = xyzToRaDec;
-windoe.computeBodyPosition = computeBodyPosition;
+window.computeBodyPosition = computeBodyPosition;
 window.raDecToXYZ= raDecToXYZ;
