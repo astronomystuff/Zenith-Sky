@@ -750,55 +750,59 @@ function computeBodyPosition(name, JDdatetime, latDeg, lonDeg) {
         return E;
     }
 
-    // ---------------- Elements → heliocentric XYZV ----------------
-    function elementsToHeliocentric(body){
-        if(body.a===0) return {r:[0,0,0],v:[0,0,0]};
+// ---------------- Elements → heliocentric XYZV ----------------
+function elementsToHeliocentric(body, JDref){
+    if(body.a===0) return {r:[0,0,0],v:[0,0,0]};
 
-        const a_km = body.a * AU_KM;
-        const e = body.e;
-        const i = deg2rad(body.i);
-        const O = deg2rad(body.Omega);
-        const w = deg2rad(body.omega);
+    const a_km = body.a * AU_KM;
+    const e = body.e;
+    const i = deg2rad(body.i);
+    const O = deg2rad(body.Omega);
+    const w = deg2rad(body.omega);
 
-        const M0 = deg2rad(body.M0);
-        const M  = ((M0 % (2*Math.PI))+2*Math.PI)% (2*Math.PI);
-        const E  = solveKepler(M,e);
+    const epoch = body.epoch || JD0;
+    const days  = JDref - epoch;
+    const Mdeg  = body.M0 + (body.n || 0)*days; // n in deg/day
+    const M     = deg2rad(((Mdeg % 360)+360)%360);
 
-        const cosE=Math.cos(E), sinE=Math.sin(E);
-        const r_orb = a_km*(1-e*cosE);
-        const x_orb = a_km*(cosE-e);
-        const y_orb = a_km*Math.sqrt(1-e*e)*sinE;
+    const E  = solveKepler(M,e);
 
-        const mu = Bodies_J2000.Sun.GM;
-        const fac = Math.sqrt(mu*a_km)/r_orb;
-        const vx_orb = -fac*sinE;
-        const vy_orb =  fac*Math.sqrt(1-e*e)*cosE;
+    const cosE=Math.cos(E), sinE=Math.sin(E);
+    const r_orb = a_km*(1-e*cosE);
+    const x_orb = a_km*(cosE-e);
+    const y_orb = a_km*Math.sqrt(1-e*e)*sinE;
 
-        const cosO=Math.cos(O), sinO=Math.sin(O);
-        const cosi=Math.cos(i), sini=Math.sin(i);
-        const cosw=Math.cos(w), sinw=Math.sin(w);
+    const mu = Bodies_J2000.Sun.GM;
+    const fac = Math.sqrt(mu*a_km)/r_orb;
+    const vx_orb = -fac*sinE;
+    const vy_orb =  fac*Math.sqrt(1-e*e)*cosE;
 
-        function rot(x,y,z){
-            let x1=x*cosw - y*sinw;
-            let y1=x*sinw + y*cosw;
-            let z1=z;
+    const cosO=Math.cos(O), sinO=Math.sin(O);
+    const cosi=Math.cos(i), sini=Math.sin(i);
+    const cosw=Math.cos(w), sinw=Math.sin(w);
 
-            let x2=x1;
-            let y2=y1*cosi;
-            let z2=y1*sini;
+    function rot(x,y,z){
+        let x1=x*cosw - y*sinw;
+        let y1=x*sinw + y*cosw;
+        let z1=z;
 
-            let x3=x2*cosO - y2*sinO;
-            let y3=x2*sinO + y2*cosO;
-            let z3=z2;
+        let x2=x1;
+        let y2=y1*cosi;
+        let z2=y1*sini;
 
-            return [x3,y3,z3];
-        }
+        let x3=x2*cosO - y2*sinO;
+        let y3=x2*sinO + y2*cosO;
+        let z3=z2;
 
-        return {
-            r: rot(x_orb,y_orb,0),
-            v: rot(vx_orb,vy_orb,0)
-        };
+        return [x3,y3,z3];
     }
+
+    return {
+        r: rot(x_orb,y_orb,0),
+        v: rot(vx_orb,vy_orb,0)
+    };
+}
+
 
     // ---------------- Heliocentric → barycentric (CM shift) ----------------
     function toBarycentric(state, bodyNames){
@@ -889,7 +893,7 @@ function computeBodyPosition(name, JDdatetime, latDeg, lonDeg) {
         return a;
     }
 
-    // ---------------- Leapfrog integrator (constant dt) ----------------
+    // ---------------- Leapfrog integrator ----------------
     function integrate(state, bodyNames, JDtarget){
         const tTotal=(JDtarget-JD0)*86400;
         if(tTotal===0) return;
@@ -966,22 +970,22 @@ function computeBodyPosition(name, JDdatetime, latDeg, lonDeg) {
         return {ra:rad2deg(ra), dec:rad2deg(dec)};
     }
 
-    // ---------------- Build initial heliocentric state ----------------
-    const massiveNames=[
-        "Sun","Mercury","Venus","Earth","Mars",
-        "Jupiter","Saturn","Uranus","Neptune"
-    ];
+ // ---------------- Build initial heliocentric state ----------------
+const massiveNames=[
+    "Sun","Mercury","Venus","Earth","Mars",
+    "Jupiter","Saturn","Uranus","Neptune"
+];
 
-    const bodySet=new Set(massiveNames);
-    bodySet.add(name);
-    const bodyNames=Array.from(bodySet);
+const bodySet=new Set(massiveNames);
+bodySet.add(name);
+const bodyNames=Array.from(bodySet);
 
-    const state={r:[],v:[]};
-    for(const b of bodyNames){
-        const s=elementsToHeliocentric(Bodies_J2000[b]);
-        state.r.push(s.r);
-        state.v.push(s.v);
-    }
+const state={r:[],v:[]};
+for(const b of bodyNames){
+    const s=elementsToHeliocentric(Bodies_J2000[b], JD0); // <-- pass JD0
+    state.r.push(s.r);
+    state.v.push(s.v);
+}
 
     // ---------------- Convert to barycentric ----------------
     toBarycentric(state,bodyNames);
