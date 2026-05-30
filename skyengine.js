@@ -47,7 +47,7 @@ async function loadAllVSOP() {
 }
 
 async function loadVSOP87BFile(url) {
-    const text = await fetch(url).then(r => r.text());
+    const text  = await fetch(url).then(r => r.text());
     const lines = text.split(/\r?\n/);
 
     const tables = {
@@ -59,27 +59,34 @@ async function loadVSOP87BFile(url) {
     let currentPower = null;
 
     for (const line of lines) {
-        if (!line.trim()) continue;
-      
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+
+        // detect "*T**0", "*T**1", ...
         const headerMatch = line.match(/\*T\*\*(\d)/);
         if (headerMatch) {
             currentPower = Number(headerMatch[1]);
             continue;
         }
 
-        if (currentPower !== null && /^\s*\d+/.test(line)) {
-            const nums = line.trim().split(/\s+/).map(Number);
+        if (currentPower === null) continue;
+        if (!/^\s*\d+/.test(line)) continue;
 
-            const A_L = nums[14];
-            const A_B = nums[15];
-            const A_R = nums[16];
-            const B   = nums[17];
-            const C   = nums[18];
+        const nums = trimmed.split(/\s+/).map(Number);
+        if (nums.length < 19) continue;
 
-            tables[`L${currentPower}`].push([A_L, B, C]);
-            tables[`B${currentPower}`].push([A_B, B, C]);
-            tables[`R${currentPower}`].push([A_R, B, C]);
-        }
+        const A_L = nums[14];
+        const A_B = nums[15];
+        const A_R = nums[16];
+        const B   = nums[17];
+        const C   = nums[18];
+
+        // skip any malformed row
+        if (![A_L, A_B, A_R, B, C].every(Number.isFinite)) continue;
+
+        tables[`L${currentPower}`].push([A_L, B, C]);
+        tables[`B${currentPower}`].push([A_B, B, C]);
+        tables[`R${currentPower}`].push([A_R, B, C]);
     }
 
     return tables;
