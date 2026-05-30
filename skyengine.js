@@ -724,6 +724,132 @@ function getStarNameFromRecord(s) {
   return "Unnamed star";
 }
 
+// ----------------------------------------------
+// ------------ computeBodyPosition -------------
+// ----------------------------------------------
+function computeBodyPosition(name, JDdatetime, latDeg, lonDeg) {
+    const AU_KM   = 149597870.7;
+    const R_EARTH = 6378.137;
+
+    function deg2rad(d) { return d * Math.PI / 180; }
+    function rad2deg(r) { return r * 180 / Math.PI; }
+
+    // ---------- Kepler solver (M, e → E) ----------
+    function solveKepler(M, e) {
+        let E = M;
+        for (let k = 0; k < 20; k++) {
+            const f  = E - e * Math.sin(E) - M;
+            const fp = 1 - e * Math.cos(E);
+            const dE = -f / fp;
+            E += dE;
+            if (Math.abs(dE) < 1e-12) break;
+        }
+        return E;
+    }
+
+    // ---------- Elements → heliocentric XYZ (position only) ----------
+    function elementsToPosition(body, JD) {
+        if (body.a === 0) return [0,0,0];
+
+        const a_AU = body.a;
+        const e    = body.e;
+        const i    = deg2rad(body.i);
+        const Omega = deg2rad(body.Omega);
+        const omega = deg2rad(body.omega);
+
+        const dt_days = JD - body.epoch;
+        const M0      = deg2rad(body.M0);
+        const n_deg   = body.n; // deg/day
+        const M       = M0 + deg2rad(n_deg * dt_days);
+        const Mnorm   = ((M % (2*Math.PI)) + 2*Math.PI) % (2*Math.PI);
+
+        const E    = solveKepler(Mnorm, e);
+        const cosE = Math.cos(E), sinE = Math.sin(E);
+
+        const r_orb_AU = a_AU * (1 - e * cosE);
+        const x_orb_AU = a_AU * (cosE - e);
+        const y_orb_AU = a_AU * Math.sqrt(1 - e*e) * sinE;
+
+        const x_orb = x_orb_AU * AU_KM;
+        const y_orb = y_orb_AU * AU_KM;
+        const z_orb = 0;
+
+        const cosO = Math.cos(Omega), sinO = Math.sin(Omega);
+        const cosi = Math.cos(i),     sini = Math.sin(i);
+        const cosw = Math.cos(omega), sinw = Math.sin(omega);
+
+        // perifocal → ecliptic heliocentric
+        let x1 =  x_orb * cosw - y_orb * sinw;
+        let y1 =  x_orb * sinw + y_orb * cosw;
+        let z1 =  z_orb;
+
+        let x2 = x1;
+        let y2 = y1 * cosi;
+        let z2 = y1 * sini;
+
+        let x3 = x2 * cosO - y2 * sinO;
+        let y3 = x2 * sinO + y2 * cosO;
+        let z3 = z2;
+
+        return [x3, y3, z3];
+    }
+
+    // ---------- Earth + topocentric observer ----------
+    function computeObserver(JD, latDeg, lonDeg) {
+        const earthPos = elementsToPosition(Bodies_J2000.Earth, JD);
+
+        const lat = deg2rad(latDeg);
+        const lon = deg2rad(lonDeg);
+
+        const T = (JD - 2451545.0) / 36525.0;
+        let GMST = 280.46061837
+                 + 360.98564736629 * (JD - 2451545.0)
+                 + 0.000387933 * T*T
+                 - T*T*T / 38710000.0;
+        GMST = ((GMST % 360) + 360) % 360;
+        const theta = deg2rad(GMST) + lon;
+
+        const cosLat = Math.cos(lat), sinLat = Math.sin(lat);
+        const cosTh  = Math.cos(theta), sinTh = Math.sin(theta);
+
+        const x_site = R_EARTH * cosLat * cosTh;
+        const y_site = R_EARTH * cosLat * sinTh;
+        const z_site = R_EARTH * sinLat;
+
+        return {
+            x: earthPos[0] + x_site,
+            y: earthPos[1] + y_site,
+            z: earthPos[2] + z_site
+        };
+    }
+
+    // ---------- RA/Dec from relative vector ----------
+    function toRaDec(dx, dy, dz) {
+        const rxy = Math.sqrt(dx*dx + dy*dy);
+        let ra  = Math.atan2(dy, dx);
+        let dec = Math.atan2(dz, rxy);
+        if (ra < 0) ra += 2*Math.PI;
+        return { ra: rad2deg(ra), dec: rad2deg(dec) };
+    }
+
+    // ---------- Main flow ----------
+    const bodyNames = Object.keys(Bodies_J2000);
+    const idx = bodyNames.indexOf(name);
+    if (idx === -1) {
+        return { ra: NaN, dec: NaN };
+    }
+
+    const targetPos = elementsToPosition(Bodies_J2000[name], JDdatetime);
+    const obs       = computeObserver(JDdatetime, latDeg, lonDeg);
+
+    const dx = targetPos[0] - obs.x;
+    const dy = targetPos[1] - obs.y;
+    const dz = targetPos[2] - obs.z;
+
+    return toRaDec(dx, dy, dz);
+}
+
+
 /* ============================================================
    Build Celestial Sphere
    ============================================================ */
