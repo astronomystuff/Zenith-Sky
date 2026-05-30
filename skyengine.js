@@ -36,11 +36,11 @@ const Bodies_J2000 = {
     Saturn:    { a:9.55491,  e:0.055508, i:2.4894,  Omega:113.665, omega:339.392, M0:317.020, epoch:2451545.0, n:0.033439,  period:10759.22, mass:5.6834e26,   GM:3.7931187e7 },
     Uranus:    { a:19.2184,  e:0.046295, i:0.7730,  Omega:74.006,  omega:96.998,  M0:142.238, epoch:2451545.0, n:0.011731,  period:30685.4, mass:8.6810e25,   GM:5.793939e6 },
     Neptune:   { a:30.1104,  e:0.008988, i:1.7700,  Omega:131.784, omega:272.846, M0:256.228, epoch:2451545.0, n:0.005981,  period:60189.0, mass:1.02413e26,  GM:6.836529e6 },
-    Pluto:     { a:39.6,  e:0.252,  i:17.1, Omega:110,   omega:114,   M0:356.5, epoch:2451545.0, n:0.00396,   period:91000,  mass:1.303e22,   GM:8.71e2 },
+    Pluto:     { a:39.6,  e:0.252,  i:17.1, Omega:110,   omega:114,   M0:356.5, epoch:2451545.0, n:0.00396,   period:91000,  mass:1.303e22,  GM:8.71e2 },
     Makemake:  { a:45.5,  e:0.16,   i:29,   Omega:79.3,  omega:297,   M0:138.6, epoch:2451545.0, n:0.00321,   period:112000, mass:3.1e21,    GM:2.06e2 },
     Haumea:    { a:43,    e:0.196,  i:28.2, Omega:122,   omega:241,   M0:189.1, epoch:2451545.0, n:0.00349,   period:103000, mass:4.01e21,   GM:2.67e2 },
     Eris:      { a:68,    e:0.437,  i:43.9, Omega:36,    omega:151,   M0:194.4, epoch:2451545.0, n:0.00176,   period:205000, mass:1.66e22,   GM:1.11e3 },
-    Sedna:     { a:550,   e:0.861,  i:11.9, Omega:144,   omega:311,   M0:358.3, epoch:2451545.0, n:0.0000765, period:4710000, mass:2.0e21,    GM:1.3e2 },
+    Sedna:     { a:550,   e:0.861,  i:11.9, Omega:144,   omega:311,   M0:358.3, epoch:2451545.0, n:0.0000765, period:4710000, mass:2.0e21,   GM:1.3e2 },
     Gonggong:  { a:66.9,  e:0.503,  i:30.9, Omega:337,   omega:207,   M0:94.0,  epoch:2451545.0, n:0.0018,    period:200000, mass:1.75e21,   GM:1.16e2 },
     Quaoar:    { a:43.1,  e:0.0358, i:7.99, Omega:189,   omega:164,   M0:258.1, epoch:2451545.0, n:0.00348,   period:104000, mass:1.4e21,    GM:9.3e1 },
     Orcus:     { a:39.3,  e:0.222,  i:20.6, Omega:268,   omega:73.7,  M0:150.3, epoch:2451545.0, n:0.004,     period:90100,  mass:6.4e20,    GM:4.3e1 },
@@ -830,7 +830,7 @@ function computeBodyPosition(name, JDdatetime, latDeg, lonDeg) {
         }
     }
 
-    // ---------------- N-body accelerations + 1PN Sun GR ----------------
+    // ---------------- N-body accelerations + Sun 1PN GR patch ----------------
     function accelerations(state, bodyNames){
         const N=bodyNames.length;
         const a=new Array(N).fill(0).map(()=>[0,0,0]);
@@ -856,7 +856,7 @@ function computeBodyPosition(name, JDdatetime, latDeg, lonDeg) {
             }
         }
 
-        // 1PN Schwarzschild-like correction around Sun only
+        // 1PN Schwarzschild-like correction around Sun only (approximate)
         for(let i=0;i<N;i++){
             if(i===sunIndex) continue;
 
@@ -874,8 +874,8 @@ function computeBodyPosition(name, JDdatetime, latDeg, lonDeg) {
 
             const pref = GM_sun/(c2*r2*r); // GM/c^2 r^3
 
-            const factor_r = (4*GM_sun/r - v2); // multiplies r-vector
-            const factor_v = 4*rv;              // multiplies v-vector
+            const factor_r = (4*GM_sun/r - v2);
+            const factor_v = 4*rv;
 
             const ax_GR = pref*(factor_r*rx + factor_v*vx);
             const ay_GR = pref*(factor_r*ry + factor_v*vy);
@@ -889,7 +889,7 @@ function computeBodyPosition(name, JDdatetime, latDeg, lonDeg) {
         return a;
     }
 
-    // ---------------- Leapfrog integrator ----------------
+    // ---------------- Leapfrog integrator (constant dt) ----------------
     function integrate(state, bodyNames, JDtarget){
         const tTotal=(JDtarget-JD0)*86400;
         if(tTotal===0) return;
@@ -1001,7 +1001,6 @@ function computeBodyPosition(name, JDdatetime, latDeg, lonDeg) {
 
     return toRaDec(dx,dy,dz);
 }
-
 
 /* ============================================================
    Build Celestial Sphere
