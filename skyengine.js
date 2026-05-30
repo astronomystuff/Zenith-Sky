@@ -59,23 +59,22 @@ async function loadVSOP87BFile(url) {
     let currentPower = null;
 
     for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
-
-        const headerMatch = trimmed.match(/\*T\*\*(\d)/);
+        if (!line.trim()) continue;
+      
+        const headerMatch = line.match(/\*T\*\*(\d)/);
         if (headerMatch) {
-            currentPower = Number(headerMatch[1]); // 0..5
+            currentPower = Number(headerMatch[1]);
             continue;
         }
 
-        if (/^\d+/.test(trimmed) && currentPower !== null) {
-            const parts = trimmed.split(/\s+/);
-            const nums = parts.map(Number);
+        if (currentPower !== null && /^\s*\d+/.test(line)) {
+            const nums = line.trim().split(/\s+/).map(Number);
+
             const A_L = nums[14];
             const A_B = nums[15];
             const A_R = nums[16];
-            const B = nums[17];
-            const C = nums[18];
+            const B   = nums[17];
+            const C   = nums[18];
 
             tables[`L${currentPower}`].push([A_L, B, C]);
             tables[`B${currentPower}`].push([A_B, B, C]);
