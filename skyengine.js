@@ -1436,4 +1436,5 @@ window.J2000_MS = J2000_MS;
 window.buildCelestialSphere = buildCelestialSphere;
 window.xyzToRaDec = xyzToRaDec;
 window.computeBodyPosition = computeBodyPosition;
+window.loadAllVSOP = loadAllVSOP;
 window.raDecToXYZ= raDecToXYZ;
