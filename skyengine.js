@@ -24,6 +24,67 @@ const J2000_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
 window.J2000_MS = J2000_MS;
 window.sky3dStarTexture = makeStarTexture();
 const LY_TO_PC = 1 / 3.26156;
+const VSOP = {
+    Mercury: null,
+    Venus: null,
+    Earth: null,
+    Mars: null,
+    Jupiter: null,
+    Saturn: null,
+    Uranus: null,
+    Neptune: null
+};
+
+async function loadAllVSOP() {
+    VSOP.Mercury = await loadVSOP87BFile("/vsop/VSOP87B.mer");
+    VSOP.Venus   = await loadVSOP87BFile("/vsop/VSOP87B.ven");
+    VSOP.Earth   = await loadVSOP87BFile("/vsop/VSOP87B.ear");
+    VSOP.Mars    = await loadVSOP87BFile("/vsop/VSOP87B.mar");
+    VSOP.Jupiter = await loadVSOP87BFile("/vsop/VSOP87B.jup");
+    VSOP.Saturn  = await loadVSOP87BFile("/vsop/VSOP87B.sat");
+    VSOP.Uranus  = await loadVSOP87BFile("/vsop/VSOP87B.ura");
+    VSOP.Neptune = await loadVSOP87BFile("/vsop/VSOP87B.nep");
+}
+
+async function loadVSOP87BFile(url) {
+    const text = await fetch(url).then(r => r.text());
+    const lines = text.split(/\r?\n/);
+
+    const tables = {
+        L0: [], L1: [], L2: [], L3: [], L4: [], L5: [],
+        B0: [], B1: [], B2: [], B3: [], B4: [], B5: [],
+        R0: [], R1: [], R2: [], R3: [], R4: [], R5: []
+    };
+
+    let currentPower = null;
+
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+
+        const headerMatch = trimmed.match(/\*T\*\*(\d)/);
+        if (headerMatch) {
+            currentPower = Number(headerMatch[1]); // 0..5
+            continue;
+        }
+
+        if (/^\d+/.test(trimmed) && currentPower !== null) {
+            const parts = trimmed.split(/\s+/);
+            const nums = parts.map(Number);
+            const A_L = nums[14];
+            const A_B = nums[15];
+            const A_R = nums[16];
+            const B = nums[17];
+            const C = nums[18];
+
+            tables[`L${currentPower}`].push([A_L, B, C]);
+            tables[`B${currentPower}`].push([A_B, B, C]);
+            tables[`R${currentPower}`].push([A_R, B, C]);
+        }
+    }
+
+    return tables;
+}
 
 /* ============================================================
    Star texture
@@ -763,6 +824,67 @@ function VSOP87_Planet(name, JD) {
         default:
             throw new Error("Unknown planet for VSOP87: " + name);
     }
+}
+
+function sphericalToCartesian(L, B, R) {
+    const cosB = Math.cos(B), sinB = Math.sin(B);
+    const cosL = Math.cos(L), sinL = Math.sin(L);
+
+    return {
+        x: R * cosB * cosL,
+        y: R * cosB * sinL,
+        z: R * sinB
+    };
+}
+
+function vsopSeries(terms, t) {
+    let sum = 0;
+    for (const [A, B, C] of terms) {
+        sum += A * Math.cos(B + C * t);
+    }
+    return sum;
+}
+
+function VSOP87_Mercury(JD) { return VSOP87_Generic("Mercury", JD); }
+function VSOP87_Venus(JD)   { return VSOP87_Generic("Venus", JD); }
+function VSOP87_Earth(JD)   { return VSOP87_Generic("Earth", JD); }
+function VSOP87_Mars(JD)    { return VSOP87_Generic("Mars", JD); }
+function VSOP87_Jupiter(JD) { return VSOP87_Generic("Jupiter", JD); }
+function VSOP87_Saturn(JD)  { return VSOP87_Generic("Saturn", JD); }
+function VSOP87_Uranus(JD)  { return VSOP87_Generic("Uranus", JD); }
+function VSOP87_Neptune(JD) { return VSOP87_Generic("Neptune", JD); }
+function VSOP87_Generic(planet, JD) {
+    const T = VSOP[planet];  // Parsed tables
+    const t = (JD - 2451545.0) / 365250.0;
+
+    const L = (
+        vsopSeries(T.L0, t) +
+        vsopSeries(T.L1, t) * t +
+        vsopSeries(T.L2, t) * t*t +
+        vsopSeries(T.L3, t) * t*t*t +
+        vsopSeries(T.L4, t) * t*t*t*t +
+        vsopSeries(T.L5, t) * t*t*t*t*t
+    );
+
+    const B = (
+        vsopSeries(T.B0, t) +
+        vsopSeries(T.B1, t) * t +
+        vsopSeries(T.B2, t) * t*t +
+        vsopSeries(T.B3, t) * t*t*t +
+        vsopSeries(T.B4, t) * t*t*t*t +
+        vsopSeries(T.B5, t) * t*t*t*t*t
+    );
+
+    const R = (
+        vsopSeries(T.R0, t) +
+        vsopSeries(T.R1, t) * t +
+        vsopSeries(T.R2, t) * t*t +
+        vsopSeries(T.R3, t) * t*t*t +
+        vsopSeries(T.R4, t) * t*t*t*t +
+        vsopSeries(T.R5, t) * t*t*t*t*t
+    );
+
+    return sphericalToCartesian(L, B, R);
 }
 
 // ==============================================
