@@ -48,8 +48,11 @@ async function loadAllVSOP() {
 
 function parseVSOP87B2Line(line) {
     const parts = line.trim().split(/\s+/);
-    if (parts.length < 6) return null;
 
+    // Must have at least: index + multipliers + AL AB AR B C
+    if (parts.length < 7) return null;
+
+    // Extract last 5 floats
     const C  = Number(parts[parts.length - 1]);
     const B  = Number(parts[parts.length - 2]);
     const AR = Number(parts[parts.length - 3]);
@@ -73,17 +76,18 @@ async function loadVSOP87BFile(url) {
 
     let currentPower = null;
 
-    for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
+    for (const raw of lines) {
+        const line = raw.trim();
+        if (!line) continue;
 
         const headerMatch = line.match(/\*T\*\*(\d)/);
         if (headerMatch) {
             currentPower = Number(headerMatch[1]);
             continue;
         }
+
         if (currentPower === null) continue;
-        if (!/^\s*\d+/.test(line)) continue;
+        if (!/^\d+/.test(line)) continue;
 
         const coeffs = parseVSOP87B2Line(line);
         if (!coeffs) continue;
@@ -97,6 +101,7 @@ async function loadVSOP87BFile(url) {
 
     return tables;
 }
+
 
 /* ============================================================
    Star texture
