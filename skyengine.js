@@ -87,7 +87,7 @@ async function loadVSOP87BFile(url) {
         }
 
         if (currentPower === null) continue;
-        if (!/^\d+/.test(line)) continue;
+        if (!/^\d+/.test(line.trimStart())) continue;
 
         const coeffs = parseVSOP87B2Line(line);
         if (!coeffs) continue;
