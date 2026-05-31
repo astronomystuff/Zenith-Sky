@@ -68,25 +68,36 @@ async function loadVSOP87BFile(url) {
     const tables = {
         L0: [], L1: [], L2: [], L3: [], L4: [], L5: [],
         B0: [], B1: [], B2: [], B3: [], B4: [], B5: [],
-        R0: [], R1: [], R2: [], R3: [], R4: [], R5: []
+        R0: [], R1: [], R2: [], R3: [], R4: [], R5: [],
+        constants: { L0: 0, B0: 0, R0: 0 }
     };
 
     let currentPower = null;
+    let constantRow = null;
 
     for (const raw of lines) {
-        const line = raw.trim();
-        if (!line) continue;
+        const trimmed = raw.trim();
+        if (!trimmed) continue;
 
-        const headerMatch = line.match(/\*T\*\*(\d)/);
+        const headerMatch = trimmed.match(/\*T\*\*(\d)/);
         if (headerMatch) {
             currentPower = Number(headerMatch[1]);
+            continue;
+        }
+
+        const parts = trimmed.split(/\s+/);
+        const allFloats = parts.length === 5 &&
+            parts.every(v => /^[-+]?\d*\.\d+(e[-+]?\d+)?$/i.test(v));
+
+        if (allFloats && !constantRow) {
+            constantRow = parts.map(Number);
             continue;
         }
 
         if (currentPower === null) continue;
         if (!/^\d+/.test(raw.trimStart())) continue;
 
-        const coeffs = parseVSOP87B2Line(line);
+        const coeffs = parseVSOP87B2Line(trimmed);
         if (!coeffs) continue;
 
         const { AL, AB, AR, B, C, varIndex } = coeffs;
@@ -99,10 +110,16 @@ async function loadVSOP87BFile(url) {
             tables[`R${currentPower}`].push([AR, B, C]);
     }
 
+    if (constantRow) {
+        tables.constants = {
+            L0: constantRow[1],
+            R0: constantRow[2],
+            B0: constantRow[3]
+        };
+    }
+
     return tables;
 }
-
-
 
 /* ============================================================
    Star texture
@@ -753,9 +770,7 @@ function getStarNameFromRecord(s) {
 }
 
 async function horizonsStateVector(name, JD) {
-
     const jdString = JD.toFixed(6);
-
     const url =
         "https://ssd.jpl.nasa.gov/api/horizons.api?" +
         `format=json&COMMAND='${name}'&OBJ_DATA='NO'&MAKE_EPHEM='YES'` +
@@ -763,7 +778,6 @@ async function horizonsStateVector(name, JD) {
         `&TLIST='${jdString}'`;
 
     const data = await fetch(url).then(r => r.json());
-
     const vec = data.result[0].vector;
 
     return {
@@ -874,7 +888,9 @@ function VSOP87_Generic(planet, JD) {
     const T = VSOP[planet];  // Parsed tables
     const t = (JD - 2451545.0) / 365250.0;
 
-    const L = (
+    const C = T.constants || { L0: 0, B0: 0, R0: 0 };
+
+    const L = C.L0 + (
         vsopSeries(T.L0, t) +
         vsopSeries(T.L1, t) * t +
         vsopSeries(T.L2, t) * t*t +
@@ -883,7 +899,7 @@ function VSOP87_Generic(planet, JD) {
         vsopSeries(T.L5, t) * t*t*t*t*t
     );
 
-    const B = (
+    const B = C.B0 + (
         vsopSeries(T.B0, t) +
         vsopSeries(T.B1, t) * t +
         vsopSeries(T.B2, t) * t*t +
@@ -892,7 +908,7 @@ function VSOP87_Generic(planet, JD) {
         vsopSeries(T.B5, t) * t*t*t*t*t
     );
 
-    const R = (
+    const R = C.R0 + (
         vsopSeries(T.R0, t) +
         vsopSeries(T.R1, t) * t +
         vsopSeries(T.R2, t) * t*t +
