@@ -1464,5 +1464,6 @@ window.VSOP87_Neptune = VSOP87_Neptune;
 window.VSOP87_Planet = VSOP87_Planet;
 window.computeBodyPosition = computeBodyPosition;
 window.VSOP = VSOP;
-window.vsopSeries = vsopSeries
+window.vsopSeries = vsopSeries;
+window.parseVSOP87B2Line = parseVSOP87B2Line;
 window.raDecToXYZ= raDecToXYZ;
