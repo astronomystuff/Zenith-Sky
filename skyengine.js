@@ -73,25 +73,15 @@ async function loadVSOP87BFile(url) {
     };
 
     let currentPower = null;
-    let constantRow = null;
 
     for (const raw of lines) {
         const trimmed = raw.trim();
         if (!trimmed) continue;
 
+        // Detect power header
         const headerMatch = trimmed.match(/\*T\*\*(\d)/);
         if (headerMatch) {
             currentPower = Number(headerMatch[1]);
-            continue;
-        }
-
-        // ⭐ Detect constant row BEFORE skipping anything
-        const parts = trimmed.split(/\s+/);
-        const allFloats = parts.length === 5 &&
-            parts.every(v => /^[-+]?\d*\.\d+(e[-+]?\d+)?$/i.test(v));
-
-        if (allFloats && currentPower === 0 && !constantRow) {
-            constantRow = parts.map(Number);
             continue;
         }
 
@@ -103,6 +93,14 @@ async function loadVSOP87BFile(url) {
 
         const { AL, AB, AR, B, C, varIndex } = coeffs;
 
+        if (currentPower === 0 && varIndex === 1 && tables.L0.length === 0) {
+            tables.constants = {
+                L0: AB,
+                R0: AR,
+                B0: B
+            };
+        }
+
         if (varIndex === 1)
             tables[`L${currentPower}`].push([AL, B, C]);
         else if (varIndex === 2)
@@ -111,16 +109,9 @@ async function loadVSOP87BFile(url) {
             tables[`R${currentPower}`].push([AR, B, C]);
     }
 
-    if (constantRow) {
-        tables.constants = {
-            L0: constantRow[1],  // L0 constant
-            R0: constantRow[2],  // R0 constant
-            B0: constantRow[3]   // B0 constant
-        };
-    }
-
     return tables;
 }
+
 
 
 /* ============================================================
