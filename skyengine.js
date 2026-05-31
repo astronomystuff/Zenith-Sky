@@ -58,7 +58,7 @@ function parseVSOP87B2Line(line) {
 
     if (![AL, AB, AR, B, C].every(Number.isFinite)) return null;
 
-    return { AL, AB, AR, B, C, varIndex: Number(parts[1]) };
+    return { AL, AB, AR, B, C, varIndex: Number(parts[2]) };
 }
 
 async function loadVSOP87BFile(url) {
@@ -93,7 +93,7 @@ async function loadVSOP87BFile(url) {
 
         const { AL, AB, AR, B, C, varIndex } = coeffs;
 
-        if (currentPower === 0 && varIndex === 1 && tables.L0.length === 0) {
+        if (currentPower === 0 && varIndex === 0 && tables.L0.length === 0) {
             tables.constants = {
                 L0: AB,
                 R0: AR,
@@ -101,18 +101,16 @@ async function loadVSOP87BFile(url) {
             };
         }
 
-        if (varIndex === 1)
+        if (varIndex === 0)
             tables[`L${currentPower}`].push([AL, B, C]);
-        else if (varIndex === 2)
+        else if (varIndex === 1)
             tables[`B${currentPower}`].push([AB, B, C]);
-        else if (varIndex === 3)
+        else if (varIndex === 2)
             tables[`R${currentPower}`].push([AR, B, C]);
     }
 
     return tables;
 }
-
-
 
 /* ============================================================
    Star texture
