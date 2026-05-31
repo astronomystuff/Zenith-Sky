@@ -878,34 +878,33 @@ function VSOP87_Neptune(JD) { return VSOP87_Generic("Neptune", JD); }
 function VSOP87_Generic(planet, JD) {
     const T = VSOP[planet];
     const t = (JD - 2451545.0) / 365250.0;
-    const C = T.constants || { L0: 0, B0: 0, R0: 0 };
+  
+  let L = (
+    vsopSeries(T.L0, t) +
+    vsopSeries(T.L1, t) * t +
+    vsopSeries(T.L2, t) * t*t +
+    vsopSeries(T.L3, t) * t*t*t +
+    vsopSeries(T.L4, t) * t*t*t*t +
+    vsopSeries(T.L5, t) * t*t*t*t*t
+  );
 
-    let L = C.L0 + (
-        vsopSeries(T.L0, t) +
-        vsopSeries(T.L1, t) * t +
-        vsopSeries(T.L2, t) * t*t +
-        vsopSeries(T.L3, t) * t*t*t +
-        vsopSeries(T.L4, t) * t*t*t*t +
-        vsopSeries(T.L5, t) * t*t*t*t*t
-    );
+  let B = (
+    vsopSeries(T.B0, t) +
+    vsopSeries(T.B1, t) * t +
+    vsopSeries(T.B2, t) * t*t +
+    vsopSeries(T.B3, t) * t*t*t +
+    vsopSeries(T.B4, t) * t*t*t*t +
+    vsopSeries(T.B5, t) * t*t*t*t*t
+  );
 
-    let B = C.B0 + (
-        vsopSeries(T.B0, t) +
-        vsopSeries(T.B1, t) * t +
-        vsopSeries(T.B2, t) * t*t +
-        vsopSeries(T.B3, t) * t*t*t +
-        vsopSeries(T.B4, t) * t*t*t*t +
-        vsopSeries(T.B5, t) * t*t*t*t*t
-    );
-
-    let R = C.R0 + (
-        vsopSeries(T.R0, t) +
-        vsopSeries(T.R1, t) * t +
-        vsopSeries(T.R2, t) * t*t +
-        vsopSeries(T.R3, t) * t*t*t +
-        vsopSeries(T.R4, t) * t*t*t*t +
-        vsopSeries(T.R5, t) * t*t*t*t*t
-    );
+  let R = (
+    vsopSeries(T.R0, t) +
+    vsopSeries(T.R1, t) * t +
+    vsopSeries(T.R2, t) * t*t +
+    vsopSeries(T.R3, t) * t*t*t +
+    vsopSeries(T.R4, t) * t*t*t*t +
+    vsopSeries(T.R5, t) * t*t*t*t*t
+  );
 
     L = L % (2*Math.PI);
     if (L < 0) L += 2*Math.PI;
