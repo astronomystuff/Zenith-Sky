@@ -908,6 +908,9 @@ function VSOP87_Generic(planet, JD) {
         vsopSeries(T.R5, t) * t*t*t*t*t
     );
 
+    L = L % (2*Math.PI);
+    if (L < 0) L += 2*Math.PI;
+  
     return sphericalToCartesian(L, B, R);
 }
 
