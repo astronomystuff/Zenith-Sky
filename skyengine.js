@@ -85,17 +85,18 @@ async function loadVSOP87BFile(url) {
             continue;
         }
 
+        // ⭐ Detect constant row BEFORE skipping anything
         const parts = trimmed.split(/\s+/);
         const allFloats = parts.length === 5 &&
             parts.every(v => /^[-+]?\d*\.\d+(e[-+]?\d+)?$/i.test(v));
 
-        if (allFloats && !constantRow) {
+        if (allFloats && currentPower === 0 && !constantRow) {
             constantRow = parts.map(Number);
             continue;
         }
 
         if (currentPower === null) continue;
-        if (!/^\d+/.test(raw.trimStart())) continue;
+        if (!/^\d+/.test(trimmed)) continue;
 
         const coeffs = parseVSOP87B2Line(trimmed);
         if (!coeffs) continue;
@@ -112,14 +113,15 @@ async function loadVSOP87BFile(url) {
 
     if (constantRow) {
         tables.constants = {
-            L0: constantRow[1],
-            R0: constantRow[2],
-            B0: constantRow[3]
+            L0: constantRow[1],  // L0 constant
+            R0: constantRow[2],  // R0 constant
+            B0: constantRow[3]   // B0 constant
         };
     }
 
     return tables;
 }
+
 
 /* ============================================================
    Star texture
