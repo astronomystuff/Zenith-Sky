@@ -48,11 +48,8 @@ async function loadAllVSOP() {
 
 function parseVSOP87B2Line(line) {
     const parts = line.trim().split(/\s+/);
-
-    // Must have at least: index + multipliers + AL AB AR B C
     if (parts.length < 7) return null;
 
-    // Extract last 5 floats
     const C  = Number(parts[parts.length - 1]);
     const B  = Number(parts[parts.length - 2]);
     const AR = Number(parts[parts.length - 3]);
@@ -61,7 +58,7 @@ function parseVSOP87B2Line(line) {
 
     if (![AL, AB, AR, B, C].every(Number.isFinite)) return null;
 
-    return { AL, AB, AR, B, C };
+    return { AL, AB, AR, B, C, varIndex: Number(parts[1]) };
 }
 
 async function loadVSOP87BFile(url) {
@@ -87,20 +84,24 @@ async function loadVSOP87BFile(url) {
         }
 
         if (currentPower === null) continue;
-        if (!/^\d+/.test(line.trimStart())) continue;
+        if (!/^\d+/.test(raw.trimStart())) continue;
 
         const coeffs = parseVSOP87B2Line(line);
         if (!coeffs) continue;
 
-        const { AL, AB, AR, B, C } = coeffs;
+        const { AL, AB, AR, B, C, varIndex } = coeffs;
 
-        tables[`L${currentPower}`].push([AL, B, C]);
-        tables[`B${currentPower}`].push([AB, B, C]);
-        tables[`R${currentPower}`].push([AR, B, C]);
+        if (varIndex === 1)
+            tables[`L${currentPower}`].push([AL, B, C]);
+        else if (varIndex === 2)
+            tables[`B${currentPower}`].push([AB, B, C]);
+        else if (varIndex === 3)
+            tables[`R${currentPower}`].push([AR, B, C]);
     }
 
     return tables;
 }
+
 
 
 /* ============================================================
