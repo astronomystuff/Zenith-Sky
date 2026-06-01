@@ -36,80 +36,60 @@ const VSOP = {
 };
 
 async function loadAllVSOP() {
-    VSOP.Mercury = await loadVSOP87BFile("vsop/VSOP87B.mer");
-    VSOP.Venus   = await loadVSOP87BFile("vsop/VSOP87B.ven");
-    VSOP.Earth   = await loadVSOP87BFile("vsop/VSOP87B.ear");
-    VSOP.Mars    = await loadVSOP87BFile("vsop/VSOP87B.mar");
-    VSOP.Jupiter = await loadVSOP87BFile("vsop/VSOP87B.jup");
-    VSOP.Saturn  = await loadVSOP87BFile("vsop/VSOP87B.sat");
-    VSOP.Uranus  = await loadVSOP87BFile("vsop/VSOP87B.ura");
-    VSOP.Neptune = await loadVSOP87BFile("vsop/VSOP87B.nep");
+    VSOP.Mercury = await loadVSOP87File("vsop/VSOP87A.mer.txt");
+    VSOP.Venus   = await loadVSOP87File("vsop/VSOP87A.ven.txt");
+    VSOP.Earth   = await loadVSOP87File("vsop/VSOP87A.ear.txt");
+    VSOP.Mars    = await loadVSOP87File("vsop/VSOP87A.mar.txt");
+    VSOP.Jupiter = await loadVSOP87File("vsop/VSOP87A.jup.txt");
+    VSOP.Saturn  = await loadVSOP87File("vsop/VSOP87A.sat.txt");
+    VSOP.Uranus  = await loadVSOP87File("vsop/VSOP87A.ura.txt");
+    VSOP.Neptune = await loadVSOP87File("vsop/VSOP87A.nep.txt");
 }
 
-function parseVSOP87B2Line(line) {
-    const parts = line.trim().split(/\s+/);
-    if (parts.length < 7) return null;
-
-    const C  = Number(parts[parts.length - 1]);
-    const B  = Number(parts[parts.length - 2]);
-    const AR = Number(parts[parts.length - 3]);
-    const AB = Number(parts[parts.length - 4]);
-    const AL = Number(parts[parts.length - 5]);
-
-    if (![AL, AB, AR, B, C].every(Number.isFinite)) return null;
-
-    return { AL, AB, AR, B, C, varIndex: Number(parts[2]) };
-}
-
-async function loadVSOP87BFile(url) {
-    const text  = await fetch(url).then(r => r.text());
+async function loadVSOP87File(url) {
+    const text = await fetch(url).then(r => r.text());
     const lines = text.split(/\r?\n/);
 
-    const tables = {
-        L0: [], L1: [], L2: [], L3: [], L4: [], L5: [],
-        B0: [], B1: [], B2: [], B3: [], B4: [], B5: [],
-        R0: [], R1: [], R2: [], R3: [], R4: [], R5: [],
-        constants: { L0: 0, B0: 0, R0: 0 }
+    const data = {
+        X0: [], X1: [], X2: [], X3: [], X4: [], X5: [],
+        Y0: [], Y1: [], Y2: [], Y3: [], Y4: [], Y5: [],
+        Z0: [], Z1: [], Z2: [], Z3: [], Z4: [], Z5: []
     };
 
-    let currentPower = null;
+    let current = null;
 
     for (const raw of lines) {
-        const trimmed = raw.trim();
-        if (!trimmed) continue;
+        const line = raw.trim();
+        if (!line) continue;
 
-        // Detect power header
-        const headerMatch = trimmed.match(/\*T\*\*(\d)/);
-        if (headerMatch) {
-            currentPower = Number(headerMatch[1]);
+        const header = line.match(/VARIABLE\s+(\d)\s+\(XYZ\).*T\*\*(\d)/);
+        if (header) {
+            const varIndex = Number(header[1]); // 1=X, 2=Y, 3=Z
+            const power    = Number(header[2]); // 0..5
+
+            if (varIndex === 1) current = "X" + power;
+            if (varIndex === 2) current = "Y" + power;
+            if (varIndex === 3) current = "Z" + power;
+
             continue;
         }
 
-        if (currentPower === null) continue;
-        if (!/^\d+/.test(trimmed)) continue;
+        if (!current) continue;
+        if (!/^\d/.test(line)) continue;
 
-        const coeffs = parseVSOP87B2Line(trimmed);
-        if (!coeffs) continue;
+        const parts = line.split(/\s+/);
+        if (parts.length < 3) continue;
 
-        const { AL, AB, AR, B, C, varIndex } = coeffs;
+        const A = parseFloat(parts[parts.length - 3]);
+        const B = parseFloat(parts[parts.length - 2]);
+        const C = parseFloat(parts[parts.length - 1]);
 
-        if (currentPower === 0 && varIndex === 0 && tables.L0.length === 0) {
-            tables.constants = {
-                L0: AB,
-                R0: AR,
-                B0: B
-            };
+        if (Number.isFinite(A) && Number.isFinite(B) && Number.isFinite(C)) {
+            data[current].push([A, B, C]);
         }
-
-        if (varIndex === 0)
-            tables[`L${currentPower}`].push([AL, B, C]);
-        else if (varIndex === 1)
-            tables[`B${currentPower}`].push([AB, B, C]);
-        else if (varIndex === 2)
-            tables[`R${currentPower}`].push([AR, B, C]);
     }
 
-    return tables;
+    return data;
 }
 
 /* ============================================================
@@ -878,38 +858,35 @@ function VSOP87_Neptune(JD) { return VSOP87_Generic("Neptune", JD); }
 function VSOP87_Generic(planet, JD) {
     const T = VSOP[planet];
     const t = (JD - 2451545.0) / 365250.0;
-  
-  let L = (
-    vsopSeries(T.L0, t) +
-    vsopSeries(T.L1, t) * t +
-    vsopSeries(T.L2, t) * t*t +
-    vsopSeries(T.L3, t) * t*t*t +
-    vsopSeries(T.L4, t) * t*t*t*t +
-    vsopSeries(T.L5, t) * t*t*t*t*t
-  );
 
-  let B = (
-    vsopSeries(T.B0, t) +
-    vsopSeries(T.B1, t) * t +
-    vsopSeries(T.B2, t) * t*t +
-    vsopSeries(T.B3, t) * t*t*t +
-    vsopSeries(T.B4, t) * t*t*t*t +
-    vsopSeries(T.B5, t) * t*t*t*t*t
-  );
+    const X = (
+        vsopSeries(T.X0, t) +
+        vsopSeries(T.X1, t) * t +
+        vsopSeries(T.X2, t) * t*t +
+        vsopSeries(T.X3, t) * t*t*t +
+        vsopSeries(T.X4, t) * t*t*t*t +
+        vsopSeries(T.X5, t) * t*t*t*t*t
+    );
 
-  let R = (
-    vsopSeries(T.R0, t) +
-    vsopSeries(T.R1, t) * t +
-    vsopSeries(T.R2, t) * t*t +
-    vsopSeries(T.R3, t) * t*t*t +
-    vsopSeries(T.R4, t) * t*t*t*t +
-    vsopSeries(T.R5, t) * t*t*t*t*t
-  );
+    const Y = (
+        vsopSeries(T.Y0, t) +
+        vsopSeries(T.Y1, t) * t +
+        vsopSeries(T.Y2, t) * t*t +
+        vsopSeries(T.Y3, t) * t*t*t +
+        vsopSeries(T.Y4, t) * t*t*t*t +
+        vsopSeries(T.Y5, t) * t*t*t*t*t
+    );
 
-    L = L % (2*Math.PI);
-    if (L < 0) L += 2*Math.PI;
+    const Z = (
+        vsopSeries(T.Z0, t) +
+        vsopSeries(T.Z1, t) * t +
+        vsopSeries(T.Z2, t) * t*t +
+        vsopSeries(T.Z3, t) * t*t*t +
+        vsopSeries(T.Z4, t) * t*t*t*t +
+        vsopSeries(T.Z5, t) * t*t*t*t*t
+    );
 
-    return sphericalToCartesian(L, B, R);
+    return { x: X, y: Y, z: Z };
 }
 
 // ==============================================
