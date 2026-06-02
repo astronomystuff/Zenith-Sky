@@ -832,50 +832,6 @@ function vsopSeries(terms, t) {
     return sum;
 }
 
-function earthVelocity(JD) {
-    const dt = 0.0001; // ~8.64 seconds
-    const e1 = VSOP87_Earth(JD - dt);
-    const e2 = VSOP87_Earth(JD + dt);
-
-    return {
-        vx: (e2.x - e1.x) / (2*dt),
-        vy: (e2.y - e1.y) / (2*dt),
-        vz: (e2.z - e1.z) / (2*dt)
-    };
-}
-
-function applyAnnualAberration(raDeg, decDeg, JD) {
-    const C_AU_PER_DAY = 173.144632674240;
-    const ra  = raDeg  * Math.PI/180;
-    const dec = decDeg * Math.PI/180;
-  
-    const {vx, vy, vz} = earthVelocity(JD);
-    const cx = Math.cos(dec) * Math.cos(ra);
-    const cy = Math.cos(dec) * Math.sin(ra);
-    const cz = Math.sin(dec);
-
-    const bx = vx / C_AU_PER_DAY;
-    const by = vy / C_AU_PER_DAY;
-    const bz = vz / C_AU_PER_DAY;
-    const x = cx + bx;
-    const y = cy + by;
-    const z = cz + bz;
-
-    const r = Math.sqrt(x*x + y*y + z*z);
-    const xn = x / r;
-    const yn = y / r;
-    const zn = z / r;
-
-    let ra2  = Math.atan2(yn, xn);
-    if (ra2 < 0) ra2 += 2*Math.PI;
-    const dec2 = Math.asin(zn);
-
-    return {
-        ra:  ra2  * 180/Math.PI,
-        dec: dec2 * 180/Math.PI
-    };
-}
-
 async function computeLightTime(body, JD) {
     const C_AU_PER_DAY = 173.144632674240;
     const earth = VSOP87_Generic("Earth", JD);
@@ -940,22 +896,107 @@ function VSOP87_Generic(planet, JD) {
     return { x: X, y: Y, z: Z };
 }
 
-// ==============================================
-// ============ computeBodyPosition =============
-// ==============================================
+function saturnRingAngles(saturn, earth) {
+    // Saturn pole orientation (IAU 2009)
+    const alphaP = 40.589 * Math.PI/180;
+    const deltaP = 83.537 * Math.PI/180;
+
+    const nx = Math.cos(deltaP) * Math.cos(alphaP);
+    const ny = Math.cos(deltaP) * Math.sin(alphaP);
+    const nz = Math.sin(deltaP);
+    const sx = saturn.x;
+    const sy = saturn.y;
+    const sz = saturn.z;
+    const ex = saturn.x - earth.x;
+    const ey = saturn.y - earth.y;
+    const ez = saturn.z - earth.z;
+    const rs = Math.hypot(sx, sy, sz);
+    const re = Math.hypot(ex, ey, ez);
+
+    const cosB  = (sx*nx + sy*ny + sz*nz) / rs;
+    const cosBp = (ex*nx + ey*ny + ez*nz) / re;
+
+    return {
+        B:  Math.asin(cosB)  * 180/Math.PI,
+        Bp: Math.asin(cosBp) * 180/Math.PI
+    };
+}
+
+function computePlanetMagnitude(name, r, delta, phaseDeg, B = null, Bp = null) {
+    const a = phaseDeg;
+    const logTerm = 5 * Math.log10(r * delta);
+
+    switch (name) {
+
+        case "Mercury":
+            return logTerm
+                 - 0.613
+                 + 0.06328*a
+                 - 0.0016336*a*a
+                 + 0.000033644*a*a*a;
+
+        case "Venus":
+            return logTerm
+                 - 4.384
+                 + 0.0009*a
+                 + 0.000239*a*a
+                 - 0.00000065*a*a*a;
+
+        case "Mars":
+            return logTerm
+                 - 1.601
+                 + 0.02267*a
+                 - 0.0001302*a*a
+                 + 0.000000435*a*a*a;
+
+        case "Jupiter":
+            return logTerm
+                 - 9.395
+                 + 0.0005*a;
+
+        case "Saturn":
+            return logTerm
+                 - 8.914
+                 + 0.044 * a
+                 - 2.60 * Math.sin(Math.abs(B) * Math.PI/180)
+                 + 1.25 * Math.pow(Math.sin(Bp * Math.PI/180), 2);
+
+        case "Uranus":
+            return logTerm
+                 - 7.110
+                 + 0.001*a;
+
+        case "Neptune":
+            return logTerm
+                 - 6.89;
+
+        case "Pluto":
+            return logTerm
+                 - 1.0
+                 + 0.04*a;
+
+        default:
+            return null;
+    }
+}
+
+
+// ===========================
+// computeBodyPosition 
+// ===========================
 async function computeBodyPosition(name, JD, latDeg, lonDeg) {
     const planets = [
         "Mercury","Venus","Earth","Mars",
         "Jupiter","Saturn","Uranus","Neptune"
     ];
 
+  
     // 1. VSOP
-   if (planets.includes(name)) {
+    if (planets.includes(name)) {
         const { x, y, z } = await computeLightTime(name, JD);
         let { ra, dec } = toObserverRADEC(x, y, z, JD, latDeg, lonDeg);
-        ({ ra, dec } = applyAnnualAberration(ra, dec, JD));
         return { ra, dec };
-   }
+    }
 
 
     // 2. Pluto
@@ -968,6 +1009,34 @@ async function computeBodyPosition(name, JD, latDeg, lonDeg) {
     const {x, y, z} = await horizonsStateVector(name, JD);
     return toObserverRADEC(x, y, z, JD, latDeg, lonDeg);
 }
+
+// ===========================
+// computeBodyMagnitude 
+// ===========================
+async function computeBodyMagnitude(name, JD) {
+    const planet = VSOP87_Planet(name, JD);
+    const earth  = VSOP87_Earth(JD);
+    const r = Math.hypot(planet.x, planet.y, planet.z);
+
+    const dx = planet.x - earth.x;
+    const dy = planet.y - earth.y;
+    const dz = planet.z - earth.z;
+    const delta = Math.hypot(dx, dy, dz);
+
+    const phaseDeg = phaseAngle(
+        {x: planet.x, y: planet.y, z: planet.z},
+        {x: dx,       y: dy,       z: dz}
+    );
+
+    let B = null, Bp = null;
+
+    if (name === "Saturn") {
+        ({ B, Bp } = saturnRingAngles(planet, earth));
+    }
+
+    return computePlanetMagnitude(name, r, delta, phaseDeg, B, Bp);
+}
+
 
 /* ============================================================
    Build Celestial Sphere
