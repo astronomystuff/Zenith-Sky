@@ -852,6 +852,28 @@ function vsopSeries(terms, t) {
     return sum;
 }
 
+async function computeLightTime(body, JD) {
+    const C_AU_PER_DAY = 173.144632674240;
+  
+    const earth = VSOP87_Generic("Earth", JD);
+    let planet = VSOP87_Generic(body, JD);
+  
+    let dx = planet.x - earth.x;
+    let dy = planet.y - earth.y;
+    let dz = planet.z - earth.z;
+    let R = Math.sqrt(dx*dx + dy*dy + dz*dz);
+  
+    let lightTime = R / C_AU_PER_DAY;
+    const JD_ret = JD - lightTime;
+  
+    planet = VSOP87_Generic(body, JD_ret);
+    dx = planet.x - earth.x;
+    dy = planet.y - earth.y;
+    dz = planet.z - earth.z;
+  
+    return { x: dx, y: dy, z: dz, lightTime };
+}
+
 function VSOP87_Mercury(JD) { return VSOP87_Generic("Mercury", JD); }
 function VSOP87_Venus(JD)   { return VSOP87_Generic("Venus", JD); }
 function VSOP87_Earth(JD)   { return VSOP87_Generic("Earth", JD); }
@@ -905,7 +927,7 @@ async function computeBodyPosition(name, JD, latDeg, lonDeg) {
 
     // 1. VSOP
     if (planets.includes(name)) {
-        const {x, y, z} = VSOP87_Planet(name, JD);   // AU
+        const { x, y, z } = await computeLightTime(name, JD);
         return toObserverRADEC(x, y, z, JD, latDeg, lonDeg);
     }
 
