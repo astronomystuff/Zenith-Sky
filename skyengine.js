@@ -832,6 +832,50 @@ function vsopSeries(terms, t) {
     return sum;
 }
 
+function earthVelocity(JD) {
+    const dt = 0.0001; // ~8.64 seconds
+    const e1 = VSOP87_Earth(JD - dt);
+    const e2 = VSOP87_Earth(JD + dt);
+
+    return {
+        vx: (e2.x - e1.x) / (2*dt),
+        vy: (e2.y - e1.y) / (2*dt),
+        vz: (e2.z - e1.z) / (2*dt)
+    };
+}
+
+function applyAnnualAberration(raDeg, decDeg, JD) {
+    const C_AU_PER_DAY = 173.144632674240;
+    const ra  = raDeg  * Math.PI/180;
+    const dec = decDeg * Math.PI/180;
+  
+    const {vx, vy, vz} = earthVelocity(JD);
+    const cx = Math.cos(dec) * Math.cos(ra);
+    const cy = Math.cos(dec) * Math.sin(ra);
+    const cz = Math.sin(dec);
+
+    const bx = vx / C_AU_PER_DAY;
+    const by = vy / C_AU_PER_DAY;
+    const bz = vz / C_AU_PER_DAY;
+    const x = cx + bx;
+    const y = cy + by;
+    const z = cz + bz;
+
+    const r = Math.sqrt(x*x + y*y + z*z);
+    const xn = x / r;
+    const yn = y / r;
+    const zn = z / r;
+
+    let ra2  = Math.atan2(yn, xn);
+    if (ra2 < 0) ra2 += 2*Math.PI;
+    const dec2 = Math.asin(zn);
+
+    return {
+        ra:  ra2  * 180/Math.PI,
+        dec: dec2 * 180/Math.PI
+    };
+}
+
 async function computeLightTime(body, JD) {
     const C_AU_PER_DAY = 173.144632674240;
     const earth = VSOP87_Generic("Earth", JD);
@@ -853,7 +897,6 @@ async function computeLightTime(body, JD) {
         lightTime 
     };
 }
-
 
 function VSOP87_Mercury(JD) { return VSOP87_Generic("Mercury", JD); }
 function VSOP87_Venus(JD)   { return VSOP87_Generic("Venus", JD); }
@@ -907,10 +950,13 @@ async function computeBodyPosition(name, JD, latDeg, lonDeg) {
     ];
 
     // 1. VSOP
-    if (planets.includes(name)) {
+   if (planets.includes(name)) {
         const { x, y, z } = await computeLightTime(name, JD);
-        return toObserverRADEC(x, y, z, JD, latDeg, lonDeg);
-    }
+        let { ra, dec } = toObserverRADEC(x, y, z, JD, latDeg, lonDeg);
+        ({ ra, dec } = applyAnnualAberration(ra, dec, JD));
+        return { ra, dec };
+   }
+
 
     // 2. Pluto
     if (name === "Pluto") {
