@@ -706,40 +706,20 @@ function getStarNameFromRecord(s) {
     Vir:"Virgo", Vol:"Volans", Vul:"Vulpecula"
   };
 
-  // --- 1. Proper name ---
   if (s.proper && s.proper.trim() !== "") return s.proper;
-
-  // --- 2. Bayer designation (Greek letter + constellation) ---
   if (s.bayer && s.con) {
     const greek = GREEK[s.bayer.toLowerCase()] || s.bayer;
     return `${greek} ${s.con}`;
   }
-
-  // --- 3. Flamsteed number + constellation ---
+  
   if (s.flam && s.con) return `${s.flam} ${s.con}`;
-
-  // --- 4. HD ---
   if (s.hd) return `HD ${s.hd}`;
-
-  // --- 5. HIP ---
   if (s.hip) return `HIP ${s.hip}`;
-
-  // --- 6. HR ---
   if (s.hr) return `HR ${s.hr}`;
-
-  // --- 7. Gliese ---
   if (s.gl) return `Gl ${s.gl}`;
-
-  // --- 8. Tycho ---
   if (s.tyc) return `TYC ${s.tyc}`;
-
-  // --- 9. Gaia ---
   if (s.gaia) return `Gaia ${s.gaia}`;
-
-  // --- 10. HYG ---
   if (s.hyg) return `HYG ${s.hyg}`;
-
-  // --- 11. Fallback ---
   if (s.id) return `Star ${s.id}`;
 
   return "Unnamed star";
@@ -854,25 +834,26 @@ function vsopSeries(terms, t) {
 
 async function computeLightTime(body, JD) {
     const C_AU_PER_DAY = 173.144632674240;
-  
     const earth = VSOP87_Generic("Earth", JD);
     let planet = VSOP87_Generic(body, JD);
-  
+
     let dx = planet.x - earth.x;
     let dy = planet.y - earth.y;
     let dz = planet.z - earth.z;
     let R = Math.sqrt(dx*dx + dy*dy + dz*dz);
-  
+
     let lightTime = R / C_AU_PER_DAY;
     const JD_ret = JD - lightTime;
-  
     planet = VSOP87_Generic(body, JD_ret);
-    dx = planet.x - earth.x;
-    dy = planet.y - earth.y;
-    dz = planet.z - earth.z;
-  
-    return { x: dx, y: dy, z: dz, lightTime };
+
+    return { 
+        x: planet.x, 
+        y: planet.y, 
+        z: planet.z, 
+        lightTime 
+    };
 }
+
 
 function VSOP87_Mercury(JD) { return VSOP87_Generic("Mercury", JD); }
 function VSOP87_Venus(JD)   { return VSOP87_Generic("Venus", JD); }
