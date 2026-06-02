@@ -62,19 +62,24 @@ async function loadVSOP87File(url) {
         const line = raw.trim();
         if (!line) continue;
 
-        const header = line.match(/VARIABLE\s+(\d)\s+\(XYZ\).*T\*\*(\d)/);
-        if (header) {
-            const varIndex = Number(header[1]); // 1=X, 2=Y, 3=Z
-            const power    = Number(header[2]); // 0..5
+        if (line.includes("VARIABLE")) {
+            const varMatch = line.match(/VARIABLE\s+(\d)/);
+            const varIndex = varMatch ? Number(varMatch[1]) : null;
+            const powMatch = line.match(/T\*\*(\d)/);
+            const power = powMatch ? Number(powMatch[1]) : null;
 
-            if (varIndex === 1) current = "X" + power;
-            if (varIndex === 2) current = "Y" + power;
-            if (varIndex === 3) current = "Z" + power;
+            if (varIndex !== null && power !== null) {
+                const axis = (varIndex === 1 ? "X" :
+                              varIndex === 2 ? "Y" : "Z");
+
+                current = axis + power;
+            }
 
             continue;
         }
 
         if (!current) continue;
+
         if (!/^\d/.test(line)) continue;
 
         const parts = line.split(/\s+/);
