@@ -1247,7 +1247,9 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     ], 3));
 
     const mat = material.clone();
-
+    mat.onBeforeCompile = material.onBeforeCompile;
+    mat.needsUpdate = true;
+    
     const planetPoint = new THREE.Points(geo, mat);
     planetPoint.userData.isPlanet = true;
     planetPoint.userData.name = name;
