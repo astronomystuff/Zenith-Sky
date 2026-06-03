@@ -1467,7 +1467,7 @@ async function rebuildCelestialSphere() {
   const dateCivil = getDateFromUICivil();
   const { latDeg, lonDeg } = getLocationFromUI();
 
-  sky3dCelestialSphere = buildCelestialSphere(dateCivil, latDeg, lonDeg);
+  sky3dCelestialSphere = await buildCelestialSphere(dateCivil, latDeg, lonDeg);
   sky3dRootGroup.add(sky3dCelestialSphere);
 }
 
