@@ -1508,7 +1508,7 @@ async function startSky3D() {
     encodeURIComponent("https://github.com/astronomystuff/Zenith-Sky/releases/download/At-HYG/stars.csv")
   );
 
-  rebuildCelestialSphere();
+  await rebuildCelestialSphere();
   animateSky3D();
 }
 
