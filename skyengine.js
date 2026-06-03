@@ -1450,7 +1450,7 @@ document.getElementById("sky3d-object-name").textContent =
 /* ============================================================
    Rebuild Sphere
    ============================================================ */
-function rebuildCelestialSphere() {
+async function rebuildCelestialSphere() {
   if (!sky3dScene || sky3dStarBase.length === 0) return;
 
   if (sky3dCelestialSphere) {
