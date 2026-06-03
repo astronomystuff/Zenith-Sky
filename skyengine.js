@@ -897,15 +897,29 @@ function VSOP87_Generic(planet, JD) {
 }
 
 function phaseAngle(sunToPlanet, earthToPlanet) {
-    const dot = sunToPlanet.x * earthToPlanet.x +
-                sunToPlanet.y * earthToPlanet.y +
-                sunToPlanet.z * earthToPlanet.z;
+    const sx = sunToPlanet.x;
+    const sy = sunToPlanet.y;
+    const sz = sunToPlanet.z;
 
-    const rs = Math.hypot(sunToPlanet.x, sunToPlanet.y, sunToPlanet.z);
-    const re = Math.hypot(earthToPlanet.x, earthToPlanet.y, earthToPlanet.z);
+    const ex = earthToPlanet.x;
+    const ey = earthToPlanet.y;
+    const ez = earthToPlanet.z;
 
-    const cosA = dot / (rs * re);
-    return Math.acos(Math.max(-1, Math.min(1, cosA))) * 180/Math.PI;
+    const rs = Math.hypot(sx, sy, sz);
+    const re = Math.hypot(ex, ey, ez);
+
+    const ux = sx / rs;
+    const uy = sy / rs;
+    const uz = sz / rs;
+
+    const vx = ex / re;
+    const vy = ey / re;
+    const vz = ez / re;
+
+    let cosA = ux*vx + uy*vy + uz*vz;
+    cosA = Math.max(-1, Math.min(1, cosA));
+
+    return Math.acos(cosA) * 180/Math.PI;
 }
 
 function saturnRingAngles(saturn, earth) {
@@ -977,15 +991,15 @@ function computePlanetMagnitude(name, r, delta, phaseDeg, B = null, Bp = null) {
             return logTerm
                  - 7.110
                  + 0.001*a;
-
         case "Neptune":
             return logTerm
-                 - 6.89;
+                 - 6.87
+                 + 0.0012 * a;
 
         case "Pluto":
             return logTerm
-                 - 1.0
-                 + 0.04*a;
+                 - 1.01
+                 + 0.041*a;
 
         default:
             return null;
