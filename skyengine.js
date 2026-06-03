@@ -896,6 +896,18 @@ function VSOP87_Generic(planet, JD) {
     return { x: X, y: Y, z: Z };
 }
 
+function phaseAngle(sunToPlanet, earthToPlanet) {
+    const dot = sunToPlanet.x * earthToPlanet.x +
+                sunToPlanet.y * earthToPlanet.y +
+                sunToPlanet.z * earthToPlanet.z;
+
+    const rs = Math.hypot(sunToPlanet.x, sunToPlanet.y, sunToPlanet.z);
+    const re = Math.hypot(earthToPlanet.x, earthToPlanet.y, earthToPlanet.z);
+
+    const cosA = dot / (rs * re);
+    return Math.acos(Math.max(-1, Math.min(1, cosA))) * 180/Math.PI;
+}
+
 function saturnRingAngles(saturn, earth) {
     // Saturn pole orientation (IAU 2009)
     const alphaP = 40.589 * Math.PI/180;
