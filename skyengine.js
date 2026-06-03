@@ -1447,7 +1447,7 @@ function searchSky3D() {
     `Alt: ${(alt * 180/Math.PI).toFixed(2)}°, Az: ${(az * 180/Math.PI).toFixed(2)}°`;
   document.getElementById("sky3d-object-mag").textContent = `Mag: ${star.mag}`;
   document.getElementById("sky3d-object-distance").textContent =
-    `Dist: ${star.dist} parsecs`;
+    `Dist: ${(star.dist * 3.26156).toFixed(2)} ly`;
 
   const lockBtn = document.getElementById("sky3d-lock");
   if (lockBtn) lockBtn.disabled = false;
