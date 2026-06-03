@@ -1476,7 +1476,8 @@ function rebuildCelestialSphere() {
    ============================================================ */
 async function startSky3D() {
   const canvas = document.getElementById("sky3d-canvas");
-
+  await loadAllVSOP();
+  
   sky3dRenderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   sky3dRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
   sky3dRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
