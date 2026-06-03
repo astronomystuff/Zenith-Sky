@@ -700,7 +700,7 @@ function getStarNameFromRecord(s) {
     Pav:"Pavo", Peg:"Pegasus", Per:"Perseus", Phe:"Phoenix", Pic:"Pictor",
     PsA:"Piscis Austrinus", Psc:"Pisces", Pup:"Puppis", Pyx:"Pyxis",
     Ret:"Reticulum", Sge:"Sagitta", Sgr:"Sagittarius", Sco:"Scorpius",
-    Scl:"Sculptor", Sct:"Scutum", Ser:"Serpens", Sex:"Sextans", Tau:"Taurus",
+    Scl:"Sculptor", Sct:"Scutum", Ser:"Serpens", Sxt:"Sextans", Tau:"Taurus",
     Tel:"Telescopium", TrA:"Triangulum Australe", Tri:"Triangulum",
     Tuc:"Tucana", UMa:"Ursa Major", UMi:"Ursa Minor", Vel:"Vela",
     Vir:"Virgo", Vol:"Volans", Vul:"Vulpecula"
@@ -708,10 +708,23 @@ function getStarNameFromRecord(s) {
 
   if (s.proper && s.proper.trim() !== "") return s.proper;
   if (s.bayer && s.con) {
-    const greek = GREEK[s.bayer.toLowerCase()] || s.bayer;
-    return `${greek} ${s.con}`;
+    let b = s.bayer.toLowerCase().trim();
+      b = b.replace(/\s+/g, "").replace("-", "");
+      const match = b.match(/^([a-z]+)(\d*)$/);
+      if (match) {
+        const root = match[1];   // e.g. "gam"
+        const comp = match[2];   // e.g. "2"
+
+        const greek = GREEK[root];
+        if (greek) {
+          const SUP = { "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵" };
+          const sup = SUP[comp] || (comp || "");
+          return `${greek}${sup} ${s.con}`;
+        }
+      }
+    return `${s.bayer} ${s.con}`;
   }
-  
+
   if (s.flam && s.con) return `${s.flam} ${s.con}`;
   if (s.hd) return `HD ${s.hd}`;
   if (s.hip) return `HIP ${s.hip}`;
@@ -1304,7 +1317,7 @@ function onSky3DClick(event) {
   sky3dTooltip.innerHTML =
     `<b>${name}</b><br>` +
     `Mag: ${star.mag}<br>` +
-    `Dist: ${star.dist} pc`;
+    `Dist: ${(star.dist * 3.26156).toFixed(2)} ly`;
 
   sky3dTooltip.style.left = (event.clientX + 12) + "px";
   sky3dTooltip.style.top = (event.clientY + 12) + "px";
@@ -1315,8 +1328,6 @@ function onSky3DClick(event) {
     sky3dTooltip.style.display = "none";
   }, 5000);
 }
-
-
 
 function searchSky3D() {
   const query = document.getElementById("sky3d-search").value.trim().toLowerCase();
