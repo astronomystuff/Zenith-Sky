@@ -1063,6 +1063,15 @@ async function computeBodyMagnitude(name, JD) {
     return computePlanetMagnitude(name, r, delta, phaseDeg, B, Bp);
 }
 
+// ===========================
+// computeBody
+// ===========================
+async function computeBody(name, JD, latDeg, lonDeg) {
+    const { ra, dec } = await computeBodyPosition(name, JD, latDeg, lonDeg);
+    const mag = await computeBodyMagnitude(name, JD);
+  
+    return { ra, dec, mag };
+}
 
 /* ============================================================
    Build Celestial Sphere
