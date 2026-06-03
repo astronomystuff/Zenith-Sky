@@ -1575,3 +1575,6 @@ window.computeBodyPosition = computeBodyPosition;
 window.VSOP = VSOP;
 window.vsopSeries = vsopSeries;
 window.raDecToXYZ= raDecToXYZ;
+window.saturnRingAngles = saturnRingAngles;
+windiw.computePlanetMagnitude = computePlanetMagnitude;
+window.computeBodyMagnitude = computeBodyMagnitude;
