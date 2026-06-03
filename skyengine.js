@@ -1076,7 +1076,7 @@ async function computeBody(name, JD, latDeg, lonDeg) {
 /* ============================================================
    Build Celestial Sphere
    ============================================================ */
-function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
+async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
   const { lst, dateLMT } = getLSTRadiansFromCivil(dateCivil, lonDeg);
   const years = (dateLMT.getTime() - J2000_MS) / 31557600000;
   const latRad = latDeg * Math.PI / 180;
@@ -1089,84 +1089,86 @@ function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
   const chosen = [];
 
   for (let i = 0; i < sky3dStarBase.length; i++) {
-  const s = sky3dStarBase[i];
-  const pm = applyProperMotionFromXYZ(s, years);
-  s.raDeg = pm.raDeg;
-  s.decDeg = pm.decDeg;
-  const raRad = pm.raDeg * Math.PI / 180;
-  const decRad = pm.decDeg * Math.PI / 180;
+    const s = sky3dStarBase[i];
+    const pm = applyProperMotionFromXYZ(s, years);
+    s.raDeg = pm.raDeg;
+    s.decDeg = pm.decDeg;
 
-  // Hour angle
-  const H = lst - raRad;
+    const raRad = pm.raDeg * Math.PI / 180;
+    const decRad = pm.decDeg * Math.PI / 180;
 
-  // Altitude
-  const sinAlt = Math.sin(latRad) * Math.sin(decRad) +
-                 Math.cos(latRad) * Math.cos(decRad) * Math.cos(H);
-  const alt = Math.asin(sinAlt);
-  if (alt <= 0) continue;
-  if (s.mag > dynamicMagLimit) continue;
+    // Hour angle
+    const H = lst - raRad;
 
-  // Azimuth
-  const cosAz = (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
-                (Math.cos(alt) * Math.cos(latRad));
-  const sinAz = -Math.cos(decRad) * Math.sin(H) / Math.cos(alt);
-  const az = Math.atan2(sinAz, cosAz);
+    // Altitude
+    const sinAlt = Math.sin(latRad) * Math.sin(decRad) +
+                   Math.cos(latRad) * Math.cos(decRad) * Math.cos(H);
+    const alt = Math.asin(sinAlt);
+    if (alt <= 0) continue;
+    if (s.mag > dynamicMagLimit) continue;
 
-  // Convert alt/az → XYZ
-  const x = Math.cos(alt) * Math.sin(az);
-  const y = Math.sin(alt);
-  const z = Math.cos(alt) * Math.cos(az);
+    // Azimuth
+    const cosAz = (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
+                  (Math.cos(alt) * Math.cos(latRad));
+    const sinAz = -Math.cos(decRad) * Math.sin(H) / Math.cos(alt);
+    const az = Math.atan2(sinAz, cosAz);
 
-  chosen.push({ idx: i, x, y, z });
-}
+    // Convert alt/az → XYZ
+    const x = Math.cos(alt) * Math.sin(az);
+    const y = Math.sin(alt);
+    const z = Math.cos(alt) * Math.cos(az);
 
+    chosen.push({ idx: i, x, y, z });
+  }
+
+  // Sort by magnitude
   chosen.sort((a, b) => sky3dStarBase[a.idx].mag - sky3dStarBase[b.idx].mag);
   if (chosen.length > maxPoints) chosen.length = maxPoints;
 
-const positions = new Float32Array(chosen.length * 3);
-const sizes = new Float32Array(chosen.length);
-const starIndices = new Uint32Array(chosen.length);
-const colors = new Float32Array(chosen.length * 3);
+  const positions = new Float32Array(chosen.length * 3);
+  const sizes = new Float32Array(chosen.length);
+  const starIndices = new Uint32Array(chosen.length);
+  const colors = new Float32Array(chosen.length * 3);
 
-let ptr = 0;
-for (let i = 0; i < chosen.length; i++) {
-  const c = chosen[i];
-  const star = sky3dStarBase[c.idx];
+  let ptr = 0;
+  for (let i = 0; i < chosen.length; i++) {
+    const c = chosen[i];
+    const star = sky3dStarBase[c.idx];
 
-  starIndices[i] = c.idx;
+    starIndices[i] = c.idx;
 
-  // Position
-  positions[ptr++] = c.x;
-  positions[ptr++] = c.y;
-  positions[ptr++] = c.z;
+    // Position
+    positions[ptr++] = c.x;
+    positions[ptr++] = c.y;
+    positions[ptr++] = c.z;
 
-  // Size
-  const mag = star.mag;
-  sizes[i] = 0.001 + 0.0375 * Math.pow(1.5, -0.9 * mag);
+    // Size
+    const mag = star.mag;
+    sizes[i] = 0.001 + 0.0375 * Math.pow(1.5, -0.9 * mag);
 
-  // Color
-  const hex = colorForSpectralType(star.spect);
-  colors[i*3]   = ((hex >> 16) & 255) / 255;
-  colors[i*3+1] = ((hex >> 8)  & 255) / 255;
-  colors[i*3+2] = ( hex        & 255) / 255;
-}
+    // Color
+    const hex = colorForSpectralType(star.spect);
+    colors[i*3]   = ((hex >> 16) & 255) / 255;
+    colors[i*3+1] = ((hex >> 8)  & 255) / 255;
+    colors[i*3+2] = ( hex        & 255) / 255;
+  }
 
-const geometry = new THREE.BufferGeometry();
-geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-geometry.setAttribute("sizeAttr", new THREE.BufferAttribute(sizes, 1));
-geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-geometry.userData.starIndices = starIndices;
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute("sizeAttr", new THREE.BufferAttribute(sizes, 1));
+  geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+  geometry.userData.starIndices = starIndices;
 
-const material = new THREE.PointsMaterial({
-  size: 1.5,
-  sizeAttenuation: true,
-  map: window.sky3dStarTexture,
-  transparent: true,
-  depthTest: true,
-  depthWrite: false,
-  vertexColors: true,
-  blending: THREE.AdditiveBlending
-});
+  const material = new THREE.PointsMaterial({
+    size: 1.5,
+    sizeAttenuation: true,
+    map: window.sky3dStarTexture,
+    transparent: true,
+    depthTest: true,
+    depthWrite: false,
+    vertexColors: true,
+    blending: THREE.AdditiveBlending
+  });
 
   material.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader.replace(
@@ -1182,6 +1184,63 @@ const material = new THREE.PointsMaterial({
   const points = new THREE.Points(geometry, material);
   const group = new THREE.Group();
   group.add(points);
+
+  // Bodies
+  const planetNames = ["Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"];
+
+  for (const name of planetNames) {
+    const body = await computeBody(name, dateLMT, latDeg, lonDeg);
+
+    // Convert RA/Dec → Alt/Az
+    const raRad  = body.ra * Math.PI/180;
+    const decRad = body.dec * Math.PI/180;
+
+    const H = lst - raRad;
+
+    const sinAlt = Math.sin(latRad)*Math.sin(decRad) +
+                   Math.cos(latRad)*Math.cos(decRad)*Math.cos(H);
+    const alt = Math.asin(sinAlt);
+    if (alt <= 0) continue;
+
+    const cosAz = (Math.sin(decRad) - Math.sin(alt)*Math.sin(latRad)) /
+                  (Math.cos(alt)*Math.cos(latRad));
+    const sinAz = -Math.cos(decRad)*Math.sin(H) / Math.cos(alt);
+    const az = Math.atan2(sinAz, cosAz);
+
+    const x = Math.cos(alt) * Math.sin(az);
+    const y = Math.sin(alt);
+    const z = Math.cos(alt) * Math.cos(az);
+
+    const size = 0.001 + 0.0375 * Math.pow(1.5, -0.9 * body.mag);
+
+    const color = {
+      Mercury: 0xffffff,
+      Venus:   0xffeedd,
+      Mars:    0xff5533,
+      Jupiter: 0xffddaa,
+      Saturn:  0xffeebb,
+      Uranus:  0x33ffff,
+      Neptune: 0x2033cc
+    }[name];
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute([x, y, z], 3));
+    geo.setAttribute("sizeAttr", new THREE.Float32BufferAttribute([size], 1));
+    geo.setAttribute("color", new THREE.Float32BufferAttribute([
+      ((color >> 16) & 255) / 255,
+      ((color >> 8)  & 255) / 255,
+      ( color        & 255) / 255
+    ], 3));
+
+    const mat = material.clone();
+
+    const planetPoint = new THREE.Points(geo, mat);
+    planetPoint.userData.isPlanet = true;
+    planetPoint.userData.name = name;
+    planetPoint.userData.mag = body.mag;
+
+    group.add(planetPoint);
+  }
 
   return group;
 }
