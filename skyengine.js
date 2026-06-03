@@ -1691,3 +1691,4 @@ window.raDecToXYZ= raDecToXYZ;
 window.saturnRingAngles = saturnRingAngles;
 window.computePlanetMagnitude = computePlanetMagnitude;
 window.computeBodyMagnitude = computeBodyMagnitude;
+window.computeBody = computeBody;
