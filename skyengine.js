@@ -1263,20 +1263,36 @@ function onSky3DClick(event) {
   const intersects = sky3dRaycaster.intersectObject(points);
   if (intersects.length === 0) return;
 
-  const i = intersects[0].index;
-  const starIdx = points.geometry.userData.starIndices[i];
-  const star = sky3dStarBase[starIdx];
+  let bestHit = null;
+  let bestStar = null;
+  let bestMag = Infinity;
 
-  // Project star to screen
+  for (const hit of intersects) {
+    const idx = hit.index;
+    const starIdx = points.geometry.userData.starIndices[idx];
+    const star = sky3dStarBase[starIdx];
+
+    if (star.mag < bestMag) {
+      bestMag = star.mag;
+      bestStar = star;
+      bestHit = hit;
+    }
+  }
+
+  if (!bestHit) return;
+
+  const i = bestHit.index;
+  const starIdx = points.geometry.userData.starIndices[i];
+  const star = bestStar;
+
   const pos = new THREE.Vector3(
-  points.geometry.attributes.position.getX(i),
-  points.geometry.attributes.position.getY(i),
-  points.geometry.attributes.position.getZ(i)
-);
-   
+    points.geometry.attributes.position.getX(i),
+    points.geometry.attributes.position.getY(i),
+    points.geometry.attributes.position.getZ(i)
+  );
+
   pos.applyMatrix4(points.matrixWorld);
   pos.project(sky3dCamera);
-
 
   const sx = (pos.x * 0.5 + 0.5) * rect.width + rect.left;
   const sy = (-pos.y * 0.5 + 0.5) * rect.height + rect.top;
@@ -1284,13 +1300,11 @@ function onSky3DClick(event) {
   const dy = event.clientY - sy;
   const dist = Math.sqrt(dx * dx + dy * dy);
 
-// Show tooltip
-const name = getStarNameFromRecord(star);
-sky3dTooltip.innerHTML =
-  `<b>${name}</b><br>` +
-  `Mag: ${star.mag}<br>` +
-  `Dist: ${star.dist} pc`;
-
+  const name = getStarNameFromRecord(star);
+  sky3dTooltip.innerHTML =
+    `<b>${name}</b><br>` +
+    `Mag: ${star.mag}<br>` +
+    `Dist: ${star.dist} pc`;
 
   sky3dTooltip.style.left = (event.clientX + 12) + "px";
   sky3dTooltip.style.top = (event.clientY + 12) + "px";
@@ -1302,11 +1316,13 @@ sky3dTooltip.innerHTML =
   }, 5000);
 }
 
+
+
 function searchSky3D() {
   const query = document.getElementById("sky3d-search").value.trim().toLowerCase();
   if (!query) return;
 
-  // 1. Find matching star in base catalog
+  // 1. Find matching star
   let best = null;
   for (let i = 0; i < sky3dStarBase.length; i++) {
     const s = sky3dStarBase[i];
@@ -1338,7 +1354,7 @@ function searchSky3D() {
   const starIndices = geom.userData.starIndices;
   const positions = geom.attributes.position;
 
-  // 2. Find this star in the rendered geometry
+  // 2. Find star
   let geoIndex = -1;
   for (let i = 0; i < starIndices.length; i++) {
     if (starIndices[i] === starIdx) {
@@ -1352,7 +1368,7 @@ function searchSky3D() {
     return;
   }
 
-  // 3. Get its local position and convert to world
+  // 3. Get local position and convert to world
   const pos = new THREE.Vector3(
     positions.getX(geoIndex),
     positions.getY(geoIndex),
@@ -1360,52 +1376,42 @@ function searchSky3D() {
   );
   points.localToWorld(pos);
 
-// 4. Compute direction
-const starDir = pos.clone().normalize();
-const camForwardLocal = new THREE.Vector3(0, 0, -1);
-const q = new THREE.Quaternion().setFromUnitVectors(starDir, camForwardLocal);
-sky3dRootGroup.quaternion.premultiply(q);
+  // 4. Compute direction
+  const starDir = pos.clone().normalize();
+  const camForwardLocal = new THREE.Vector3(0, 0, -1);
+  const q = new THREE.Quaternion().setFromUnitVectors(starDir, camForwardLocal);
+  sky3dRootGroup.quaternion.premultiply(q);
 
-// --- REMOVE ROLL ---
+  // --- REMOVE ROLL ---
+  const camForwardWorld = new THREE.Vector3(0, 0, -1)
+    .applyQuaternion(sky3dCamera.quaternion)
+    .normalize();
 
-// Camera forward
-const camForwardWorld = new THREE.Vector3(0, 0, -1)
-  .applyQuaternion(sky3dCamera.quaternion)
-  .normalize();
+  const worldUp = new THREE.Vector3(0, 1, 0);
 
-// World up
-const worldUp = new THREE.Vector3(0, 1, 0);
+  const skyUpWorld = new THREE.Vector3(0, 1, 0)
+    .applyQuaternion(sky3dRootGroup.quaternion)
+    .normalize();
 
-// Sky's current up direction in world space
-const skyUpWorld = new THREE.Vector3(0, 1, 0)
-  .applyQuaternion(sky3dRootGroup.quaternion)
-  .normalize();
+  const projectedSkyUp = skyUpWorld.clone().sub(
+    camForwardWorld.clone().multiplyScalar(skyUpWorld.dot(camForwardWorld))
+  ).normalize();
 
-// Project skyUp
-const projectedSkyUp = skyUpWorld.clone().sub(
-  camForwardWorld.clone().multiplyScalar(skyUpWorld.dot(camForwardWorld))
-).normalize();
+  const projectedWorldUp = worldUp.clone().sub(
+    camForwardWorld.clone().multiplyScalar(worldUp.dot(camForwardWorld))
+  ).normalize();
 
-// Project worldUp
-const projectedWorldUp = worldUp.clone().sub(
-  camForwardWorld.clone().multiplyScalar(worldUp.dot(camForwardWorld))
-).normalize();
+  const rollAngle = Math.acos(
+    THREE.MathUtils.clamp(projectedSkyUp.dot(projectedWorldUp), -1, 1)
+  );
 
-// Angle between projected up vectors
-const rollAngle = Math.acos(
-  THREE.MathUtils.clamp(projectedSkyUp.dot(projectedWorldUp), -1, 1)
-);
+  const cross = projectedSkyUp.clone().cross(projectedWorldUp);
+  const sign = cross.dot(camForwardWorld) < 0 ? -1 : 1;
 
-// Determine rotation direction
-const cross = projectedSkyUp.clone().cross(projectedWorldUp);
-const sign = cross.dot(camForwardWorld) < 0 ? -1 : 1;
+  const rollQuat = new THREE.Quaternion()
+    .setFromAxisAngle(camForwardWorld, rollAngle * sign);
 
-// Rotate sky around camera forward axis
-const rollQuat = new THREE.Quaternion()
-  .setFromAxisAngle(camForwardWorld, rollAngle * sign);
-
-sky3dRootGroup.quaternion.premultiply(rollQuat);
-  
+  sky3dRootGroup.quaternion.premultiply(rollQuat);
 
   // 5. Store
   window.sky3dSelectedWorldPos = pos.clone();
@@ -1431,8 +1437,8 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
                 (Math.cos(alt) * Math.cos(latRad));
   const az = Math.atan2(sinAz, cosAz);
 
-document.getElementById("sky3d-object-name").textContent =
-  getStarNameFromRecord(star);
+  document.getElementById("sky3d-object-name").textContent =
+    getStarNameFromRecord(star);
   document.getElementById("sky3d-object-type").textContent = "Star";
   const raHoursDisplay = pm.raDeg / 15;
   document.getElementById("sky3d-object-ra-dec").textContent =
@@ -1443,8 +1449,8 @@ document.getElementById("sky3d-object-name").textContent =
   document.getElementById("sky3d-object-distance").textContent =
     `Dist: ${star.dist} parsecs`;
 
-  const lockBtn   = document.getElementById("sky3d-lock");
-  if (lockBtn)   lockBtn.disabled = false;
+  const lockBtn = document.getElementById("sky3d-lock");
+  if (lockBtn) lockBtn.disabled = false;
 }
 
 /* ============================================================
