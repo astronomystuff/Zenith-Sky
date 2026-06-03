@@ -489,16 +489,17 @@ async function loadStarCSV(url) {
    XYZ → RA/Dec (parsec → parsec)
    ============================================================ */
 function xyzToRaDec(x, y, z) {
-  const r = Math.sqrt(x * x + y * y + z * z);
-  const ra  = Math.atan2(z, x);
-  const dec = Math.asin(y / r);
+  const r = Math.sqrt(x*x + y*y + z*z);
+
+  const ra  = Math.atan2(y, x);
+  const dec = Math.asin(z / r);
+
   return {
-  raDeg: (ra < 0 ? ra + 2 * Math.PI : ra) * 180 / Math.PI,
-  decDeg: dec * 180 / Math.PI,
-  distance: r
+    raDeg: (ra < 0 ? ra + 2*Math.PI : ra) * 180/Math.PI,
+    decDeg: dec * 180/Math.PI,
+    distance: r
   };
 }
-
 
 /* ============================================================
    Proper Motion + RV
