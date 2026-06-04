@@ -18,6 +18,7 @@ window.sky3dTooltip = null;
 window.sky3dRootGroup = null;
 window.sky3dStarBase = [];
 window.sky3dPlanetMeshes = [];
+window.sky3dPlanetMap = {};
 let sky3dLocked = false;
 window.sky3dRaycaster = new THREE.Raycaster();
 window.sky3dMouse = new THREE.Vector2();
@@ -1283,10 +1284,16 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     planetPoint.userData.name = name;
     planetPoint.userData.mag = body.mag;
     planetPoint.userData.type = "planet";
-    planetPoint.userData.dist = body.dist; // in AU
+    planetPoint.userData.dist = body.dist; //  AU
+    planetPoint.userData.ra = body.ra;
+    planetPoint.userData.dec = body.dec;
+    planetPoint.userData.alt = alt * 180/Math.PI;
+    planetPoint.userData.az  = az  * 180/Math.PI;
+
 
     group.add(planetPoint);
     sky3dPlanetMeshes.push(planetPoint);
+    sky3dPlanetMap[name.toLowerCase()] = planetPoint;
   }
 
   return group;
@@ -1377,10 +1384,72 @@ function onSky3DClick(event) {
 }
 
 
+function searchSkyPlanet(planetPoint) {
+  const pos = new THREE.Vector3();
+  planetPoint.getWorldPosition(pos);
+
+  // Rotate sky to center planet
+  const dir = pos.clone().normalize();
+  const camForward = new THREE.Vector3(0, 0, -1);
+  const q = new THREE.Quaternio
+    .setFromUnitVectors(dir, camForward);
+  sky3dRootGroup.quaternion.premultiply(q);
+
+  // Remove roll (same logic as stars)
+  const camForwardWorld = new THREE.Vector3(0, 0, -1)
+    .applyQuaternion(sky3dCamera.quaternion)
+    .normalize();
+
+  const worldUp = new THREE.Vector3(0, 1, 0);
+  const skyUpWorld = new THREE.Vector3(0, 1, 0)
+    .applyQuaternion(sky3dRootGroup.quaternion)
+    .normalize();
+
+  const projectedSkyUp = skyUpWorld.clone().sub(
+    camForwardWorld.clone().multiplyScalar(skyUpWorld.dot(camForwardWorld))
+  ).normalize();
+
+  const projectedWorldUp = worldUp.clone().sub(
+    camForwardWorld.clone().multiplyScalar(worldUp.dot(camForwardWorld))
+  ).normalize();
+
+  const rollAngle = Math.acos(
+    THREE.MathUtils.clamp(projectedSkyUp.dot(projectedWorldUp), -1, 1)
+  );
+
+  const cross = projectedSkyUp.clone().cross(projectedWorldUp);
+  const sign = cross.dot(camForwardWorld) < 0 ? -1 : 1;
+
+  const rollQuat = new THREE.Quaternion()
+    .setFromAxisAngle(camForwardWorld, rollAngle * sign);
+
+  sky3dRootGroup.quaternion.premultiply(rollQuat);
+
+  // Update info panel
+  const body = planetPoint.userData;
+
+  document.getElementById("sky3d-object-name").textContent = body.name;
+  document.getElementById("sky3d-object-type").textContent = "Planet";
+  document.getElementById("sky3d-object-ra-dec").textContent =
+    `RA: ${(body.ra/15).toFixed(2)}h, Dec: ${body.dec.toFixed(2)}°`;
+  document.getElementById("sky3d-object-alt-az").textContent =
+    `Alt: ${body.alt.toFixed(2)}°, Az: ${body.az.toFixed(2)}°`;
+  document.getElementById("sky3d-object-mag").textContent = `Mag: ${body.mag.toFixed(2)}`;
+  document.getElementById("sky3d-object-distance").textContent = `Dist: ${body.dist.toFixed(2)} AU`;
+
+  const lockBtn = document.getElementById("sky3d-lock");
+  if (lockBtn) lockBtn.disabled = false;
+}
+
+
 function searchSky3D() {
   const query = document.getElementById("sky3d-search").value.trim().toLowerCase();
   if (!query) return;
 
+  if (sky3dPlanetMap[query]) {
+    return searchSkyPlanet(sky3PlanetMap[query]);
+  }
+  
   // 1. Find matching star
   let best = null;
   for (let i = 0; i < sky3dStarBase.length; i++) {
