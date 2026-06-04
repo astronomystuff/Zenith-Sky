@@ -1288,8 +1288,9 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     planetPoint.userData.ra = body.ra;
     planetPoint.userData.dec = body.dec;
     planetPoint.userData.alt = alt * 180/Math.PI;
-    planetPoint.userData.az  = az  * 180/Math.PI;
-
+    let azDeg = az * 180/Math.PI;
+    if (azDeg < 0) azDeg += 360;
+    planetPoint.userData.az = azDeg;
 
     group.add(planetPoint);
     sky3dPlanetMeshes.push(planetPoint);
