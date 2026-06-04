@@ -1388,6 +1388,7 @@ function onSky3DClick(event) {
 function searchSkyPlanet(planetPoint) {
   const pos = new THREE.Vector3();
   planetPoint.getWorldPosition(pos);
+  sky3dRootGroup.worldToLocal(pos);
 
   // Rotate sky to center planet
   const dir = pos.clone().normalize();
