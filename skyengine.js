@@ -1392,7 +1392,7 @@ function searchSkyPlanet(planetPoint) {
   // Rotate sky to center planet
   const dir = pos.clone().normalize();
   const camForward = new THREE.Vector3(0, 0, -1);
-  const q = new THREE.Quaternio
+  const q = new THREE.Quaternion()
     .setFromUnitVectors(dir, camForward);
   sky3dRootGroup.quaternion.premultiply(q);
 
