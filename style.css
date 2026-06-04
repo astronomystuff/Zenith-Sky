@@ -39,6 +39,10 @@ body {
     0 16px 40px rgba(0, 0, 0, 0.55);
 }
 
+.tool-card {
+  margin-left: 16px;
+}
+
 /* BUTTONS */
 
 button,
