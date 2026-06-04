@@ -1097,7 +1097,8 @@ async function computeBodyMagnitude(name, JD) {
         ({ B, Bp } = saturnRingAngles(planet, earth));
     }
 
-    return computePlanetMagnitude(name, r, delta, phaseDeg, B, Bp);
+    const mag = computePlanetMagnitude(name, r, delta, phaseDeg, B, Bp);
+    return { mag, dist: delta };
 }
 
 // ===========================
