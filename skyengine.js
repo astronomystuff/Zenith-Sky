@@ -17,6 +17,7 @@ window.sky3dGround = null;
 window.sky3dTooltip = null;
 window.sky3dRootGroup = null;
 window.sky3dStarBase = [];
+window.sky3dPlanetMeshes = [];
 let sky3dLocked = false;
 window.sky3dRaycaster = new THREE.Raycaster();
 window.sky3dMouse = new THREE.Vector2();
@@ -1281,6 +1282,7 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     planetPoint.userData.mag = body.mag;
 
     group.add(planetPoint);
+    sky3dPlanetMeshes.push(planetPoint);
   }
 
   return group;
@@ -1300,53 +1302,66 @@ function onSky3DClick(event) {
 
   if (!sky3dCelestialSphere) return;
 
-  const points = sky3dCelestialSphere.children[0];
-  const intersects = sky3dRaycaster.intersectObject(points);
-  if (intersects.length === 0) return;
+  const starPoints = sky3dCelestialSphere.children[0];
+  const starHits = sky3dRaycaster.intersectObject(starPoints);
 
-  let bestHit = null;
   let bestStar = null;
-  let bestMag = Infinity;
+  let bestStarHit = null;
+  let bestStarMag = Infinity;
 
-  for (const hit of intersects) {
-    const idx = hit.index;
-    const starIdx = points.geometry.userData.starIndices[idx];
-    const star = sky3dStarBase[starIdx];
+  if (starHits.length > 0) {
+    for (const hit of starHits) {
+      const idx = hit.index;
+      const starIdx = starPoints.geometry.userData.starIndices[idx];
+      const star = sky3dStarBase[starIdx];
 
-    if (star.mag < bestMag) {
-      bestMag = star.mag;
-      bestStar = star;
-      bestHit = hit;
+      if (star.mag < bestStarMag) {
+        bestStarMag = star.mag;
+        bestStar = star;
+        bestStarHit = hit;
+      }
     }
   }
 
-  if (!bestHit) return;
+  const planetHits = sky3dRaycaster.intersectObjects(sky3dPlanetMeshes || []);
 
-  const i = bestHit.index;
-  const starIdx = points.geometry.userData.starIndices[i];
-  const star = bestStar;
+  let bestPlanet = null;
+  let bestPlanetHit = null;
 
-  const pos = new THREE.Vector3(
-    points.geometry.attributes.position.getX(i),
-    points.geometry.attributes.position.getY(i),
-    points.geometry.attributes.position.getZ(i)
-  );
+  if (planetHits.length > 0) {
+    bestPlanetHit = planetHits[0]; // planets are single meshes
+    bestPlanet = bestPlanetHit.object.userData;
+  }
 
-  pos.applyMatrix4(points.matrixWorld);
-  pos.project(sky3dCamera);
+  let picked = null;
 
-  const sx = (pos.x * 0.5 + 0.5) * rect.width + rect.left;
-  const sy = (-pos.y * 0.5 + 0.5) * rect.height + rect.top;
-  const dx = event.clientX - sx;
-  const dy = event.clientY - sy;
-  const dist = Math.sqrt(dx * dx + dy * dy);
+  if (bestStar && bestPlanet) {
+    // Choose whichever is visually brighter (lower mag)
+    picked = (bestStar.mag < bestPlanet.mag) ? bestStar : bestPlanet;
+  } else if (bestStar) {
+    picked = bestStar;
+  } else if (bestPlanet) {
+    picked = bestPlanet;
+  } else {
+    return;
+  }
 
-  const name = getStarNameFromRecord(star);
-  sky3dTooltip.innerHTML =
-    `<b>${name}</b><br>` +
-    `Mag: ${star.mag}<br>` +
-    `Dist: ${(star.dist * 3.26156).toFixed(2)} ly`;
+  let html = "";
 
+  if (picked.type === "planet") {
+    html =
+      `<b>${picked.name}</b><br>` +
+      `Mag: ${picked.mag.toFixed(2)}<br>` +
+      `Dist: ${(picked.dist).toFixed(2)} AU`;
+  } else {
+    const name = getStarNameFromRecord(picked);
+    html =
+      `<b>${name}</b><br>` +
+      `Mag: ${picked.mag}<br>` +
+      `Dist: ${(picked.dist * 3.26156).toFixed(2)} ly`;
+  }
+
+  sky3dTooltip.innerHTML = html;
   sky3dTooltip.style.left = (event.clientX + 12) + "px";
   sky3dTooltip.style.top = (event.clientY + 12) + "px";
   sky3dTooltip.style.display = "block";
@@ -1356,6 +1371,7 @@ function onSky3DClick(event) {
     sky3dTooltip.style.display = "none";
   }, 5000);
 }
+
 
 function searchSky3D() {
   const query = document.getElementById("sky3d-search").value.trim().toLowerCase();
