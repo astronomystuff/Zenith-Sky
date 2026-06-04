@@ -1105,10 +1105,11 @@ async function computeBodyMagnitude(name, JD) {
 // ===========================
 async function computeBody(name, JD, latDeg, lonDeg) {
     const { ra, dec } = await computeBodyPosition(name, JD, latDeg, lonDeg);
-    const mag = await computeBodyMagnitude(name, JD);
-  
-    return { ra, dec, mag };
+    const { mag, dist } = await computeBodyMagnitude(name, JD);
+
+    return { ra, dec, mag, dist };
 }
+
 
 /* ============================================================
    Build Celestial Sphere
@@ -1280,6 +1281,8 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     planetPoint.userData.isPlanet = true;
     planetPoint.userData.name = name;
     planetPoint.userData.mag = body.mag;
+    planetPoint.userData.type = "planet";
+    planetPoint.userData.dist = body.dist; // in AU
 
     group.add(planetPoint);
     sky3dPlanetMeshes.push(planetPoint);
