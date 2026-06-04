@@ -1448,7 +1448,7 @@ function searchSky3D() {
   if (!query) return;
 
   if (sky3dPlanetMap[query]) {
-    return searchSkyPlanet(sky3PlanetMap[query]);
+    return searchSkyPlanet(sky3dPlanetMap[query]);
   }
   
   // 1. Find matching star
