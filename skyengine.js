@@ -439,7 +439,8 @@ async function loadStarCSV(url) {
     if (proper && proper.toLowerCase() === "sol") continue;
     
     if (i % 20000 === 0) {
-    sky3dUpdateLoading(`Loading stars… ${i.toLocaleString()} loaded`);
+      sky3dUpdateLoading(`Loading stars… ${i.toLocaleString()} loaded`);
+      await new Promise(requestAnimationFrame);  // <-- THIS is the magic
     }
 
     const x0   = parseFloat(cols[idx.x]);
@@ -1547,12 +1548,14 @@ async function startSky3D() {
   sky3dControls = new minimalCameraControls(sky3dCamera, canvas);
   installSky3DLockSystem();
   canvas.addEventListener("click", onSky3DClick);
-   
+  
+  sky3dUpdateLoading("Loading Stars…");
   sky3dStarBase = await loadStarCSV(
     "https://astro-proxy.niamnbhakta.workers.dev/?url=" +
     encodeURIComponent("https://github.com/astronomystuff/Zenith-Sky/releases/download/At-HYG/stars.csv")
   );
-
+  
+  sky3dUpdateLoading("Building Sky…");
   await rebuildCelestialSphere();
   animateSky3D();
   sky3dHideLoading();
