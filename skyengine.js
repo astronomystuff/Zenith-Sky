@@ -1203,7 +1203,10 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
   const planetNames = ["Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"];
 
   for (const name of planetNames) {
-    const body = await computeBody(name, dateLMT, latDeg, lonDeg);
+    const date = dateCivil;
+    const utcMs = date.getTime();
+    const JD = utcMs / 86400000 + 2440587.5;
+    const body = await computeBodyPosition(name, JD, latDeg, lonDeg);
 
     // Convert RA/Dec → Alt/Az
     const raRad  = body.ra * Math.PI/180;
