@@ -437,6 +437,10 @@ async function loadStarCSV(url) {
 
     const proper = cols[idx.proper];
     if (proper && proper.toLowerCase() === "sol") continue;
+    
+    if (i % 20000 === 0) {
+    sky3dUpdateLoading(`Loading stars… ${i.toLocaleString()} loaded`);
+    }
 
     const x0   = parseFloat(cols[idx.x]);
     const y0   = parseFloat(cols[idx.y]);
@@ -737,6 +741,23 @@ function getStarNameFromRecord(s) {
   if (s.id) return `Star ${s.id}`;
 
   return "Unnamed star";
+}
+
+function sky3dShowLoading(text = "Loading…") {
+  const el = document.getElementById("sky3d-loading");
+  const label = document.getElementById("sky3d-loading-text");
+  if (label) label.textContent = text;
+  if (el) el.style.display = "flex";
+}
+
+function sky3dUpdateLoading(text) {
+  const label = document.getElementById("sky3d-loading-text");
+  if (label) label.textContent = text;
+}
+
+function sky3dHideLoading() {
+  const el = document.getElementById("sky3d-loading");
+  if (el) el.style.display = "none";
 }
 
 async function horizonsStateVector(name, JD) {
@@ -1499,6 +1520,7 @@ async function rebuildCelestialSphere() {
    ============================================================ */
 async function startSky3D() {
   const canvas = document.getElementById("sky3d-canvas");
+  sky3dUpdateLoading("Loading Planetary Data…");
   await loadAllVSOP();
   
   sky3dRenderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -1533,6 +1555,7 @@ async function startSky3D() {
 
   await rebuildCelestialSphere();
   animateSky3D();
+  sky3dHideLoading();
 }
 
 /* ============================================================
@@ -1625,17 +1648,20 @@ function initSky3DModal() {
 openBtn.onclick = () => {
   overlay.style.display = "flex";
   sky3dModalOpen = true;
-   
+
+  sky3dShowLoading("Initializing sky engine…");
+
   setTimeout(() => {
     if (!sky3dScene) {
       startSky3D();
     } else {
+      sky3dUpdateLoading("Updating sky…");
       rebuildCelestialSphere();
       animateSky3D();
+      sky3dHideLoading();
     }
-  }, 0);
+  }, 50);
 };
-
 
   closeBtn.onclick = () => {
     overlay.style.display = "none";
