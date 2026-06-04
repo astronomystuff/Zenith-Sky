@@ -1385,10 +1385,12 @@ function onSky3DClick(event) {
 }
 
 
+
 function searchSkyPlanet(planetPoint) {
   const pos = new THREE.Vector3();
   planetPoint.getWorldPosition(pos);
   sky3dRootGroup.worldToLocal(pos);
+  window.sky3dSelectedWorldPos = pos.clone();
 
   // Rotate sky to center planet
   const dir = pos.clone().normalize();
@@ -1397,7 +1399,7 @@ function searchSkyPlanet(planetPoint) {
     .setFromUnitVectors(dir, camForward);
   sky3dRootGroup.quaternion.premultiply(q);
 
-  // Remove roll (same logic as stars)
+  // Remove roll
   const camForwardWorld = new THREE.Vector3(0, 0, -1)
     .applyQuaternion(sky3dCamera.quaternion)
     .normalize();
