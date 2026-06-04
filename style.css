@@ -526,3 +526,7 @@ th, td {
   top: unset !important;
   left: unset !important;
 }
+
+body {
+  margin-left: 5px;
+}
