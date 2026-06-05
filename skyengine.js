@@ -1389,25 +1389,28 @@ function onSky3DClick(event) {
 function searchSkyPlanet(planetPoint) {
   const body = planetPoint.userData;
 
-  // --- 1. Compute direction ---
+  // --- 1. Compute direction in horizon frame ---
   const altRad = body.alt * Math.PI/180;
   const azRad  = body.az  * Math.PI/180;
 
-  const dir = new THREE.Vector3(
+  let dir = new THREE.Vector3(
     Math.cos(altRad) * Math.sin(azRad),
     Math.sin(altRad),
     Math.cos(altRad) * Math.cos(azRad)
   ).normalize();
 
-  // --- 2. Rotate sky ---
+  // --- 2. Convert Horizon to Sky Direction ---
+  dir.applyQuaternion(sky3dRootGroup.quaternion.clone().invert());
+
+  // --- 3. Center Planet ---
   const camForward = new THREE.Vector3(0, 0, -1);
   const q = new THREE.Quaternion().setFromUnitVectors(dir, camForward);
   sky3dRootGroup.quaternion.premultiply(q);
 
-  // --- 3. Store---
-  window.sky3dSelectedWorldPos = dir.clone(); // direction is enough
+  // --- 4. Store ---
+  window.sky3dSelectedWorldPos = dir.clone();
 
-  // --- 4. Remove roll ---
+  // --- 5. Remove Roll ---
   const camForwardWorld = new THREE.Vector3(0, 0, -1)
     .applyQuaternion(sky3dCamera.quaternion)
     .normalize();
@@ -1437,7 +1440,7 @@ function searchSkyPlanet(planetPoint) {
 
   sky3dRootGroup.quaternion.premultiply(rollQuat);
 
-  // --- 5. Update UI ---
+  // --- 6. Update UI ---
   document.getElementById("sky3d-object-name").textContent = body.name;
   document.getElementById("sky3d-object-type").textContent = "Planet";
   document.getElementById("sky3d-object-ra-dec").textContent =
@@ -1450,6 +1453,7 @@ function searchSkyPlanet(planetPoint) {
   const lockBtn = document.getElementById("sky3d-lock");
   if (lockBtn) lockBtn.disabled = false;
 }
+
 
 
 function searchSky3D() {
