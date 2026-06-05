@@ -1267,7 +1267,6 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     }[name];
 
     const geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.Float32BufferAttribute([x, y, z], 3));
     geo.setAttribute("sizeAttr", new THREE.Float32BufferAttribute([size], 1));
     geo.setAttribute("color", new THREE.Float32BufferAttribute([
       ((color >> 16) & 255) / 255,
@@ -1280,6 +1279,7 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     mat.needsUpdate = true;
     
     const planetPoint = new THREE.Points(geo, mat);
+    planetPoint.position.set(x, y, z);
     planetPoint.userData.isPlanet = true;
     planetPoint.userData.name = name;
     planetPoint.userData.mag = body.mag;
