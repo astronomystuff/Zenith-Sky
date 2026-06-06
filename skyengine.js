@@ -1388,19 +1388,14 @@ function onSky3DClick(event) {
 
 function searchSkyPlanet(planetPoint) {
   const body = planetPoint.userData;
+  
+// --- 1. Get planet position ---
+const pos = new THREE.Vector3();
+planetPoint.getWorldPosition(pos);
 
-  // --- 1. Compute direction in horizon frame ---
-  const altRad = body.alt * Math.PI/180;
-  const azRad  = body.az  * Math.PI/180;
+// --- 2. Direction ---
+const dir = pos.clone().normalize();
 
-  let dir = new THREE.Vector3(
-    Math.cos(altRad) * Math.sin(azRad),
-    Math.sin(altRad),
-    Math.cos(altRad) * Math.cos(azRad)
-  ).normalize();
-
-  // --- 2. Convert Horizon to Sky Direction ---
-  dir.applyQuaternion(sky3dRootGroup.quaternion.clone().invert());
 
   // --- 3. Center Planet ---
   const camForward = new THREE.Vector3(0, 0, -1);
