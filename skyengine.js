@@ -1343,6 +1343,8 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
   group.add(points);
 
   // Bodies
+  sky3dPlanetMeshes.length = 0;
+  sky3dPlanetMap = {};
   const planetNames = ["Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"];
 
   for (const name of planetNames) {
