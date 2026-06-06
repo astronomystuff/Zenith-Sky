@@ -1525,34 +1525,40 @@ const dir = pos.clone().normalize();
   window.sky3dSelectedWorldPos = dir.clone();
 
   // --- 5. Remove Roll ---
-  const camForwardWorld = new THREE.Vector3(0, 0, -1)
-    .applyQuaternion(sky3dCamera.quaternion)
-    .normalize();
+const camForwardWorld = new THREE.Vector3(0, 0, -1)
+  .applyQuaternion(sky3dCamera.quaternion)
+  .normalize();
 
-  const worldUp = new THREE.Vector3(0, 1, 0);
-  const skyUpWorld = new THREE.Vector3(0, 1, 0)
-    .applyQuaternion(sky3dRootGroup.quaternion)
-    .normalize();
+// World up (fixed reference)
+const worldUp = new THREE.Vector3(0, 1, 0);
 
-  const projectedSkyUp = skyUpWorld.clone().sub(
-    camForwardWorld.clone().multiplyScalar(skyUpWorld.dot(camForwardWorld))
-  ).normalize();
+// Sky up
+const skyUpWorld = new THREE.Vector3(0, 1, 0)
+  .applyQuaternion(sky3dRootGroup.quaternion)
+  .normalize();
 
-  const projectedWorldUp = worldUp.clone().sub(
-    camForwardWorld.clone().multiplyScalar(worldUp.dot(camForwardWorld))
-  ).normalize();
+const projectedSkyUp = skyUpWorld.clone().sub(
+  camForwardWorld.clone().multiplyScalar(skyUpWorld.dot(camForwardWorld))
+).normalize();
 
-  const rollAngle = Math.acos(
-    THREE.MathUtils.clamp(projectedSkyUp.dot(projectedWorldUp), -1, 1)
-  );
+const projectedWorldUp = worldUp.clone().sub(
+  camForwardWorld.clone().multiplyScalar(worldUp.dot(camForwardWorld))
+).normalize();
 
-  const cross = projectedSkyUp.clone().cross(projectedWorldUp);
-  const sign = cross.dot(camForwardWorld) < 0 ? -1 : 1;
+let dot = projectedSkyUp.dot(projectedWorldUp);
+dot = THREE.MathUtils.clamp(dot, -1, 1);
 
-  const rollQuat = new THREE.Quaternion()
-    .setFromAxisAngle(camForwardWorld, rollAngle * sign);
+const angle = Math.acos(dot);
 
-  sky3dRootGroup.quaternion.premultiply(rollQuat);
+const cross = projectedSkyUp.clone().cross(projectedWorldUp);
+const sign = cross.dot(camForwardWorld) < 0 ? -1 : 1;
+
+// Apply roll correction
+const rollQuat = new THREE.Quaternion()
+  .setFromAxisAngle(camForwardWorld, angle * sign);
+
+sky3dRootGroup.quaternion.premultiply(rollQuat);
+
 
   // --- 6. Update UI ---
   document.getElementById("sky3d-object-name").textContent = body.name;
