@@ -368,11 +368,15 @@
         <label><input type="checkbox" id="sky3d-asteroids" checked> Asteroids</label><br>
         <label><input type="checkbox" id="sky3d-constellations" checked> Constellations</label><br>
         <label><input type="checkbox" id="sky3d-dso" checked> Deep Sky Objects</label><br>
-
         <h3 style="margin-top:20px;">Search</h3>
-        <input type="text" id="sky3d-search" placeholder="Search object..." style="width:100%;">
-        <button id="sky3d-search-btn" style="margin-top:10px; width:100%;">Go</button>
 
+        <div style="position:relative;">
+          <input type="text" id="sky3d-search" placeholder="Search object..." style="width:100%;">
+          <div id="sky3d-search-suggestions" class="sky3d-suggestions"></div>
+        </div>
+
+        <button id="sky3d-search-btn" style="margin-top:10px; width:100%;">Go</button>
+        
       </aside>
 
       <!-- Canvas Area -->
