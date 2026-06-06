@@ -781,57 +781,57 @@ function sky3dGetSuggestions(rawQuery) {
     }
   }
 
-// --- Stars ---
-for (let i = 0; i < sky3dStarBase.length; i++) {
-  const s = sky3dStarBase[i];
+  // --- Stars ---
+  for (let i = 0; i < sky3dStarBase.length; i++) {
+    const s = sky3dStarBase[i];
+    if (!isStarAboveHorizon(s)) continue;
 
-  // ⭐ Skip stars below horizon
-  if (!isStarAboveHorizon(s)) continue;
+    // Proper name
+    if (s.proper && s.proper.toLowerCase().includes(query)) {
+      out.push({ type: "star", name: s.proper });
+      if (out.length > 12) break;
+      continue;
+    }
 
-  // Proper name
-  if (s.proper && s.proper.toLowerCase().includes(query)) {
-    out.push({ type: "star", name: s.proper });
+    // HIP
+    if (query.startsWith("hip")) {
+      const hip = query.replace("hip", "").trim();
+      if (s.hip && String(s.hip) === hip) {
+        out.push({ type: "star", name: "HIP " + hip });
+        continue;
+      }
+    }
+
+    // Bayer
+    if (s.bayer && s.con) {
+      let b = s.bayer.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const key = `${b} ${s.con.toLowerCase()}`;
+      if (key.includes(query)) {
+        out.push({ type: "star", name: getStarNameFromRecord(s) });
+        continue;
+      }
+    }
+
+    // Flamsteed
+    if (s.flam && s.con) {
+      const key = `${s.flam} ${s.con.toLowerCase()}`;
+      if (key.includes(query)) {
+        out.push({ type: "star", name: getStarNameFromRecord(s) });
+        continue;
+      }
+    }
+
+    // Constellation-only
+    if (s.con && s.con.toLowerCase() === query) {
+      out.push({ type: "star", name: getStarNameFromRecord(s) });
+      continue;
+    }
+
     if (out.length > 12) break;
-    continue;
   }
 
-  // HIP
-  if (query.startsWith("hip")) {
-    const hip = query.replace("hip", "").trim();
-    if (s.hip && String(s.hip) === hip) {
-      out.push({ type: "star", name: "HIP " + hip });
-      continue;
-    }
-  }
-
-  // Bayer
-  if (s.bayer && s.con) {
-    let b = s.bayer.toLowerCase().replace(/[^a-z0-9]/g, "");
-    const key = `${b} ${s.con.toLowerCase()}`;
-    if (key.includes(query)) {
-      out.push({ type: "star", name: getStarNameFromRecord(s) });
-      continue;
-    }
-  }
-
-  // Flamsteed
-  if (s.flam && s.con) {
-    const key = `${s.flam} ${s.con.toLowerCase()}`;
-    if (key.includes(query)) {
-      out.push({ type: "star", name: getStarNameFromRecord(s) });
-      continue;
-    }
-  }
-
-  // Constellation-only
-  if (s.con && s.con.toLowerCase() === query) {
-    out.push({ type: "star", name: getStarNameFromRecord(s) });
-    continue;
-  }
-
-  if (out.length > 12) break;
+  return out;
 }
-
 
 function sky3dShowSuggestions(list) {
   const box = document.getElementById("sky3d-search-suggestions");
