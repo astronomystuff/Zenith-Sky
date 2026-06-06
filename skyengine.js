@@ -777,7 +777,7 @@ function sky3dGetSuggestions(rawQuery) {
   // --- Planets ---
   for (const name in sky3dPlanetMap) {
     if (name.startsWith(query)) {
-      out.push({ type: "planet", name });
+      out.push({ type: "planet", name: name.charAt(0).toUpperCase() + name.slice(1) });
     }
   }
 
