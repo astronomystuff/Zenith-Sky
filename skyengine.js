@@ -1660,9 +1660,6 @@ function searchSky3D() {
   }
 
 // --- 3. Position ---
-const points = sky3dCelestialSphere.children[0];
-const geom = points.geometry;
-const starIndices = geom.userData.starIndices;
 const posAttr = geom.attributes.position;
 
 let geoIndex = -1;
