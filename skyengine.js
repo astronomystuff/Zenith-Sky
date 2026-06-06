@@ -1966,7 +1966,17 @@ searchInput.addEventListener("keydown", e => {
   items.forEach(i => i.classList.remove("active"));
   items[sky3dSuggestionIndex].classList.add("active");
 });
-  
+
+const planetToggle = document.getElementById("sky3d-planets");
+if (planetToggle) {
+  planetToggle.addEventListener("change", () => {
+    const visible = planetToggle.checked;
+    for (const mesh of sky3dPlanetMeshes) {
+      mesh.visible = visible;
+    }
+  });
+}
+
 }
 
 document.addEventListener("click", e => {
