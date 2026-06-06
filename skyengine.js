@@ -763,6 +763,101 @@ function sky3dHideLoading() {
   if (el) el.style.display = "none";
 }
 
+function sky3dGetSuggestions(rawQuery) {
+  let query = rawQuery
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]+/g, "")
+    .trim();
+
+  if (!query) return [];
+
+  const out = [];
+
+  // --- Planets ---
+  for (const name in sky3dPlanetMap) {
+    if (name.startsWith(query)) {
+      out.push({ type: "planet", name });
+    }
+  }
+
+  // --- Stars ---
+  for (let i = 0; i < sky3dStarBase.length; i++) {
+    const s = sky3dStarBase[i];
+
+    // Proper name
+    if (s.proper && s.proper.toLowerCase().includes(query)) {
+      out.push({ type: "star", name: s.proper });
+      if (out.length > 12) break;
+      continue;
+    }
+
+    // HIP
+    if (query.startsWith("hip")) {
+      const hip = query.replace("hip", "").trim();
+      if (s.hip && String(s.hip) === hip) {
+        out.push({ type: "star", name: "HIP " + hip });
+        continue;
+      }
+    }
+
+    // Bayer
+    if (s.bayer && s.con) {
+      let b = s.bayer.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const key = `${b} ${s.con.toLowerCase()}`;
+      if (key.includes(query)) {
+        out.push({ type: "star", name: getStarNameFromRecord(s) });
+        continue;
+      }
+    }
+
+    // Flamsteed
+    if (s.flam && s.con) {
+      const key = `${s.flam} ${s.con.toLowerCase()}`;
+      if (key.includes(query)) {
+        out.push({ type: "star", name: getStarNameFromRecord(s) });
+        continue;
+      }
+    }
+
+    // Constellation-only
+    if (s.con && s.con.toLowerCase() === query) {
+      out.push({ type: "star", name: getStarNameFromRecord(s) });
+      continue;
+    }
+
+    if (out.length > 12) break;
+  }
+
+  return out.slice(0, 12);
+}
+
+function sky3dShowSuggestions(list) {
+  const box = document.getElementById("sky3d-search-suggestions");
+
+  if (!list.length) {
+    box.style.display = "none";
+    return;
+  }
+
+  box.innerHTML = "";
+  list.forEach((item, i) => {
+    const div = document.createElement("div");
+    div.textContent = item.name;
+    div.dataset.index = i;
+
+    div.onclick = () => {
+      document.getElementById("sky3d-search").value = item.name;
+      box.style.display = "none";
+      searchSky3D();
+    };
+
+    box.appendChild(div);
+  });
+
+  box.style.display = "block";
+}
+
+
 async function horizonsStateVector(name, JD) {
     const jdString = JD.toFixed(6);
     const url =
@@ -1812,14 +1907,52 @@ if (applyLoc) applyLoc.onclick = rebuildCelestialSphere;
 // Search wiring
 const searchBtn = document.getElementById("sky3d-search-btn");
 if (searchBtn) searchBtn.onclick = searchSky3D;
+
 const searchInput = document.getElementById("sky3d-search");
 if (searchInput) {
   searchInput.addEventListener("keydown", e => {
     if (e.key === "Enter") searchSky3D();
   });
+
+  searchInput.addEventListener("input", e => {
+    const q = e.target.value;
+    const suggestions = sky3dGetSuggestions(q);
+    sky3dShowSuggestions(suggestions);
+  });
 }
+
+searchInput.addEventListener("keydown", e => {
+  const box = document.getElementById("sky3d-search-suggestions");
+  const items = box.querySelectorAll("div");
+  if (!items.length) return;
+
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    sky3dSuggestionIndex = (sky3dSuggestionIndex + 1) % items.length;
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    sky3dSuggestionIndex = (sky3dSuggestionIndex - 1 + items.length) % items.length;
+  } else if (e.key === "Enter") {
+    e.preventDefault();
+    if (sky3dSuggestionIndex >= 0) {
+      items[sky3dSuggestionIndex].click();
+    }
+    return;
+  } else {
+    return;
+  }
+
+  items.forEach(i => i.classList.remove("active"));
+  items[sky3dSuggestionIndex].classList.add("active");
+});
   
 }
+
+document.addEventListener("click", e => {
+  if (!e.target.closest("#sky3d-search")) {
+    document.getElementById("sky3d-search-suggestions").style.display = "none";
+  }
+});
 
 /* ============================================================
    Ensure modal wiring runs
