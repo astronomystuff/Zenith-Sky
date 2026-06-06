@@ -1660,21 +1660,38 @@ function searchSky3D() {
   }
 
 // --- 3. Position ---
-const pos = new THREE.Vector3();
+const points = sky3dCelestialSphere.children[0];
+const geom = points.geometry;
+const starIndices = geom.userData.starIndices;
+const posAttr = geom.attributes.position;
+
+let geoIndex = -1;
+for (let i = 0; i < starIndices.length; i++) {
+  if (starIndices[i] === star.index) {
+    geoIndex = i;
+    break;
+  }
+}
+if (geoIndex === -1) return;
+
+// Get XYZ
+const pos = new THREE.Vector3(
+  posAttr.getX(geoIndex),
+  posAttr.getY(geoIndex),
+  posAttr.getZ(geoIndex)
+);
+
 points.localToWorld(pos);
 
 // --- 4. Direction ---
 const dir = pos.clone().normalize();
 
-// --- 6. Center Star ---
+// --- 5. Center Star ---
 const camForward = new THREE.Vector3(0, 0, -1);
 const q = new THREE.Quaternion().setFromUnitVectors(dir, camForward);
 sky3dRootGroup.quaternion.premultiply(q);
 
-// --- 7. Store ---
-window.sky3dSelectedWorldPos = dir.clone();
-
-// --- 8. Remove Roll ---
+// --- 6. Remove Roll ---
 const camForwardWorld = new THREE.Vector3(0, 0, -1)
   .applyQuaternion(sky3dCamera.quaternion)
   .normalize();
@@ -1704,7 +1721,7 @@ const rollQuat = new THREE.Quaternion()
 
 sky3dRootGroup.quaternion.premultiply(rollQuat);
 
-  // 8. Update info panel
+  // 7. Update info panel
   const dateCivil = getDateFromUICivil();
   const { latDeg, lonDeg } = getLocationFromUI();
   const { lst, dateLMT } = getLSTRadiansFromCivil(dateCivil, lonDeg);
