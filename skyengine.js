@@ -781,56 +781,57 @@ function sky3dGetSuggestions(rawQuery) {
     }
   }
 
-  // --- Stars ---
-  for (let i = 0; i < sky3dStarBase.length; i++) {
-    const s = sky3dStarBase[i];
+// --- Stars ---
+for (let i = 0; i < sky3dStarBase.length; i++) {
+  const s = sky3dStarBase[i];
 
-    // Proper name
-    if (s.proper && s.proper.toLowerCase().includes(query)) {
-      out.push({ type: "star", name: s.proper });
-      if (out.length > 12) break;
+  // ⭐ Skip stars below horizon
+  if (!isStarAboveHorizon(s)) continue;
+
+  // Proper name
+  if (s.proper && s.proper.toLowerCase().includes(query)) {
+    out.push({ type: "star", name: s.proper });
+    if (out.length > 12) break;
+    continue;
+  }
+
+  // HIP
+  if (query.startsWith("hip")) {
+    const hip = query.replace("hip", "").trim();
+    if (s.hip && String(s.hip) === hip) {
+      out.push({ type: "star", name: "HIP " + hip });
       continue;
     }
+  }
 
-    // HIP
-    if (query.startsWith("hip")) {
-      const hip = query.replace("hip", "").trim();
-      if (s.hip && String(s.hip) === hip) {
-        out.push({ type: "star", name: "HIP " + hip });
-        continue;
-      }
-    }
-
-    // Bayer
-    if (s.bayer && s.con) {
-      let b = s.bayer.toLowerCase().replace(/[^a-z0-9]/g, "");
-      const key = `${b} ${s.con.toLowerCase()}`;
-      if (key.includes(query)) {
-        out.push({ type: "star", name: getStarNameFromRecord(s) });
-        continue;
-      }
-    }
-
-    // Flamsteed
-    if (s.flam && s.con) {
-      const key = `${s.flam} ${s.con.toLowerCase()}`;
-      if (key.includes(query)) {
-        out.push({ type: "star", name: getStarNameFromRecord(s) });
-        continue;
-      }
-    }
-
-    // Constellation-only
-    if (s.con && s.con.toLowerCase() === query) {
+  // Bayer
+  if (s.bayer && s.con) {
+    let b = s.bayer.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const key = `${b} ${s.con.toLowerCase()}`;
+    if (key.includes(query)) {
       out.push({ type: "star", name: getStarNameFromRecord(s) });
       continue;
     }
-
-    if (out.length > 12) break;
   }
 
-  return out.slice(0, 12);
+  // Flamsteed
+  if (s.flam && s.con) {
+    const key = `${s.flam} ${s.con.toLowerCase()}`;
+    if (key.includes(query)) {
+      out.push({ type: "star", name: getStarNameFromRecord(s) });
+      continue;
+    }
+  }
+
+  // Constellation-only
+  if (s.con && s.con.toLowerCase() === query) {
+    out.push({ type: "star", name: getStarNameFromRecord(s) });
+    continue;
+  }
+
+  if (out.length > 12) break;
 }
+
 
 function sky3dShowSuggestions(list) {
   const box = document.getElementById("sky3d-search-suggestions");
@@ -858,6 +859,25 @@ function sky3dShowSuggestions(list) {
   box.style.display = "block";
 }
 
+function isStarAboveHorizon(star) {
+  const dateCivil = getDateFromUICivil();
+  const { latDeg, lonDeg } = getLocationFromUI();
+  const { lst, dateLMT } = getLSTRadiansFromCivil(dateCivil, lonDeg);
+  const years = (dateLMT.getTime() - J2000_MS) / 31557600000;
+
+  const pm = applyProperMotionFromXYZ(star, years);
+
+  const raRad  = pm.raDeg * Math.PI / 180;
+  const decRad = pm.decDeg * Math.PI / 180;
+  const latRad = latDeg * Math.PI / 180;
+
+  const H = lst - raRad;
+
+  const sinAlt = Math.sin(latRad) * Math.sin(decRad) +
+                 Math.cos(latRad) * Math.cos(decRad) * Math.cos(H);
+
+  return sinAlt > 0;
+}
 
 async function horizonsStateVector(name, JD) {
     const jdString = JD.toFixed(6);
