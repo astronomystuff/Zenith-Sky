@@ -74,7 +74,7 @@ button,
 }
 
 /* =============================== */
-/* iOS 26 LIQUID‑GLASS INPUT FIELDS */
+/* INPUT FIELDS */
 /* =============================== */
 
 #planner-root input[type="date"],
@@ -130,7 +130,7 @@ button,
 }
 
 /* =============================== */
-/* LIQUID‑GLASS GENERATE BUTTON    */
+/* GENERATE BUTTON    */
 /* =============================== */
 
 #planner-generate {
@@ -412,6 +412,33 @@ button:active,
 #planner-close-btn {
   color: black !important;
   font-weight: 600;
+}
+
+/* SKY ENGINE SUGGESTIONS */
+.sky3d-suggestions {
+  position: absolute;
+  top: 100%;              /* directly under the input */
+  left: 0;
+  width: 100%;            /* match input width */
+  background: #111;
+  border: 1px solid #333;
+  border-radius: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+  display: none;
+  z-index: 9999;
+}
+
+.sky3d-suggestions div {
+  padding: 8px 10px;
+  cursor: pointer;
+  color: #ddd;
+}
+
+.sky3d-suggestions div:hover,
+.sky3d-suggestions .active {
+  background: #222;
+  color: #fff;
 }
 
 /* SMALL SCREENS */
