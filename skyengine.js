@@ -1660,6 +1660,7 @@ function searchSky3D() {
   }
 
 // --- 3. Position ---
+const pos = new THREE.Vector3();
 points.localToWorld(pos);
 const posCam = pos.clone().applyMatrix4(sky3dCamera.matrixWorldInverse);
 
