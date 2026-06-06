@@ -1566,7 +1566,6 @@ const dir = pos.clone().normalize();
 }
 
 
-
 function searchSky3D() {
   let query = document.getElementById("sky3d-search").value
     .toLowerCase()
@@ -1583,7 +1582,6 @@ function searchSky3D() {
 
   // --- 2. Star search ---
   let best = null;
-
   for (let i = 0; i < sky3dStarBase.length; i++) {
     const s = sky3dStarBase[i];
 
@@ -1658,55 +1656,57 @@ function searchSky3D() {
     return;
   }
 
-  // 3. Get local position and convert to world
-  const pos = new THREE.Vector3(
-    positions.getX(geoIndex),
-    positions.getY(geoIndex),
-    positions.getZ(geoIndex)
-  );
-  points.localToWorld(pos);
+// --- 3. Get star world position ---
+const pos = new THREE.Vector3(
+  positions.getX(geoIndex),
+  positions.getY(geoIndex),
+  positions.getZ(geoIndex)
+);
+points.localToWorld(pos);
 
-  // 4. Compute direction
-  const starDir = pos.clone().normalize();
-  const camForwardLocal = new THREE.Vector3(0, 0, -1);
-  const q = new THREE.Quaternion().setFromUnitVectors(starDir, camForwardLocal);
-  sky3dRootGroup.quaternion.premultiply(q);
+// --- 4. Direction ---
+const dir = pos.clone().normalize();
 
-  // --- REMOVE ROLL ---
-  const camForwardWorld = new THREE.Vector3(0, 0, -1)
-    .applyQuaternion(sky3dCamera.quaternion)
-    .normalize();
+// --- 5. Center Star ---
+const camForward = new THREE.Vector3(0, 0, -1);
+const q = new THREE.Quaternion().setFromUnitVectors(dir, camForward);
+sky3dRootGroup.quaternion.premultiply(q);
 
-  const worldUp = new THREE.Vector3(0, 1, 0);
+// --- 6. Store ---
+window.sky3dSelectedWorldPos = dir.clone();
 
-  const skyUpWorld = new THREE.Vector3(0, 1, 0)
-    .applyQuaternion(sky3dRootGroup.quaternion)
-    .normalize();
+// --- 7. Remove Roll ---
+const camForwardWorld = new THREE.Vector3(0, 0, -1)
+  .applyQuaternion(sky3dCamera.quaternion)
+  .normalize();
 
-  const projectedSkyUp = skyUpWorld.clone().sub(
-    camForwardWorld.clone().multiplyScalar(skyUpWorld.dot(camForwardWorld))
-  ).normalize();
+const worldUp = new THREE.Vector3(0, 1, 0);
+const skyUpWorld = new THREE.Vector3(0, 1, 0)
+  .applyQuaternion(sky3dRootGroup.quaternion)
+  .normalize();
 
-  const projectedWorldUp = worldUp.clone().sub(
-    camForwardWorld.clone().multiplyScalar(worldUp.dot(camForwardWorld))
-  ).normalize();
+const projectedSkyUp = skyUpWorld.clone().sub(
+  camForwardWorld.clone().multiplyScalar(skyUpWorld.dot(camForwardWorld))
+).normalize();
 
-  const rollAngle = Math.acos(
-    THREE.MathUtils.clamp(projectedSkyUp.dot(projectedWorldUp), -1, 1)
-  );
+const projectedWorldUp = worldUp.clone().sub(
+  camForwardWorld.clone().multiplyScalar(worldUp.dot(camForwardWorld))
+).normalize();
 
-  const cross = projectedSkyUp.clone().cross(projectedWorldUp);
-  const sign = cross.dot(camForwardWorld) < 0 ? -1 : 1;
+const rollAngle = Math.acos(
+  THREE.MathUtils.clamp(projectedSkyUp.dot(projectedWorldUp), -1, 1)
+);
 
-  const rollQuat = new THREE.Quaternion()
-    .setFromAxisAngle(camForwardWorld, rollAngle * sign);
+const cross = projectedSkyUp.clone().cross(projectedWorldUp);
+const sign = cross.dot(camForwardWorld) < 0 ? -1 : 1;
 
-  sky3dRootGroup.quaternion.premultiply(rollQuat);
+const rollQuat = new THREE.Quaternion()
+  .setFromAxisAngle(camForwardWorld, rollAngle * sign);
 
-  // 5. Store
-  window.sky3dSelectedWorldPos = pos.clone();
+sky3dRootGroup.quaternion.premultiply(rollQuat);
 
-  // 6. Update info panel
+
+  // 8. Update info panel
   const dateCivil = getDateFromUICivil();
   const { latDeg, lonDeg } = getLocationFromUI();
   const { lst, dateLMT } = getLSTRadiansFromCivil(dateCivil, lonDeg);
