@@ -1662,15 +1662,6 @@ function searchSky3D() {
 // --- 3. Position ---
 const posAttr = geom.attributes.position;
 
-let geoIndex = -1;
-for (let i = 0; i < starIndices.length; i++) {
-  if (starIndices[i] === star.index) {
-    geoIndex = i;
-    break;
-  }
-}
-if (geoIndex === -1) return;
-
 // Get XYZ
 const pos = new THREE.Vector3(
   posAttr.getX(geoIndex),
