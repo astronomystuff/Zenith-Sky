@@ -1686,7 +1686,17 @@ const q = new THREE.Quaternion().setFromUnitVectors(dir, camForward);
 sky3dRootGroup.quaternion.premultiply(q);
 
 // --- 6. Remove Roll ---
-  const projectedSkyUp = skyUpWorld.clone().sub(
+const camForwardWorld = new THREE.Vector3(0, 0, -1)
+  .applyQuaternion(sky3dCamera.quaternion)
+  .normalize();
+
+const worldUp = new THREE.Vector3(0, 1, 0);
+
+const skyUpWorld = new THREE.Vector3(0, 1, 0)
+  .applyQuaternion(sky3dRootGroup.quaternion)
+  .normalize();
+
+const projectedSkyUp = skyUpWorld.clone().sub(
   camForwardWorld.clone().multiplyScalar(skyUpWorld.dot(camForwardWorld))
 ).normalize();
 
@@ -1694,26 +1704,19 @@ const projectedWorldUp = worldUp.clone().sub(
   camForwardWorld.clone().multiplyScalar(worldUp.dot(camForwardWorld))
 ).normalize();
 
-// Clamp dot and force the *short* rotation (avoid 180° flips)
 let dot = projectedSkyUp.dot(projectedWorldUp);
 dot = THREE.MathUtils.clamp(dot, -1, 1);
-
-if (dot < 0) {
-  // Flip target up so we never rotate more than 90°
-  projectedWorldUp.negate();
-  dot = -dot;
-}
 
 const rollAngle = Math.acos(dot);
 
 const cross = projectedSkyUp.clone().cross(projectedWorldUp);
 const sign = cross.dot(camForwardWorld) < 0 ? -1 : 1;
 
+// Apply roll correction
 const rollQuat = new THREE.Quaternion()
   .setFromAxisAngle(camForwardWorld, rollAngle * sign);
 
 sky3dRootGroup.quaternion.premultiply(rollQuat);
-
 
   // 7. Update info panel
   const dateCivil = getDateFromUICivil();
