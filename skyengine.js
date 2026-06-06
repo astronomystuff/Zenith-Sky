@@ -784,7 +784,7 @@ function sky3dGetSuggestions(rawQuery) {
   // --- Stars ---
   for (let i = 0; i < sky3dStarBase.length; i++) {
     const s = sky3dStarBase[i];
-    if (!isStarAboveHorizon(s)) continue;
+    if (!s._aboveHorizon) continue;
 
     // Proper name
     if (s.proper && s.proper.toLowerCase().includes(query)) {
@@ -1260,6 +1260,7 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     const sinAlt = Math.sin(latRad) * Math.sin(decRad) +
                    Math.cos(latRad) * Math.cos(decRad) * Math.cos(H);
     const alt = Math.asin(sinAlt);
+    s._aboveHorizon = (alt > 0);
     if (alt <= 0) continue;
     if (s.mag > dynamicMagLimit) continue;
 
@@ -1642,7 +1643,7 @@ function searchSky3D() {
   const starIndices = geom.userData.starIndices;
   const positions = geom.attributes.position;
 
-  // 2. Find star
+  // Find star
   let geoIndex = -1;
   for (let i = 0; i < starIndices.length; i++) {
     if (starIndices[i] === starIdx) {
@@ -1656,26 +1657,22 @@ function searchSky3D() {
     return;
   }
 
-// --- 3. Get star world position ---
-const pos = new THREE.Vector3(
-  positions.getX(geoIndex),
-  positions.getY(geoIndex),
-  positions.getZ(geoIndex)
-);
+// --- 3. Position ---
 points.localToWorld(pos);
+const posCam = pos.clone().applyMatrix4(sky3dCamera.matrixWorldInverse);
 
 // --- 4. Direction ---
-const dir = pos.clone().normalize();
+const dir = posCam.normalize();
 
-// --- 5. Center Star ---
+// --- 6. Center Star ---
 const camForward = new THREE.Vector3(0, 0, -1);
 const q = new THREE.Quaternion().setFromUnitVectors(dir, camForward);
 sky3dRootGroup.quaternion.premultiply(q);
 
-// --- 6. Store ---
+// --- 7. Store ---
 window.sky3dSelectedWorldPos = dir.clone();
 
-// --- 7. Remove Roll ---
+// --- 8. Remove Roll ---
 const camForwardWorld = new THREE.Vector3(0, 0, -1)
   .applyQuaternion(sky3dCamera.quaternion)
   .normalize();
@@ -1704,7 +1701,6 @@ const rollQuat = new THREE.Quaternion()
   .setFromAxisAngle(camForwardWorld, rollAngle * sign);
 
 sky3dRootGroup.quaternion.premultiply(rollQuat);
-
 
   // 8. Update info panel
   const dateCivil = getDateFromUICivil();
