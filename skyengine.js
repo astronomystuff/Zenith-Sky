@@ -1267,6 +1267,7 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     }[name];
 
 const geo = new THREE.BufferGeometry();
+
 geo.setAttribute("position", new THREE.Float32BufferAttribute([0, 0, 0], 3));
 geo.setAttribute("sizeAttr", new THREE.Float32BufferAttribute([size], 1));
 geo.setAttribute("color", new THREE.Float32BufferAttribute([
@@ -1277,29 +1278,25 @@ geo.setAttribute("color", new THREE.Float32BufferAttribute([
 
 const mat = material.clone();
 mat.onBeforeCompile = material.onBeforeCompile;
-mat.needsUpdate = true;
 
 const planetPoint = new THREE.Points(geo, mat);
-
 planetPoint.position.set(x, y, z);
-planetPoint.userData.isPlanet = true;
-planetPoint.userData.name = name;
-planetPoint.userData.mag = body.mag;
-planetPoint.userData.type = "planet";
-planetPoint.userData.dist = body.dist;
-planetPoint.userData.ra = body.ra;
-planetPoint.userData.dec = body.dec;
-planetPoint.userData.alt = alt * 180/Math.PI;
+planetPoint.userData = {
+  type: "planet",
+  name,
+  mag: body.mag,
+  dist: body.dist,
+  ra: body.ra,
+  dec: body.dec,
+  alt: alt * 180/Math.PI,
+  az: (az * 180/Math.PI + 360) % 360
+};
 
-let azDeg = az * 180/Math.PI;
-if (azDeg < 0) azDeg += 360;
-planetPoint.userData.az = azDeg;
-
-group.add(planetPoint);
 sky3dPlanetMeshes.push(planetPoint);
 sky3dPlanetMap[name.toLowerCase()] = planetPoint;
+group.add(planetPoint);
 }
-
+  
   return group;
 }
 
