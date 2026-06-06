@@ -1452,29 +1452,66 @@ const dir = pos.clone().normalize();
 
 
 function searchSky3D() {
-  const query = document.getElementById("sky3d-search").value.trim().toLowerCase();
+  let query = document.getElementById("sky3d-search").value
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]+/g, "")   // remove punctuation, greek chars, etc.
+    .replace(/\s+/g, " ")
+    .trim();
+
   if (!query) return;
 
+  // --- 1. Planet search ---
   if (sky3dPlanetMap[query]) {
     return searchSkyPlanet(sky3dPlanetMap[query]);
   }
-  
-  // 1. Find matching star
+
+  // --- 2. Star search ---
   let best = null;
+
   for (let i = 0; i < sky3dStarBase.length; i++) {
     const s = sky3dStarBase[i];
 
+    // --- Proper name ---
     if (s.proper && s.proper.toLowerCase().includes(query)) {
       best = { star: s, idx: i };
       break;
     }
 
+    // --- HIP search ---
     if (query.startsWith("hip")) {
       const hip = query.replace("hip", "").trim();
       if (s.hip && String(s.hip) === hip) {
         best = { star: s, idx: i };
         break;
       }
+    }
+
+    // --- Bayer search ---
+    if (s.bayer && s.con) {
+      let b = s.bayer.toLowerCase().trim();
+      b = b.replace(/\s+/g, "").replace("-", "");
+
+      const bayerKey = `${b} ${s.con.toLowerCase()}`;
+
+      if (bayerKey.includes(query)) {
+        best = { star: s, idx: i };
+        break;
+      }
+    }
+
+    // --- Flamsteed search ---
+    if (s.flam && s.con) {
+      const flamKey = `${s.flam} ${s.con.toLowerCase()}`;
+      if (flamKey.includes(query)) {
+        best = { star: s, idx: i };
+        break;
+      }
+    }
+
+    // --- Constellation-only search ---
+    if (s.con && s.con.toLowerCase() === query) {
+      best = { star: s, idx: i };
+      break;
     }
   }
 
