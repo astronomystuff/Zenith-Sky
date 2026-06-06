@@ -1662,10 +1662,9 @@ function searchSky3D() {
 // --- 3. Position ---
 const pos = new THREE.Vector3();
 points.localToWorld(pos);
-const posCam = pos.clone().applyMatrix4(sky3dCamera.matrixWorldInverse);
 
 // --- 4. Direction ---
-const dir = posCam.normalize();
+const dir = pos.clone().normalize();
 
 // --- 6. Center Star ---
 const camForward = new THREE.Vector3(0, 0, -1);
