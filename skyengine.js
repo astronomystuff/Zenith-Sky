@@ -260,28 +260,36 @@ class minimalCameraControls {
     this.lastY = e.clientY;
   }
 
-  onMouseMove(e) {
-    if (!this.isRotating) return;
+onMouseMove(e) {
+  if (!this.isRotating) return;
 
-    const dx = e.clientX - this.lastX;
-    const dy = e.clientY - this.lastY;
+  const dx = e.clientX - this.lastX;
+  const dy = e.clientY - this.lastY;
 
-    if (sky3dRootGroup) {
-      const fovFactor = this.camera.fov / 60;
-      const rotSpeed = this.rotateSpeed * fovFactor;
-      sky3dRootGroup.rotation.y += dx * rotSpeed;
-      sky3dRootGroup.rotation.x += dy * rotSpeed;
+  if (sky3dRootGroup) {
+    const fovFactor = this.camera.fov / 60;
+    const rotSpeed = this.rotateSpeed * fovFactor;
 
-      const limit = Math.PI / 2;
-      sky3dRootGroup.rotation.x = Math.max(
-        -limit,
-        Math.min(limit, sky3dRootGroup.rotation.x)
-      );
-    }
+    const yaw = dx * rotSpeed;
+    const pitch = dy * rotSpeed;
 
-    this.lastX = e.clientX;
-    this.lastY = e.clientY;
+    const qYaw = new THREE.Quaternion()
+      .setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+
+    const right = new THREE.Vector3(1, 0, 0)
+      .applyQuaternion(sky3dRootGroup.quaternion)
+      .normalize();
+
+    const qPitch = new THREE.Quaternion()
+      .setFromAxisAngle(right, pitch);
+
+    sky3dRootGroup.quaternion.premultiply(qYaw).premultiply(qPitch);
   }
+
+  this.lastX = e.clientX;
+  this.lastY = e.clientY;
+}
+
 
   onMouseUp() {
     this.isRotating = false;
@@ -312,38 +320,44 @@ class minimalCameraControls {
   onTouchMove(e) {
     e.preventDefault();
 
-    if (this.touchMode === "rotate" && e.touches.length === 1) {
-      const x = e.touches[0].clientX;
-      const y = e.touches[0].clientY;
+ if (this.touchMode === "rotate" && e.touches.length === 1) {
+  const x = e.touches[0].clientX;
+  const y = e.touches[0].clientY;
 
-      const dx = x - this.lastX;
-      const dy = y - this.lastY;
+  const dx = x - this.lastX;
+  const dy = y - this.lastY;
 
-      if (sky3dRootGroup) {
-      const fovFactor = this.camera.fov / 60;
-      const rotSpeed = this.rotateSpeed * fovFactor;
-      sky3dRootGroup.rotation.y += dx * rotSpeed;
-      sky3dRootGroup.rotation.x += dy * rotSpeed;
+  if (sky3dRootGroup) {
+    const fovFactor = this.camera.fov / 60;
+    const rotSpeed = this.rotateSpeed * fovFactor;
 
+    const yaw = dx * rotSpeed;
+    const pitch = dy * rotSpeed;
 
-        const limit = Math.PI / 2;
-        sky3dRootGroup.rotation.x = Math.max(
-          -limit,
-          Math.min(limit, sky3dRootGroup.rotation.x)
-        );
-      }
+    const qYaw = new THREE.Quaternion()
+      .setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
 
-      this.lastX = x;
-      this.lastY = y;
-    }
+    const right = new THREE.Vector3(1, 0, 0)
+      .applyQuaternion(sky3dRootGroup.quaternion)
+      .normalize();
 
-      if (this.touchMode === "pinch" && e.touches.length === 2) {
-        const newDist = this.getTouchDistance(e);
-        const delta = this.lastTouchDist - newDist;
-        this.onZoom(delta * 0.15);
-        this.lastTouchDist = newDist;
-    }
+    const qPitch = new THREE.Quaternion()
+      .setFromAxisAngle(right, pitch);
+
+    sky3dRootGroup.quaternion.premultiply(qYaw).premultiply(qPitch);
   }
+
+  this.lastX = x;
+  this.lastY = y;
+}
+
+if (this.touchMode === "pinch" && e.touches.length === 2) {
+  const newDist = this.getTouchDistance(e);
+  const delta = this.lastTouchDist - newDist;
+  this.onZoom(delta * 0.15);
+  this.lastTouchDist = newDist;
+}
+}
 
   onTouchEnd() {
     this.touchMode = null;
