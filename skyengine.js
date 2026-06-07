@@ -1689,16 +1689,16 @@ const ny = y / r;
 const nz = z / r;
 
 // Altitude
-const alt = Math.asin(ny);
+const centerAlt = Math.asin(ny);
 
 // Azimuth (0 = north, clockwise east)
-const az = Math.atan2(nx, -nz);
+const centerAz = Math.atan2(nx, -nz);
 
-// --- 5. Center sky ---
+// --- 5. Center sky using PURE EULER ---
 sky3dRootGroup.rotation.set(
-  -alt,   // pitch
-  -az,    // yaw
-  0,      // zero roll
+  -centerAlt,   // pitch
+  -centerAz,    // yaw
+  0,            // zero roll
   "YXZ"
 );
 
