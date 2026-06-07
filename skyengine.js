@@ -1719,7 +1719,6 @@ const rollQuat = new THREE.Quaternion()
   .setFromAxisAngle(camForwardWorld, angle * sign);
 
 sky3dRootGroup.quaternion.premultiply(rollQuat);
-sky3dRootGroup.rotation.order = "YXZ";
 
   // 7. Update info panel
   const dateCivil = getDateFromUICivil();
