@@ -1677,32 +1677,50 @@ const pos = new THREE.Vector3(
 // Convert to world space
 points.localToWorld(pos);
 
-// --- 4. Convert world XYZ → Alt/Az ---
-const x = pos.x;
-const y = pos.y;
-const z = pos.z;
+// --- 4. Direction ---
+const dir = pos.clone().normalize();
 
-// Normalize
-const r = Math.sqrt(x*x + y*y + z*z);
-const nx = x / r;
-const ny = y / r;
-const nz = z / r;
+// --- 5. Center Star ---
+const camForward = new THREE.Vector3(0, 0, -1);
+const q = new THREE.Quaternion().setFromUnitVectors(dir, camForward);
+sky3dRootGroup.quaternion.premultiply(q);
 
-// Altitude
-const centerAlt = Math.asin(ny);
+// --- 6. Remove Roll ---
+const camForwardWorld = new THREE.Vector3(0, 0, -1)
+  .applyQuaternion(sky3dCamera.quaternion)
+  .normalize();
 
-// Azimuth (0 = north, clockwise east)
-const centerAz = Math.atan2(nx, -nz);
+// World up
+const worldUp = new THREE.Vector3(0, 1, 0);
 
-// --- 5. Center sky using PURE EULER ---
-sky3dRootGroup.rotation.set(
-  -centerAlt,   // pitch
-  -centerAz,    // yaw
-  0,            // zero roll
-  "YXZ"
-);
+// Sky up
+const skyUpWorld = new THREE.Vector3(0, 1, 0)
+  .applyQuaternion(sky3dRootGroup.quaternion)
+  .normalize();
 
-  // 6. Update info panel
+const projectedSkyUp = skyUpWorld.clone().sub(
+  camForwardWorld.clone().multiplyScalar(skyUpWorld.dot(camForwardWorld))
+).normalize();
+
+const projectedWorldUp = worldUp.clone().sub(
+  camForwardWorld.clone().multiplyScalar(worldUp.dot(camForwardWorld))
+).normalize();
+
+let dot = projectedSkyUp.dot(projectedWorldUp);
+dot = THREE.MathUtils.clamp(dot, -1, 1);
+
+const angle = Math.acos(dot);
+
+const cross = projectedSkyUp.clone().cross(projectedWorldUp);
+const sign = cross.dot(camForwardWorld) < 0 ? -1 : 1;
+
+// Apply roll correction
+const rollQuat = new THREE.Quaternion()
+  .setFromAxisAngle(camForwardWorld, angle * sign);
+
+sky3dRootGroup.quaternion.premultiply(rollQuat);
+
+  // 7. Update info panel
   const dateCivil = getDateFromUICivil();
   const { latDeg, lonDeg } = getLocationFromUI();
   const { lst, dateLMT } = getLSTRadiansFromCivil(dateCivil, lonDeg);
