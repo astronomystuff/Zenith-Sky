@@ -1667,77 +1667,42 @@ function searchSky3D() {
 // --- 3. Position ---
 const posAttr = geom.attributes.position;
 
-// Get XYZ
+// Get XYZ in local space
 const pos = new THREE.Vector3(
   posAttr.getX(geoIndex),
   posAttr.getY(geoIndex),
   posAttr.getZ(geoIndex)
 );
 
+// Convert to world space
 points.localToWorld(pos);
 
-// --- 4. Direction ---
-const dir = pos.clone().normalize();
+// --- 4. Convert world XYZ → Alt/Az ---
+const x = pos.x;
+const y = pos.y;
+const z = pos.z;
 
-// --- 5. Center Star ---
-const camForward = new THREE.Vector3(0, 0, -1);
-const q = new THREE.Quaternion().setFromUnitVectors(dir, camForward);
-sky3dRootGroup.quaternion.premultiply(q);
+// Normalize
+const r = Math.sqrt(x*x + y*y + z*z);
+const nx = x / r;
+const ny = y / r;
+const nz = z / r;
 
-// --- 6. Remove Roll ---
-const camForwardWorld = new THREE.Vector3(0, 0, -1)
-  .applyQuaternion(sky3dCamera.quaternion)
-  .normalize();
+// Altitude
+const alt = Math.asin(ny);
 
-const worldUp = new THREE.Vector3(0, 1, 0);
+// Azimuth (0 = north, clockwise east)
+const az = Math.atan2(nx, -nz);
 
-const skyUpWorld = new THREE.Vector3(0, 1, 0)
-  .applyQuaternion(sky3dRootGroup.quaternion)
-  .normalize();
-
-const projectedSkyUp = skyUpWorld.clone().sub(
-  camForwardWorld.clone().multiplyScalar(skyUpWorld.dot(camForwardWorld))
-).normalize();
-
-const projectedWorldUp = worldUp.clone().sub(
-  camForwardWorld.clone().multiplyScalar(worldUp.dot(camForwardWorld))
-).normalize();
-
-let dot = projectedSkyUp.dot(projectedWorldUp);
-dot = THREE.MathUtils.clamp(dot, -1, 1);
-
-const rollAngle = Math.acos(dot);
-
-const cross = projectedSkyUp.clone().cross(projectedWorldUp);
-const sign = cross.dot(camForwardWorld) < 0 ? -1 : 1;
-
-// Apply roll correction
-const rollQuat = new THREE.Quaternion()
-  .setFromAxisAngle(camForwardWorld, rollAngle * sign);
-
-sky3dRootGroup.quaternion.premultiply(rollQuat);
-
-// Convert quaternion → Euler
-const e = new THREE.Euler().setFromQuaternion(
-  sky3dRootGroup.quaternion,
+// --- 5. Center sky ---
+sky3dRootGroup.rotation.set(
+  -alt,   // pitch
+  -az,    // yaw
+  0,      // zero roll
   "YXZ"
 );
 
-// Zero roll
-e.z = 0;
-
-// Clamp pitch
-e.x = THREE.MathUtils.clamp(
-  e.x,
-  -Math.PI / 2 + 0.01,
-  Math.PI / 2 - 0.01
-);
-
-// Write back to quaternion
-sky3dRootGroup.quaternion.setFromEuler(e);
-
-
-  // 7. Update info panel
+  // 6. Update info panel
   const dateCivil = getDateFromUICivil();
   const { latDeg, lonDeg } = getLocationFromUI();
   const { lst, dateLMT } = getLSTRadiansFromCivil(dateCivil, lonDeg);
