@@ -261,7 +261,7 @@ class minimalCameraControls {
 
   onMouseMove(e) {
     if (!this.isRotating || this.locked || !this.enabled) return;
-    this.applyRotation(e.clientX - this.lastX, e.clientY - this.lastY);
+    this.applyEulerRotation(e.clientX - this.lastX, e.clientY - this.lastY);
     this.lastX = e.clientX;
     this.lastY = e.clientY;
   }
@@ -301,7 +301,7 @@ class minimalCameraControls {
     if (this.touchMode === "rotate" && e.touches.length === 1) {
       const x = e.touches[0].clientX;
       const y = e.touches[0].clientY;
-      this.applyRotation(x - this.lastX, y - this.lastY);
+      this.applyEulerRotation(x - this.lastX, y - this.lastY);
       this.lastX = x;
       this.lastY = y;
     }
@@ -325,9 +325,9 @@ class minimalCameraControls {
   }
 
   /* ============================
-     ROTATION (stable yaw/pitch)
+     EULER ROTATION (stable)
   ============================ */
-  applyRotation(dx, dy) {
+  applyEulerRotation(dx, dy) {
     if (!sky3dRootGroup) return;
 
     const fovFactor = this.camera.fov / 60;
@@ -336,28 +336,26 @@ class minimalCameraControls {
     const yaw = dx * rotSpeed;
     const pitch = dy * rotSpeed;
 
-    // 1. Apply yaw
-    const qYaw = new THREE.Quaternion()
-      .setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
-    sky3dRootGroup.quaternion.premultiply(qYaw);
-
-    // 2. Convert to Euler
+    // Convert quaternion → Euler
     const e = new THREE.Euler().setFromQuaternion(
       sky3dRootGroup.quaternion,
       "YXZ"
     );
 
-    // 3. Apply pitch with clamp
+    // Apply yaw
+    e.y -= yaw;
+
+    // Apply pitch with clamp
     e.x = THREE.MathUtils.clamp(
-      e.x + pitch,
+      e.x - pitch,
       -Math.PI / 2 + 0.01,
       Math.PI / 2 - 0.01
     );
 
-    // 4. Remove roll
+    // Remove roll
     e.z = 0;
 
-    // 5. Reapply
+    // Write back to quaternion
     sky3dRootGroup.quaternion.setFromEuler(e);
   }
 
@@ -383,6 +381,7 @@ class minimalCameraControls {
     }, 120);
   }
 }
+
 
 /* ============================================================
    CSV Loader
