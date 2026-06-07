@@ -325,7 +325,7 @@ class minimalCameraControls {
   }
 
   /* ============================
-     EULER ROTATION (stable)
+     PURE EULER ROTATION
   ============================ */
   applyEulerRotation(dx, dy) {
     if (!sky3dRootGroup) return;
@@ -381,7 +381,6 @@ class minimalCameraControls {
     }, 120);
   }
 }
-
 
 /* ============================================================
    CSV Loader
