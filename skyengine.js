@@ -1679,7 +1679,11 @@ points.localToWorld(pos);
 
 // --- 4. Direction ---
 const dir = pos.clone().normalize();
-
+if (dir.dot(camForward) < -0.9999) {
+    dir.x += 0.001;
+    dir.normalize();
+}
+  
 // --- 5. Center Star ---
 const camForward = new THREE.Vector3(0, 0, -1);
 const q = new THREE.Quaternion().setFromUnitVectors(dir, camForward);
