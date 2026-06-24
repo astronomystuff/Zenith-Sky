@@ -127,6 +127,101 @@ function normalizeSpectral(raw) {
   return s;
 }
 
+function estimateStarAgeAndLifetime(star) {
+  const spect = normalizeSpectral(star.spect || "");
+  const Mv = star.absmag;
+
+  // --- 1. Parse ---
+  const classMatch = spect.match(/^([OBAFGKMLTYCRNSDW])([0-9]?)/i);
+  const lumMatch   = spect.match(/(I{1,3}|IV|V)/i);
+
+  const cls = classMatch ? classMatch[1].toUpperCase() : null;
+  const subtype = classMatch && classMatch[2] ? Number(classMatch[2]) : 5;
+  const lumClass = lumMatch ? lumMatch[1].toUpperCase() : "V";
+
+  // --- 2. Absolute Magnitude To Luminosity ---
+  function luminosityFromAbsMag(M) {
+    return Math.pow(10, (4.83 - M) / 2.5);
+  }
+  const L = luminosityFromAbsMag(Mv);
+
+  // --- 3. Estimate Mass ---
+  function estimateMass(L) {
+    if (L < 0.03) return Math.pow(L, 1/2.0);   // M dwarfs
+    if (L < 16)   return Math.pow(L, 1/4.0);   // Sun-like
+    return Math.pow(L, 1/3.5);                 // massive stars
+  }
+  let mass = estimateMass(L);
+
+  // --- 4. Refine Mass ---
+  if (cls && "OBAFGKM".includes(cls)) {
+    const subtypeFrac = subtype / 9;
+    const classMass = {
+      O: [16, 60],
+      B: [2.5, 16],
+      A: [1.4, 2.5],
+      F: [1.04, 1.4],
+      G: [0.8, 1.04],
+      K: [0.45, 0.8],
+      M: [0.08, 0.45]
+    }[cls];
+
+    if (classMass) {
+      const [minM, maxM] = classMass;
+      const subtypeMass = minM + (maxM - minM) * (1 - subtypeFrac);
+      mass = (mass + subtypeMass) / 2;
+    }
+  }
+
+  // --- 5. Main-sequence From Mass ---
+  function lifetimeYears(m) {
+    return 1e10 * Math.pow(m, -2.5);
+  }
+  const lifetime = lifetimeYears(mass);
+
+  // --- 6. White Dwarfs ---
+  if (cls === "D") {
+    return {
+      age: 0,
+      lifetime: 1e12,
+      remnant: true
+    };
+  }
+
+  // --- 7. Probabilistic Age Fraction---
+  let ageFrac;
+
+  if (cls === "W") {
+    ageFrac = 0.99 + Math.random() * 0.01;
+  }
+  else if (["C","R","N","S"].includes(cls)) {
+    ageFrac = 0.95 + Math.random() * 0.05;
+  }
+  else if (lumClass === "V") {
+    ageFrac = 0.1 + Math.random() * 0.8;
+  }
+  else if (lumClass === "IV") {
+    ageFrac = 0.8 + Math.random() * 0.1;
+  }
+  else if (lumClass === "III") {
+    ageFrac = 0.9 + Math.random() * 0.05;
+  }
+  else if (lumClass === "II" || lumClass === "I") {
+    ageFrac = 0.97 + Math.random() * 0.02;
+  }
+  else {
+    ageFrac = 0.5; // Fallback
+  }
+
+  const age = lifetime * ageFrac;
+
+  return {
+    age,
+    lifetime,
+    remnant: false
+  };
+}
+
 
 function colorForSpectralType(raw) {
   if (!raw) return 0xffffff;
@@ -1262,6 +1357,8 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     s._aboveHorizon = (alt > 0);
     if (alt <= 0) continue;
     if (s.mag > dynamicMagLimit) continue;
+    const { age, lifetime, remnant } = estimateStarAgeAndLifetime(s);
+    if (!remnant && years > (lifetime - age)) continue;
 
     // Azimuth
     const cosAz = (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
