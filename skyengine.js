@@ -655,31 +655,29 @@ function toJulianDate(date) {
   const year = date.getUTCFullYear();
 
   if (!Number.isFinite(year) || year < 1 || year > 275000) {
-    const y = Number.isFinite(year) ? year : date.getFullYear(); // Fallback
-    const m = date.getUTCMonth() + 1;
-    const d = date.getUTCDate();
-    const hh = date.getUTCHours();
-    const mm = date.getUTCMinutes();
-    const ss = date.getUTCSeconds();
-
-    let Y = y;
-    let M = m;
-
-    if (M <= 2) {
-      Y -= 1;
-      M += 12;
-    }
-
-    const A = Math.floor(Y / 100);
-    const B = 2 - A + Math.floor(A / 4);
-
-    return Math.floor(365.25 * (Y + 4716))
-         + Math.floor(30.6001 * (M + 1))
-         + d + B - 1524.5
-         + (hh + mm/60 + ss/3600) / 24;
+    const civil = getCivilFieldsFromUI();
+    return jdFromCivil(civil);
   }
 
   return (date.getTime() + date.getTimezoneOffset() * 60000) / 86400000 + 2440587.5;
+}
+
+function jdFromCivil({ year, month, day, hour, minute, second }) {
+  let Y = year;
+  let M = month;
+
+  if (M <= 2) {
+    Y -= 1;
+    M += 12;
+  }
+
+  const A = Math.floor(Y / 100);
+  const B = 2 - A + Math.floor(A / 4);
+
+  return Math.floor(365.25 * (Y + 4716))
+       + Math.floor(30.6001 * (M + 1))
+       + day + B - 1524.5
+       + (hour + minute/60 + second/3600) / 24;
 }
 
 function gmstFromJulian(jd) {
@@ -702,8 +700,15 @@ function getLSTRadians(date, lonEastDeg) {
 }
 
 function getLSTRadiansFromCivil(dateCivil, lonDegUI) {
+  const civil = getCivilFieldsFromUI();
+  const jd = jdFromCivil(civil);
+  const gmst = gmstFromJulian(jd);
+
+  let lst = gmst + lonDegUI * Math.PI / 180;
+  lst = ((lst % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+
   return {
-    lst: getLSTRadians(dateCivil, lonDegUI),
+    lst,
     dateLMT: dateCivil
   };
 }
@@ -737,6 +742,20 @@ function getDateFromUICivil() {
   if (era === "BCE") y = 1 - year;
 
   return new Date(y, month - 1, day, hh, mm, 0, 0);
+}
+
+function getCivilFieldsFromUI() {
+  const year  = parseInt(document.getElementById("sky3d-year").value, 10);
+  const month = parseInt(document.getElementById("sky3d-month").value, 10);
+  const day   = parseInt(document.getElementById("sky3d-day").value, 10);
+  const timeStr = document.getElementById("sky3d-time").value || "00:00";
+  const era  = document.getElementById("sky3d-era").value;
+
+  let [hh, mm] = timeStr.split(":").map(Number);
+  let y = year;
+  if (era === "BCE") y = 1 - year;
+
+  return { year: y, month, day, hour: hh, minute: mm, second: 0 };
 }
 
 function getLocationFromUI() {
