@@ -653,8 +653,9 @@ function applyProperMotionFromXYZ(star, years) {
    ============================================================ */
 function toJulianDate(date) {
   const year = date.getUTCFullYear();
+  const time = date.getTime();
 
-  if (!Number.isFinite(year)) {
+  if (!Number.isFinite(year) || !Number.isFinite(time)) {
     const civil = getCivilFieldsFromUI();
     return jdFromCivil(civil);
   }
@@ -684,7 +685,7 @@ function toJulianDate(date) {
          + (hh + mm/60 + ss/3600) / 24;
   }
 
-  return (date.getTime() + date.getTimezoneOffset() * 60000) / 86400000 + 2440587.5;
+  return (time + date.getTimezoneOffset() * 60000) / 86400000 + 2440587.5;
 }
 
 
