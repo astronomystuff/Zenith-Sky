@@ -23,8 +23,6 @@ window.sky3dStarTexture = makeStarTexture();
 let sky3dLocked = false;
 let sky3dSuggestionIndex = -1;
 const LY_TO_PC = 1 / 3.26156;
-const J2000_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
-window.J2000_MS = J2000_MS;
 window.sky3dRaycaster = new THREE.Raycaster();
 window.sky3dMouse = new THREE.Vector2();
 const VSOP = {
@@ -651,45 +649,9 @@ function applyProperMotionFromXYZ(star, years) {
 /* ============================================================
    Civil Time → LMT → LST
    ============================================================ */
-function toJulianDate(date) {
-  const year = date.getUTCFullYear();
-  const time = date.getTime();
+function toJulianDate(civil) {
+  let { year, month, day, hour, minute, second } = civil;
 
-  if (!Number.isFinite(year) || !Number.isFinite(time)) {
-    const civil = getCivilFieldsFromUI();
-    return jdFromCivil(civil);
-  }
-
-  if (year < 1 || year > 275000) {
-    const y = year;
-    const m = date.getUTCMonth() + 1;
-    const d = date.getUTCDate();
-    const hh = date.getUTCHours();
-    const mm = date.getUTCMinutes();
-    const ss = date.getUTCSeconds();
-
-    let Y = y;
-    let M = m;
-
-    if (M <= 2) {
-      Y -= 1;
-      M += 12;
-    }
-
-    const A = Math.floor(Y / 100);
-    const B = 2 - A + Math.floor(A / 4);
-
-    return Math.floor(365.25 * (Y + 4716))
-         + Math.floor(30.6001 * (M + 1))
-         + d + B - 1524.5
-         + (hh + mm/60 + ss/3600) / 24;
-  }
-
-  return (time + date.getTimezoneOffset() * 60000) / 86400000 + 2440587.5;
-}
-
-
-function jdFromCivil({ year, month, day, hour, minute, second }) {
   let Y = year;
   let M = month;
 
@@ -707,6 +669,7 @@ function jdFromCivil({ year, month, day, hour, minute, second }) {
        + (hour + minute/60 + second/3600) / 24;
 }
 
+
 function gmstFromJulian(jd) {
   const T = (jd - 2451545.0) / 36525.0;
   let gmst =
@@ -718,34 +681,14 @@ function gmstFromJulian(jd) {
   return gmst * Math.PI / 180;
 }
 
-function getLSTRadians(date, lonEastDeg) {
-  const jd = toJulianDate(date);
+function getLSTRadians(civil, lonEastDeg) {
+  const jd = toJulianDate(civil);
   const gmst = gmstFromJulian(jd);
   let lst = gmst + lonEastDeg * Math.PI / 180;
   lst = ((lst % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+
   return lst;
 }
-
-function getLSTRadiansFromCivil(dateCivil, lonDegUI) {
-  let jd;
-  const year = dateCivil.getUTCFullYear();
-  if (Number.isFinite(year)) {
-    jd = toJulianDate(dateCivil);
-  } else {
-    const civil = getCivilFieldsFromUI();
-    jd = jdFromCivil(civil);
-  }
-
-  const gmst = gmstFromJulian(jd);
-  let lst = gmst + lonDegUI * Math.PI / 180;
-  lst = ((lst % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-
-  return {
-    lst,
-    dateLMT: dateCivil
-  };
-}
-
 
 /* ============================================================
    RA/Dec → Unit Sphere XYZ
@@ -764,20 +707,6 @@ function raDecToXYZ(raDeg, decDeg) {
 /* ============================================================
    Helpers
    ============================================================ */
-function getDateFromUICivil() {
-  const year  = parseInt(document.getElementById("sky3d-year").value, 10);
-  const month = parseInt(document.getElementById("sky3d-month").value, 10);
-  const day   = parseInt(document.getElementById("sky3d-day").value, 10);
-  const timeStr = document.getElementById("sky3d-time").value || "00:00";
-  const era  = document.getElementById("sky3d-era").value;
-
-  let [hh, mm] = timeStr.split(":").map(Number);
-  let y = year;
-  if (era === "BCE") y = 1 - year;
-
-  return new Date(y, month - 1, day, hh, mm, 0, 0);
-}
-
 function getCivilFieldsFromUI() {
   const year  = parseInt(document.getElementById("sky3d-year").value, 10);
   const month = parseInt(document.getElementById("sky3d-month").value, 10);
@@ -1007,24 +936,21 @@ function sky3dShowSuggestions(list) {
 }
 
 function isStarAboveHorizon(star) {
-  const dateCivil = getDateFromUICivil();
+  const civil = getCivilFieldsFromUI();
   const { latDeg, lonDeg } = getLocationFromUI();
-  const { lst, dateLMT } = getLSTRadiansFromCivil(dateCivil, lonDeg);
-  const years = (dateLMT.getTime() - J2000_MS) / 31557600000;
-
+  const lst = getLSTRadians(civil, lonDeg);
+  const jd = toJulianDate(civil);
+  const years = (jd - 2451545.0) / 365.25;
   const pm = applyProperMotionFromXYZ(star, years);
-
   const raRad  = pm.raDeg * Math.PI / 180;
   const decRad = pm.decDeg * Math.PI / 180;
   const latRad = latDeg * Math.PI / 180;
-
   const H = lst - raRad;
-
   const sinAlt = Math.sin(latRad) * Math.sin(decRad) +
                  Math.cos(latRad) * Math.cos(decRad) * Math.cos(H);
-
   return sinAlt > 0;
 }
+
 
 async function horizonsStateVector(name, JD) {
     const jdString = JD.toFixed(6);
@@ -1380,8 +1306,9 @@ async function computeBody(name, JD, latDeg, lonDeg) {
    Build Celestial Sphere
    ============================================================ */
 async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 150000) {
-  const { lst, dateLMT } = getLSTRadiansFromCivil(dateCivil, lonDeg);
-  const years = (dateLMT.getTime() - J2000_MS) / 31557600000;
+  const lst = getLSTRadians(dateCivil, lonDeg);
+  const jd = toJulianDate(dateCivil);
+  const years = (jd - 2451545.0) / 365.25;
   const latRad = latDeg * Math.PI / 180;
 
   // Dynamic magnitude limit
@@ -1497,9 +1424,7 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
   const planetNames = ["Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"];
 
   for (const name of planetNames) {
-    const date = dateCivil;
-    const utcMs = date.getTime();
-    const JD = utcMs / 86400000 + 2440587.5;
+    const JD = toJulianDate(dateCivil);
     const body = await computeBody(name, JD, latDeg, lonDeg);
 
     // Convert RA/Dec → Alt/Az
@@ -1875,10 +1800,11 @@ const rollQuat = new THREE.Quaternion()
 sky3dRootGroup.quaternion.premultiply(rollQuat);
 
   // 7. Update info panel
-  const dateCivil = getDateFromUICivil();
+  const civil = getCivilFieldsFromUI();
   const { latDeg, lonDeg } = getLocationFromUI();
-  const { lst, dateLMT } = getLSTRadiansFromCivil(dateCivil, lonDeg);
-  const years = (dateLMT.getTime() - J2000_MS) / 31557600000;
+  const lst = getLSTRadians(civil, lonDeg);
+  const jd = toJulianDate(civil);
+  const years = (jd - 2451545.0) / 365.25;
   const pm = applyProperMotionFromXYZ(star, years);
 
   const raRad = pm.raDeg * Math.PI / 180;
@@ -1928,7 +1854,7 @@ async function rebuildCelestialSphere() {
     sky3dRootGroup.remove(sky3dCelestialSphere);
   }
 
-  const dateCivil = getDateFromUICivil();
+  const dateCivil = getCivilFieldsFromUI();
   const { latDeg, lonDeg } = getLocationFromUI();
 
   sky3dCelestialSphere = await buildCelestialSphere(dateCivil, latDeg, lonDeg);
@@ -2171,7 +2097,6 @@ window.applyProperMotionFromXYZ = applyProperMotionFromXYZ;
 window.getDateFromUICivil = getDateFromUICivil;
 window.getLocationFromUI = getLocationFromUI;
 window.getLSTRadiansFromCivil = getLSTRadiansFromCivil;
-window.J2000_MS = J2000_MS;
 window.buildCelestialSphere = buildCelestialSphere;
 window.xyzToRaDec = xyzToRaDec;
 window.loadAllVSOP = loadAllVSOP;
