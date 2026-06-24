@@ -651,11 +651,11 @@ function applyProperMotionFromXYZ(star, years) {
 /* ============================================================
    Civil Time → LMT → LST
    ============================================================ */
-function toJulianDate(date) {
+ffunction toJulianDate(date) {
   const year = date.getUTCFullYear();
 
-  if (year < 1 || year > 275000) {
-    const y = year;
+  if (!Number.isFinite(year) || year < 1 || year > 275000) {
+    const y = Number.isFinite(year) ? year : date.getFullYear(); // Fallback
     const m = date.getUTCMonth() + 1;
     const d = date.getUTCDate();
     const hh = date.getUTCHours();
