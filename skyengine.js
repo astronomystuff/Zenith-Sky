@@ -602,7 +602,7 @@ function xyzToRaDec(x, y, z) {
 }
 
 /* ============================================================
-   Proper Motion + RV
+   Proper Motion & Precession
    ============================================================ */
 function masToRad(mas) {
   return mas * (Math.PI / (180 * 3600 * 1000));
@@ -644,6 +644,129 @@ function applyProperMotionFromXYZ(star, years) {
   }
 
   return xyzToRaDec(x, y, z);
+}
+
+
+function applyPrecession(raDeg, decDeg, jd) {
+  const PI = Math.PI;
+  const DJ00 = 2451545.0;          // J2000.0
+  const DJC  = 36525.0;            // days per Julian century
+  const DAS2R = (PI / 180) / 3600; // arcsec → rad
+  const deg2rad = PI / 180;
+  const rad2deg = 180 / PI;
+
+  function meanObliquityIAU2006(jd) {
+    const t = (jd - DJ00) / DJC;
+    const epsArcsec =
+      84381.406 +
+      (-46.836769 +
+      (-0.0001831 +
+      (0.00200340 +
+      (-0.000000576 +
+      (-0.0000000434)*t)*t)*t)*t)*t;
+    return epsArcsec * DAS2R;
+  }
+
+  function computeP03Angles(jd) {
+    const t = (jd - DJ00) / DJC;
+
+    const gamb =
+      (-0.052928 +
+      (10.556378 +
+      (0.4932044 +
+      (-0.00031238 +
+      (-0.000002788 +
+      (0.0000000260)*t)*t)*t)*t)*t) * DAS2R;
+
+    const phib =
+      (84381.412819 +
+      (-46.811016 +
+      (0.0511268 +
+      (0.00053289 +
+      (-0.000000440 +
+      (-0.0000000176)*t)*t)*t)*t)*t) * DAS2R;
+
+    const psib =
+      (-0.041775 +
+      (5038.481484 +
+      (1.5584175 +
+      (-0.00018522 +
+      (-0.000026452 +
+      (-0.0000000148)*t)*t)*t)*t)*t) * DAS2R;
+
+    const epsa = meanObliquityIAU2006(jd);
+
+    return { gamb, phib, psib, epsa };
+  }
+  
+  function matMul(a, b) {
+    const r = [[0,0,0],[0,0,0],[0,0,0]];
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        r[i][j] = a[i][0]*b[0][j] + a[i][1]*b[1][j] + a[i][2]*b[2][j];
+      }
+    }
+    return r;
+  }
+
+  function rotZ(angle) {
+    const c = Math.cos(angle), s = Math.sin(angle);
+    return [
+      [ c,  s, 0],
+      [-s,  c, 0],
+      [ 0,  0, 1]
+    ];
+  }
+
+  function rotX(angle) {
+    const c = Math.cos(angle), s = Math.sin(angle);
+    return [
+      [1, 0,  0],
+      [0, c,  s],
+      [0,-s,  c]
+    ];
+  }
+
+  function fw2m(gamb, phib, psi, eps) {
+    let r = [
+      [1,0,0],
+      [0,1,0],
+      [0,0,1]
+    ];
+    r = matMul(rotZ(gamb), r);
+    r = matMul(rotX(phib), r);
+    r = matMul(rotZ(-psi), r);
+    r = matMul(rotX(-eps), r);
+    return r;
+  }
+
+  function precessionMatrixIAU2006(jd) {
+    const { gamb, phib, psib, epsa } = computeP03Angles(jd);
+    return fw2m(gamb, phib, psib, epsa);
+  }
+
+  const ra = raDeg * deg2rad;
+  const dec = decDeg * deg2rad;
+
+  const x0 = Math.cos(dec) * Math.cos(ra);
+  const y0 = Math.cos(dec) * Math.sin(ra);
+  const z0 = Math.sin(dec);
+
+  const rbp = precessionMatrixIAU2006(jd);
+
+  const x = rbp[0][0]*x0 + rbp[0][1]*y0 + rbp[0][2]*z0;
+  const y = rbp[1][0]*x0 + rbp[1][1]*y0 + rbp[1][2]*z0;
+  const z = rbp[2][0]*x0 + rbp[2][1]*y0 + rbp[2][2]*z0;
+
+  const r = Math.sqrt(x*x + y*y + z*z);
+  const decNew = Math.asin(z / r);
+  let raNew = Math.atan2(y, x);
+  if (raNew < 0) raNew += 2*PI;
+
+  return {
+    raDeg: raNew * rad2deg,
+    decDeg: decNew * rad2deg
+  };
 }
 
 /* ============================================================
@@ -942,8 +1065,9 @@ function isStarAboveHorizon(star) {
   const jd = toJulianDate(civil);
   const years = (jd - 2451545.0) / 365.25;
   const pm = applyProperMotionFromXYZ(star, years);
-  const raRad  = pm.raDeg * Math.PI / 180;
-  const decRad = pm.decDeg * Math.PI / 180;
+  const prec = applyPrecession(pm.raDeg, pm.decDeg, jd);
+  const raRad  = prec.raDeg * Math.PI / 180;
+  const decRad = prec.decDeg * Math.PI / 180;
   const latRad = latDeg * Math.PI / 180;
   const H = lst - raRad;
   const sinAlt = Math.sin(latRad) * Math.sin(decRad) +
@@ -1318,14 +1442,14 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
 
   const chosen = [];
 
-  for (let i = 0; i < sky3dStarBase.length; i++) {
+for (let i = 0; i < sky3dStarBase.length; i++) {
     const s = sky3dStarBase[i];
     const pm = applyProperMotionFromXYZ(s, years);
-    s.raDeg = pm.raDeg;
-    s.decDeg = pm.decDeg;
-
-    const raRad = pm.raDeg * Math.PI / 180;
-    const decRad = pm.decDeg * Math.PI / 180;
+    const prec = applyPrecession(pm.raDeg, pm.decDeg, jd);
+    s.raDeg = prec.raDeg;
+    s.decDeg = prec.decDeg;
+    const raRad  = prec.raDeg * Math.PI / 180;
+    const decRad = prec.decDeg * Math.PI / 180;
 
     // Hour angle
     const H = lst - raRad;
@@ -1806,9 +1930,9 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   const jd = toJulianDate(civil);
   const years = (jd - 2451545.0) / 365.25;
   const pm = applyProperMotionFromXYZ(star, years);
-
-  const raRad = pm.raDeg * Math.PI / 180;
-  const decRad = pm.decDeg * Math.PI / 180;
+  const prec = applyPrecession(pm.raDeg, pm.decDeg, jd);
+  const raRad  = prec.raDeg * Math.PI / 180;
+  const decRad = prec.decDeg * Math.PI / 180;
   const latRad = latDeg * Math.PI / 180;
   const H = lst - raRad;
 
@@ -2094,6 +2218,7 @@ window.sky3dCamera = sky3dCamera;
 window.sky3dScene = sky3dScene;
 window.sky3dRootGroup = sky3dRootGroup;
 window.applyProperMotionFromXYZ = applyProperMotionFromXYZ;
+window.applyPrecession = applyPrecession;
 window.getCivilFieldsFromUI = getCivilFieldsFromUI;
 window.getLocationFromUI = getLocationFromUI;
 window.getLSTRadians = getLSTRadians;
