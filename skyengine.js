@@ -845,10 +845,45 @@ function getCivilFieldsFromUI() {
 }
 
 function getLocationFromUI() {
-  return {
-    latDeg: parseFloat(document.getElementById("sky3d-lat").value) || 0,
-    lonDeg: parseFloat(document.getElementById("sky3d-lon").value) || 0
-  };
+  let lat = parseFloat(document.getElementById("sky3d-lat").value) || 0;
+  let lon = parseFloat(document.getElementById("sky3d-lon").value) || 0;
+  
+  if (lat >= 90)  lat = 89.99999;
+  if (lat <= -90) lat = -89.99999;
+
+  return { latDeg: lat, lonDeg: lon };
+}
+
+
+function validateInputs(lat, lon, year, month, day) {
+  const errors = [];
+
+  // Latitude
+  if (lat < -90 || lat > 90) {
+    errors.push("Latitude must be between -90 and +90 degrees");
+  }
+
+  // Longitude
+  if (lon < -180 || lon > 180) {
+    errors.push("Longitude must be between -180 and +180 degrees");
+  }
+
+  // Month
+  if (month < 1 || month > 12) {
+    errors.push("Month must be between 1 and 12");
+  }
+
+  // Day
+  if (month >= 1 && month <= 12) {
+    const maxDay = new Date(year, month, 0).getDate();
+    if (day < 1 || day > maxDay) {
+      errors.push(`Day must be between 1 and ${maxDay} for month ${month}`);
+    }
+  } else {
+    errors.push("Day cannot be validated because month is invalid");
+  }
+
+  return errors;
 }
 
 function makeGround() {
@@ -868,16 +903,7 @@ function makeGround() {
   ground.renderOrder = 999;
 
   return ground;
-}
 
-function centerOnWorldPos(pos) {
-  const starDir = pos.clone().normalize();
-  const camForward = new THREE.Vector3(0, 0, -1);
-
-  const q = new THREE.Quaternion().setFromUnitVectors(starDir, camForward);
-
-  sky3dRootGroup.quaternion.premultiply(q);
-}
 
 function getStarNameFromRecord(s) {
 
@@ -2140,8 +2166,39 @@ openBtn.onclick = () => {
     sky3dModalOpen = false;
   };
 
-if (applyDT) applyDT.onclick = rebuildCelestialSphere;
-if (applyLoc) applyLoc.onclick = rebuildCelestialSphere;
+if (applyDT) {
+  applyDT.onclick = () => {
+    const civil = getCivilFieldsFromUI();
+    const { latDeg, lonDeg } = getLocationFromUI();
+    const { year, month, day } = civil;
+
+    const errors = validateInputs(latDeg, lonDeg, year, month, day);
+
+    if (errors.length > 0) {
+      alert("Please input a real value:\n\n" + errors.join("\n"));
+      return;
+    }
+
+    rebuildCelestialSphere();
+  };
+}
+
+if (applyLoc) {
+  applyLoc.onclick = () => {
+    const civil = getCivilFieldsFromUI();
+    const { latDeg, lonDeg } = getLocationFromUI();
+    const { year, month, day } = civil;
+
+    const errors = validateInputs(latDeg, lonDeg, year, month, day);
+
+    if (errors.length > 0) {
+      alert("Please input a real value:\n\n" + errors.join("\n"));
+      return;
+    }
+
+    rebuildCelestialSphere();
+  };
+}
 
 // Search wiring
 const searchBtn = document.getElementById("sky3d-search-btn");
