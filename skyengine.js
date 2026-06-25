@@ -903,7 +903,7 @@ function makeGround() {
   ground.renderOrder = 999;
 
   return ground;
-
+}
 
 function getStarNameFromRecord(s) {
 
