@@ -434,16 +434,71 @@
 <!-- Black Hole Visualizer -->
 <div class="tool-card" id="blackhole-tool">
   <h2>Black Hole Visualizer</h2>
-
-  <button id="blackhole-open" class="tool-btn">
-    Open Black Hole Visualizer
-  </button>
+  <button id="blackhole-open">Open Black Hole</button>
 </div>
 
-<div id="bh-modal" class="modal-overlay">
-  <div class="modal-content">
-    <button id="bh-close" class="modal-close">✕</button>
-    <canvas id="bh-canvas"></canvas>
+<!-- Black Hole Modal -->
+<div id="blackhole-modal-overlay" style="
+  display:none;
+  position:fixed;
+  top:0; left:0;
+  width:100vw; height:100vh;
+  background:rgba(0,0,0,0.5);
+  justify-content:center;
+  align-items:center;
+  z-index:9999;
+">
+  <div id="blackhole-modal" style="
+    background:#000;
+    width:95%;
+    height:95%;
+    border-radius:12px;
+    padding:0;
+    position:relative;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    color:white;
+  ">
+
+    <!-- Header -->
+    <div style="
+      height:40px;
+      padding:8px 12px;
+      font-size:14px;
+      border-bottom:1px solid #333;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      flex-shrink:0;
+      gap:10px;
+      background:#111;
+    ">
+      <div>Black Hole Visualizer</div>
+
+      <button id="blackhole-close" style="
+        font-size:20px;
+        background:none;
+        border:none;
+        cursor:pointer;
+        color:white;
+      ">×</button>
+    </div>
+
+    <!-- Canvas Area -->
+    <div style="
+      flex:1;
+      position:relative;
+      background:#000;
+    ">
+      <canvas id="blackhole-canvas" style="
+        width:100%;
+        height:100%;
+        display:block;
+        background:#000;
+      "></canvas>
+    </div>
+
   </div>
 </div>
 
