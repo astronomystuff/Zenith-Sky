@@ -68,39 +68,40 @@ const fragmentShader = `
             uniform float R_out;
             varying vec2 vUv;
 
-            // Optimized step count and larger step increment to eliminate GPU lag completely
-            #define MAX_STEPS 180
-            #define DL 0.22
+            // Balanced step parameters for optimal speed and crisp edges
+            #define MAX_STEPS 200
+            #define DL 0.18
 
             vec3 normalize3(vec3 v) { return length(v) == 0.0 ? vec3(0.0) : normalize(v); }
 
+            // High-contrast blinding blackbody core from the old version
             vec3 blackbody(float T) {
-                T = clamp(T, 800.0, 16000.0);
-                float t = (T - 800.0) / (16000.0 - 800.0);
+                T = clamp(T, 1000.0, 16000.0);
+                float t = (T - 1000.0) / (16000.0 - 1000.0);
                 vec3 col;
-                col.r = 185.0 + 70.0 * t;
-                col.g = 30.0 + 225.0 * pow(t, 1.15);
-                col.b = 5.0 + 250.0 * pow(t, 1.7);
+                col.r = 170.0 + 85.0 * t;
+                col.g = 40.0 + 215.0 * pow(t, 1.05);
+                col.b = 10.0 + 245.0 * pow(t, 1.8);
                 
-                vec3 rgb = vec3(pow(clamp(col.r/255.0, 0.0, 1.0), 0.9),
-                                pow(clamp(col.g/255.0, 0.0, 1.0), 0.9),
-                                pow(clamp(col.b/255.0, 0.0, 1.0), 0.9));
+                vec3 rgb = vec3(pow(clamp(col.r/255.0, 0.0, 1.0), 0.85),
+                                pow(clamp(col.g/255.0, 0.0, 1.0), 0.85),
+                                pow(clamp(col.b/255.0, 0.0, 1.0), 0.85));
                                 
                 if (T > 8500.0) {
-                    rgb += vec3(pow((T - 8500.0) / 7500.0, 1.3) * 0.9);
+                    rgb += vec3(pow((T - 8500.0) / 7500.0, 1.2) * 0.7);
                 }
                 return rgb;
             }
 
-            // High-frequency fractional sin noise to fix star clustering
+            // High-frequency fractional noise for fine pinpoint stars
             float hash(vec3 p) {
                 return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453123);
             }
 
-            // Smooth star placement using high-frequency float hashes
+            // Keeping the new pinpoint starfield engine (no clustering)
             vec3 getBackgroundStars(vec3 dir) {
                 vec3 normDir = normalize3(dir);
-                float n = hash(floor(normDir * 450.0)); // Finer resolution grid
+                float n = hash(floor(normDir * 450.0)); 
                 vec3 color = vec3(0.001, 0.001, 0.003); 
                 
                 if (n > 0.996) {
@@ -174,25 +175,25 @@ const fragmentShader = `
                         vec3 intersectPos = mix(cur_pos - cur_vel * DL, cur_pos, t);
                         float hit_r = length(intersectPos);
 
+                        // Restoring the solid, crisp geometric boundaries (Old Disk properties)
                         if (hit_r >= R_in && hit_r <= R_out) {
-                            float vphi = sqrt(M / hit_r);
+                            float vphi = sqrt(R_s / (2.0 * hit_r));
                             float phi = atan(intersectPos.z, intersectPos.x);
                             
                             vec3 tangent = normalize3(vec3(-sin(phi), 0.0, cos(phi)));
                             vec3 los = normalize3(camPos - intersectPos);
+
                             float cosA = dot(tangent, los);
-                            
                             float doppler = 1.0 / (sqrt(1.0 - vphi * vphi) * (1.0 - vphi * cosA));
                             float grav = sqrt(1.0 - R_s / hit_r);
 
-                            float noiseFactor = 0.84 + 0.16 * sin(phi * 12.0 - u_time * 3.5) * cos(hit_r * 1.5);
-                            float T = (7200.0 * pow(R_in / hit_r, 0.75) * noiseFactor) * doppler * grav;
+                            // Keep high-contrast, intense relativistic beaming active
+                            float cinematicDoppler = mix(1.0, doppler, 0.55);
+                            
+                            float noiseFactor = 0.85 + 0.15 * sin(phi * 9.0 - u_time * 2.5) * cos(hit_r * 1.5);
+                            float T = (6600.0 * pow(R_in / hit_r, 0.6) * noiseFactor) * cinematicDoppler * grav;
 
-                            // REALISTIC SMOOTH DENSITY EDGE FALLOFF
-                            // Softens both the inner and outer edge profiles exponentially
-                            float edgeAlpha = smoothstep(R_in, R_in + 0.5, hit_r) * smoothstep(R_out, R_out - 3.0, hit_r);
-
-                            finalColor = blackbody(T) * edgeAlpha;
+                            finalColor = blackbody(T);
                             hitSomething = true;
                             break;
                         }
