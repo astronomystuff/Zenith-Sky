@@ -1,7 +1,7 @@
 // Google Gemini vs Microsoft Copilot Black Hole
 
 // ============================================================================
-//  ZENITH SKY ASTROPHYSICS ENGINE — DOM MODULE INTEGRATION (EXTERNAL THREE)
+//  ZENITH SKY ASTROPHYSICS ENGINE — FIXED DOM MODULE INTEGRATION
 // ============================================================================
 
 export class GPUSchwarzschildEngine {
@@ -9,10 +9,11 @@ export class GPUSchwarzschildEngine {
         this.canvas = document.getElementById(canvasId);
         this.container = container;
         
-        this.width = this.container.clientWidth || window.innerWidth * 0.8; 
-        this.height = this.container.clientHeight || window.innerHeight * 0.8;
+        // Dynamically measure the parent container bounding space
+        this.width = this.container.clientWidth || window.innerWidth * 0.95; 
+        this.height = this.container.clientHeight || window.innerHeight * 0.95;
 
-        // Uses the existing global THREE namespace from your app environment
+        // Core WebGL Engine Setup
         this.renderer = new THREE.WebGLRenderer({ 
             canvas: this.canvas,
             antialias: false, 
@@ -50,7 +51,7 @@ export class GPUSchwarzschildEngine {
             }
         `;
 
-    const fragmentShader = `
+        const fragmentShader = `
             uniform vec2 u_resolution;
             uniform float u_time;
             uniform float u_camDist;
@@ -61,7 +62,6 @@ export class GPUSchwarzschildEngine {
             uniform float R_out;
             varying vec2 vUv;
 
-            // Tightened step size and increased cap for ultimate smooth accuracy
             #define MAX_STEPS 400
             #define DL 0.12
 
@@ -110,11 +110,10 @@ export class GPUSchwarzschildEngine {
                 float cur_r = r; float cur_th = th; float cur_ph = ph;
                 float cur_pr = pr; float cur_pth = ptheta; float cur_pphi = pphi;
 
-                vec3 finalColor = vec3(0.002, 0.002, 0.005); // Deep space void
+                vec3 finalColor = vec3(0.002, 0.002, 0.005); 
                 float M = R_s / 2.0;
 
                 for (int n = 0; n < MAX_STEPS; n++) {
-                    // Early exit if we plunge beneath the event horizon event line
                     if (cur_r < R_s * 1.0005) {
                         finalColor = vec3(0.0);
                         break;
@@ -123,7 +122,6 @@ export class GPUSchwarzschildEngine {
 
                     float f1 = 1.0 - (2.0 * M) / cur_r;
                     float sinTh1 = sin(cur_th);
-                    // CRITICAL POLAR SAFETY GUARD: Prevents division by zero at poles
                     if (abs(sinTh1) < 1e-3) sinTh1 = 1e-3;
 
                     float dr1 = cur_pr;
@@ -147,7 +145,6 @@ export class GPUSchwarzschildEngine {
                     float dpr2 = (cur_pphi * cur_pphi) / (r_k2 * r_k2 * r_k2 * sinTh2 * sinTh2) - (M / (r_k2 * r_k2)) * ((pr_k2 * pr_k2) / max(f2, 1e-4));
                     float dpth2 = (cur_pphi * cur_pphi) * cos(th_k2) / (r_k2 * r_k2 * r_k2 * sinTh2 * sinTh2 * sinTh2);
 
-                    // Track previous theta sign to catch macro crossings perfectly
                     float prev_cos = cos(cur_th);
                     
                     cur_r += dr2 * DL; 
@@ -156,7 +153,6 @@ export class GPUSchwarzschildEngine {
                     cur_pr += dpr2 * DL; 
                     cur_pth += dpth2 * DL;
 
-                    // BULLETPROOF EQUATOR CROSSING INTERSECTION (Eliminates film grain completely)
                     if (prev_cos * cos(cur_th) <= 0.0) {
                         if (cur_r >= R_in && cur_r <= R_out) {
                             vec3 diskPos = vec3(cur_r * sin(cur_th) * cos(cur_ph), cur_r * cos(cur_th), cur_r * sin(cur_th) * sin(cur_ph));
@@ -168,7 +164,6 @@ export class GPUSchwarzschildEngine {
                             float doppler = 1.0 / (sqrt(1.0 - vphi * vphi) * (1.0 - vphi * cosA));
                             float grav = sqrt(1.0 - R_s / cur_r);
 
-                            // Beautiful gaseous noise frequency simulation
                             float noiseFactor = 0.85 + 0.15 * sin(cur_ph * 8.0 - u_time * 3.0) * cos(cur_r * 1.5);
                             float T = (6800.0 * pow(R_in / cur_r, 0.75) * noiseFactor) * doppler * grav;
 
@@ -180,7 +175,7 @@ export class GPUSchwarzschildEngine {
                 gl_FragColor = vec4(finalColor, 1.0);
             }
         `;
-        
+
         this.material = new THREE.ShaderMaterial({
             vertexShader,
             fragmentShader,
@@ -227,37 +222,43 @@ export class GPUSchwarzschildEngine {
 }
 
 // ============================================================================
-//  DOM EVENT CONTROLLER
+//  UNIFIED DOM EVENT CONTROLLER (MATCHES YOUR EXACT HTML)
 // ============================================================================
 document.addEventListener('DOMContentLoaded', () => {
     const openBtn = document.getElementById('blackhole-open');
-    const closeBtn = document.getElementById('bh-close');
-    const modal = document.getElementById('bh-modal');
-    const modalContent = modal?.querySelector('.modal-content');
+    const closeBtn = document.getElementById('blackhole-close');
+    const modalOverlay = document.getElementById('blackhole-modal-overlay');
+    
+    // We target the canvas parent div directly to read responsive viewport measurements
+    const canvasContainer = document.getElementById('blackhole-canvas')?.parentElement;
 
     let bhEngine = null;
 
-    if (openBtn && modal && modalContent) {
-        openBtn.addEventListener('click', () => {
-            modal.classList.add('active'); 
-            modal.style.display = 'flex';
+    if (openBtn && modalOverlay && canvasContainer) {
+        openBtn.onclick = function () {
+            // 1. Show the overlay layout structure
+            modalOverlay.style.display = 'flex';
 
+            // 2. Allow a 50ms buffer for layout calculations before compiling shaders
             setTimeout(() => {
-                bhEngine = new GPUSchwarzschildEngine('bh-canvas', modalContent);
-                bhEngine.animate();
-            }, 50); 
-        });
+                if (!bhEngine) {
+                    bhEngine = new GPUSchwarzschildEngine('blackhole-canvas', canvasContainer);
+                    bhEngine.animate();
+                }
+            }, 50);
+        };
     }
 
-    if (closeBtn && modal) {
-        closeBtn.addEventListener('click', () => {
+    if (closeBtn && modalOverlay) {
+        closeBtn.onclick = function () {
+            // 1. Fully unload simulation resources from VRAM immediately
             if (bhEngine) {
                 bhEngine.destroy();
                 bhEngine = null;
             }
-            modal.style.display = 'none';
-            modal.classList.remove('active');
-        });
+            // 2. Close the modal frame view
+            modalOverlay.style.display = 'none';
+        };
     }
 
     window.addEventListener('resize', () => {
