@@ -68,12 +68,11 @@ const fragmentShader = `
             uniform float R_out;
             varying vec2 vUv;
 
-            #define MAX_STEPS 200
-            #define DL 0.18
+            #define MAX_STEPS 180
+            #define DL 0.20
 
             vec3 normalize3(vec3 v) { return length(v) == 0.0 ? vec3(0.0) : normalize(v); }
 
-            // High-contrast blinding blackbody color curve
             vec3 blackbody(float T) {
                 T = clamp(T, 1000.0, 16000.0);
                 float t = (T - 1000.0) / (16000.0 - 1000.0);
@@ -92,12 +91,10 @@ const fragmentShader = `
                 return rgb;
             }
 
-            // High-frequency fractional noise for fine pinpoint stars
             float hash(vec3 p) {
                 return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453123);
             }
 
-            // Pinpoint starfield generator
             vec3 getBackgroundStars(vec3 dir) {
                 vec3 normDir = normalize3(dir);
                 float n = hash(floor(normDir * 450.0)); 
@@ -187,13 +184,10 @@ const fragmentShader = `
 
                             float cinematicDoppler = mix(1.0, doppler, 0.55);
                             
-                            // SAFE KEPPLERIAN PLASMA SHEARING (GPU Friendly, No Matrix Glitches)
-                            // Uses smooth sin/cos combinations that scale with orbital speed
-                            float shearTime = u_time * (2.2 * pow(R_in / hit_r, 1.5));
-                            float dynamicWaves = sin(phi * 8.0 - shearTime) * cos(hit_r * 2.5 + sin(phi * 3.0));
-                            float secondaryWaves = sin(phi * 19.0 + shearTime * 0.5) * 0.3;
+                            // STABLE RADIAL SHEAR (Uses basic trig, impossible to break compilers)
+                            float radialSpiral = sin(phi * 7.0 - u_time * 3.0 + hit_r * 1.2);
+                            float noiseFactor = 0.85 + 0.15 * radialSpiral;
                             
-                            float noiseFactor = 0.82 + 0.18 * (dynamicWaves + secondaryWaves);
                             float T = (6600.0 * pow(R_in / hit_r, 0.6) * noiseFactor) * cinematicDoppler * grav;
 
                             finalColor = blackbody(T);
