@@ -1,13 +1,10 @@
 // Google Gemini vs Microsoft Copilot Black Hole
 
 // ============================================================================
-//  ZENITH SKY ASTROPHYSICS ENGINE — DOM MODULE INTEGRATION
-//  Real-time GPU Relativistic Simulation Module for Zenith Sky App
+//  ZENITH SKY ASTROPHYSICS ENGINE — DOM MODULE INTEGRATION (EXTERNAL THREE)
 // ============================================================================
 
-import * as THREE from 'three';
-
-class GPUSchwarzschildEngine {
+export class GPUSchwarzschildEngine {
     constructor(canvasId, container) {
         this.canvas = document.getElementById(canvasId);
         this.container = container;
@@ -15,7 +12,7 @@ class GPUSchwarzschildEngine {
         this.width = this.container.clientWidth || window.innerWidth * 0.8; 
         this.height = this.container.clientHeight || window.innerHeight * 0.8;
 
-        // Core WebGL Engine Setup
+        // Uses the existing global THREE namespace from your app environment
         this.renderer = new THREE.WebGLRenderer({ 
             canvas: this.canvas,
             antialias: false, 
@@ -32,7 +29,6 @@ class GPUSchwarzschildEngine {
         this.mesh = null;
         this.frameId = null;
 
-        // Physical Constants
         this.settings = {
             camDist: 40.0,
             camTiltDeg: 22.0,
@@ -107,11 +103,11 @@ class GPUSchwarzschildEngine {
                 vec3 ePh = vec3(-sin(ph), 0.0, cos(ph));
 
                 float pr = dot(dir, er);
-                float pth = r * dot(dir, eTh);
-                float pph = r * sin(th) * dot(dir, ePh);
+                float ptheta = r * dot(dir, eTh);
+                float pphi = r * sin(th) * dot(dir, ePh);
 
                 float cur_r = r; float cur_th = th; float cur_ph = ph;
-                float cur_pr = pr; float cur_pth = pth; float cur_pphi = pph;
+                float cur_pr = pr; float cur_pth = ptheta; float cur_pphi = pphi;
 
                 vec3 finalColor = vec3(0.005, 0.005, 0.012); 
                 float M = R_s / 2.0;
@@ -224,32 +220,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const openBtn = document.getElementById('blackhole-open');
     const closeBtn = document.getElementById('bh-close');
     const modal = document.getElementById('bh-modal');
-    const modalContent = modal.querySelector('.modal-content');
+    const modalContent = modal?.querySelector('.modal-content');
 
     let bhEngine = null;
 
-    openBtn.addEventListener('click', () => {
-        // 1. Reveal modal UI
-        modal.classList.add('active'); // Assumes an active visibility state class
-        modal.style.display = 'flex';
+    if (openBtn && modal && modalContent) {
+        openBtn.addEventListener('click', () => {
+            modal.classList.add('active'); 
+            modal.style.display = 'flex';
 
-        // 2. Instantiate core engine safely inside the active viewport dimensions
-        setTimeout(() => {
-            bhEngine = new GPUSchwarzschildEngine('bh-canvas', modalContent);
-            bhEngine.animate();
-        }, 50); 
-    });
+            setTimeout(() => {
+                bhEngine = new GPUSchwarzschildEngine('bh-canvas', modalContent);
+                bhEngine.animate();
+            }, 50); 
+        });
+    }
 
-    closeBtn.addEventListener('click', () => {
-        // 1. Terminate execution thread and clean up VRAM allocations immediately
-        if (bhEngine) {
-            bhEngine.destroy();
-            bhEngine = null;
-        }
-        // 2. Hide UI frame
-        modal.style.display = 'none';
-        modal.classList.remove('active');
-    });
+    if (closeBtn && modal) {
+        closeBtn.addEventListener('click', () => {
+            if (bhEngine) {
+                bhEngine.destroy();
+                bhEngine = null;
+            }
+            modal.style.display = 'none';
+            modal.classList.remove('active');
+        });
+    }
 
     window.addEventListener('resize', () => {
         if (bhEngine) bhEngine.resize();
