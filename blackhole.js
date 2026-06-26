@@ -56,7 +56,7 @@ export class GPUSchwarzschildEngine {
             }
         `;
 
-        const fragmentShader = `
+const fragmentShader = `
             uniform vec2 u_resolution;
             uniform float u_time;
             uniform float u_camDist;
@@ -68,48 +68,54 @@ export class GPUSchwarzschildEngine {
             uniform float R_out;
             varying vec2 vUv;
 
-            #define MAX_STEPS 320
-            #define DL 0.15
+            #define MAX_STEPS 200
+            #define DL 0.18
 
             vec3 normalize3(vec3 v) { return length(v) == 0.0 ? vec3(0.0) : normalize(v); }
 
-            // High-fidelity Planck-curve color simulator
+            // High-fidelity Planck blackbody approximation curve
             vec3 blackbody(float T) {
-                T = clamp(T, 800.0, 18000.0);
-                float t = (T - 800.0) / (18000.0 - 800.0);
+                T = clamp(T, 900.0, 16500.0);
+                float t = (T - 900.0) / (16500.0 - 900.0);
                 vec3 col;
-                col.r = 180.0 + 75.0 * t;
+                col.r = 175.0 + 80.0 * t;
                 col.g = 35.0 + 220.0 * pow(t, 1.1);
-                col.b = 5.0 + 250.0 * pow(t, 1.6);
+                col.b = 5.0 + 250.0 * pow(t, 1.9);
                 
-                vec3 rgb = vec3(pow(clamp(col.r/255.0, 0.0, 1.0), 0.9),
-                                pow(clamp(col.g/255.0, 0.0, 1.0), 0.9),
-                                pow(clamp(col.b/255.0, 0.0, 1.0), 0.9));
+                vec3 rgb = vec3(pow(clamp(col.r/255.0, 0.0, 1.0), 0.85),
+                                pow(clamp(col.g/255.0, 0.0, 1.0), 0.85),
+                                pow(clamp(col.b/255.0, 0.0, 1.0), 0.85));
                                 
-                if (T > 9000.0) {
-                    rgb += vec3(pow((T - 9000.0) / 9000.0, 1.3) * 0.95); // Natural overexposure saturation
+                if (T > 8500.0) {
+                    rgb += vec3(pow((T - 8500.0) / 8000.0, 1.25) * 0.85);
                 }
                 return rgb;
             }
 
-            // Pseudo-random function for generating background cosmic fields
             float hash(vec3 p) {
-                p = fract(p * vec3(443.8975, 397.2973, 491.1871));
-                p += dot(p.xyz, p.yzx + 19.19);
-                return fract(p.x * p.y * p.z);
+                return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453123);
             }
 
-            // Renders a high-density, gravitationally lensed background starfield
+            // 2D fractal noise generator for fluid structures
+            float noise2d(vec2 p) {
+                vec2 i = floor(p);
+                vec2 f = fract(p);
+                f = f * f * (3.0 - 2.0 * f);
+                float a = fract(sin(dot(i, vec2(127.1, 311.7))) * 43758.5453);
+                float b = fract(sin(dot(i + vec2(1.0, 0.0), vec2(127.1, 311.7))) * 43758.5453);
+                float c = fract(sin(dot(i + vec2(0.0, 1.0), vec2(127.1, 311.7))) * 43758.5453);
+                float d = fract(sin(dot(i + vec2(1.0, 1.0), vec2(127.1, 311.7))) * 43758.5453);
+                return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+            }
+
+            // Smooth pinpoint background starfield
             vec3 getBackgroundStars(vec3 dir) {
                 vec3 normDir = normalize3(dir);
-                float n = hash(floor(normDir * 220.0));
-                vec3 color = vec3(0.001, 0.001, 0.004); // Base deep space background tint
-                
-                if (n > 0.994) {
-                    float starIntensity = pow(hash(floor(normDir * 220.0) + 0.5), 2.0) * 1.5;
-                    // Add subtle temperature color variation to background stars
-                    vec3 starColor = vec3(0.8, 0.9, 1.0) + 0.2 * vec3(sin(n*10.0), cos(n*20.0), sin(n*5.0));
-                    color += starColor * starIntensity * step(0.92, hash(normDir * 1200.0 + u_time * 0.02));
+                float n = hash(floor(normDir * 450.0)); 
+                vec3 color = vec3(0.001, 0.001, 0.003); 
+                if (n > 0.996) {
+                    float starIntensity = pow(hash(floor(normDir * 450.0) + 0.5), 3.0) * 2.0;
+                    color += vec3(0.9, 0.95, 1.0) * starIntensity;
                 }
                 return color;
             }
@@ -130,7 +136,6 @@ export class GPUSchwarzschildEngine {
                 float u = uv.x * aspect * tanHalfFov;
                 float v = uv.y * tanHalfFov;
 
-                // Spherical Camera Translation Vectors
                 vec3 camPos = vec3(
                     u_camDist * sin(u_camTilt) * cos(u_camPan),
                     u_camDist * cos(u_camTilt),
@@ -155,15 +160,12 @@ export class GPUSchwarzschildEngine {
                     float r = sqrt(r2);
 
                     if (r < R_s * 1.001) {
-                        finalColor = vec3(0.0); // Spatially trapped light lines
+                        finalColor = vec3(0.0); 
                         hitSomething = true;
                         break;
                     }
-                    if (r > 58.0 * R_s) {
-                        break; // Light ray escaped out into deep space background
-                    }
+                    if (r > 55.0 * R_s) break;
 
-                    // RK4 Orbital Integration Core
                     vec3 dp1, dv1; getDerivs(cur_pos, cur_vel, dp1, dv1, M);
                     vec3 p2 = cur_pos + dp1 * (DL * 0.5); vec3 v2 = cur_vel + dv1 * (DL * 0.5);
                     vec3 dp2, dv2; getDerivs(p2, v2, dp2, dv2, M);
@@ -177,14 +179,12 @@ export class GPUSchwarzschildEngine {
                     cur_pos += (dp1 + 2.0 * dp2 + 2.0 * dp3 + dp4) * (DL / 6.0);
                     cur_vel += (dv1 + 2.0 * dv2 + 2.0 * dv3 + dv4) * (DL / 6.0);
 
-                    // ACCRETION DISK EQUATOR CROSSING CHECK
                     if (prev_y * cur_pos.y <= 0.0) {
                         float t = abs(prev_y) / (abs(prev_y) + abs(cur_pos.y));
                         vec3 intersectPos = mix(cur_pos - cur_vel * DL, cur_pos, t);
                         float hit_r = length(intersectPos);
 
                         if (hit_r >= R_in && hit_r <= R_out) {
-                            // Accurate orbital Keplerian velocity profile
                             float vphi = sqrt(M / hit_r);
                             float phi = atan(intersectPos.z, intersectPos.x);
                             
@@ -192,17 +192,21 @@ export class GPUSchwarzschildEngine {
                             vec3 los = normalize3(camPos - intersectPos);
 
                             float cosA = dot(tangent, los);
-                            
-                            // 100% UNBIASED RAW RELATIVISTIC DOPPLER FACTOR
                             float doppler = 1.0 / (sqrt(1.0 - vphi * vphi) * (1.0 - vphi * cosA));
-                            
-                            // Raw General Relativistic Gravitational Redshift Calculation
                             float grav = sqrt(1.0 - R_s / hit_r);
 
-                            float noiseFactor = 0.84 + 0.16 * sin(phi * 11.0 - u_time * 3.5) * cos(hit_r * 1.6);
+                            float cinematicDoppler = mix(1.0, doppler, 0.65);
                             
-                            // Mathematical Temperature execution
-                            float T = (7000.0 * pow(R_in / hit_r, 0.75) * noiseFactor) * doppler * grav;
+                            // DYNAMIC VELOCITY DIFFERENTIAL NOISE (Keplerian Shearing)
+                            // Matter spins exponentially faster near the event horizon than it does at the rim
+                            float angularSpeed = 4.0 * pow(R_in / hit_r, 1.5);
+                            vec2 shearedUV = vec2(phi * 7.5 - u_time * angularSpeed, hit_r * 1.4);
+                            
+                            // Layering a multi-octave noise profile removes checkerboard stamps
+                            float fbmNoise = noise2d(shearedUV) * 0.65 + noise2d(shearedUV * 2.5 + u_time) * 0.35;
+                            float noiseFactor = 0.72 + 0.28 * fbmNoise;
+
+                            float T = (6800.0 * pow(R_in / hit_r, 0.62) * noiseFactor) * cinematicDoppler * grav;
 
                             finalColor = blackbody(T);
                             hitSomething = true;
@@ -211,7 +215,6 @@ export class GPUSchwarzschildEngine {
                     }
                 }
 
-                // If the ray escapes into deep infinity, sample the lensed background sky sphere
                 if (!hitSomething) {
                     finalColor = getBackgroundStars(cur_vel);
                 }
@@ -219,7 +222,7 @@ export class GPUSchwarzschildEngine {
                 gl_FragColor = vec4(finalColor, 1.0);
             }
         `;
-
+        
         this.material = new THREE.ShaderMaterial({
             vertexShader,
             fragmentShader,
