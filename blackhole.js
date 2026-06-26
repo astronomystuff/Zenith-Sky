@@ -73,46 +73,36 @@ const fragmentShader = `
 
             vec3 normalize3(vec3 v) { return length(v) == 0.0 ? vec3(0.0) : normalize(v); }
 
-            // High-fidelity Planck blackbody approximation curve
+            // High-contrast blinding blackbody color curve
             vec3 blackbody(float T) {
-                T = clamp(T, 900.0, 16500.0);
-                float t = (T - 900.0) / (16500.0 - 900.0);
+                T = clamp(T, 1000.0, 16000.0);
+                float t = (T - 1000.0) / (16000.0 - 1000.0);
                 vec3 col;
-                col.r = 175.0 + 80.0 * t;
-                col.g = 35.0 + 220.0 * pow(t, 1.1);
-                col.b = 5.0 + 250.0 * pow(t, 1.9);
+                col.r = 170.0 + 85.0 * t;
+                col.g = 40.0 + 215.0 * pow(t, 1.05);
+                col.b = 10.0 + 245.0 * pow(t, 1.8);
                 
                 vec3 rgb = vec3(pow(clamp(col.r/255.0, 0.0, 1.0), 0.85),
                                 pow(clamp(col.g/255.0, 0.0, 1.0), 0.85),
                                 pow(clamp(col.b/255.0, 0.0, 1.0), 0.85));
                                 
                 if (T > 8500.0) {
-                    rgb += vec3(pow((T - 8500.0) / 8000.0, 1.25) * 0.85);
+                    rgb += vec3(pow((T - 8500.0) / 7500.0, 1.2) * 0.7);
                 }
                 return rgb;
             }
 
+            // High-frequency fractional noise for fine pinpoint stars
             float hash(vec3 p) {
                 return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453123);
             }
 
-            // 2D fractal noise generator for fluid structures
-            float noise2d(vec2 p) {
-                vec2 i = floor(p);
-                vec2 f = fract(p);
-                f = f * f * (3.0 - 2.0 * f);
-                float a = fract(sin(dot(i, vec2(127.1, 311.7))) * 43758.5453);
-                float b = fract(sin(dot(i + vec2(1.0, 0.0), vec2(127.1, 311.7))) * 43758.5453);
-                float c = fract(sin(dot(i + vec2(0.0, 1.0), vec2(127.1, 311.7))) * 43758.5453);
-                float d = fract(sin(dot(i + vec2(1.0, 1.0), vec2(127.1, 311.7))) * 43758.5453);
-                return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
-            }
-
-            // Smooth pinpoint background starfield
+            // Pinpoint starfield generator
             vec3 getBackgroundStars(vec3 dir) {
                 vec3 normDir = normalize3(dir);
                 float n = hash(floor(normDir * 450.0)); 
                 vec3 color = vec3(0.001, 0.001, 0.003); 
+                
                 if (n > 0.996) {
                     float starIntensity = pow(hash(floor(normDir * 450.0) + 0.5), 3.0) * 2.0;
                     color += vec3(0.9, 0.95, 1.0) * starIntensity;
@@ -185,7 +175,7 @@ const fragmentShader = `
                         float hit_r = length(intersectPos);
 
                         if (hit_r >= R_in && hit_r <= R_out) {
-                            float vphi = sqrt(M / hit_r);
+                            float vphi = sqrt(R_s / (2.0 * hit_r));
                             float phi = atan(intersectPos.z, intersectPos.x);
                             
                             vec3 tangent = normalize3(vec3(-sin(phi), 0.0, cos(phi)));
@@ -195,18 +185,16 @@ const fragmentShader = `
                             float doppler = 1.0 / (sqrt(1.0 - vphi * vphi) * (1.0 - vphi * cosA));
                             float grav = sqrt(1.0 - R_s / hit_r);
 
-                            float cinematicDoppler = mix(1.0, doppler, 0.65);
+                            float cinematicDoppler = mix(1.0, doppler, 0.55);
                             
-                            // DYNAMIC VELOCITY DIFFERENTIAL NOISE (Keplerian Shearing)
-                            // Matter spins exponentially faster near the event horizon than it does at the rim
-                            float angularSpeed = 4.0 * pow(R_in / hit_r, 1.5);
-                            vec2 shearedUV = vec2(phi * 7.5 - u_time * angularSpeed, hit_r * 1.4);
+                            // SAFE KEPPLERIAN PLASMA SHEARING (GPU Friendly, No Matrix Glitches)
+                            // Uses smooth sin/cos combinations that scale with orbital speed
+                            float shearTime = u_time * (2.2 * pow(R_in / hit_r, 1.5));
+                            float dynamicWaves = sin(phi * 8.0 - shearTime) * cos(hit_r * 2.5 + sin(phi * 3.0));
+                            float secondaryWaves = sin(phi * 19.0 + shearTime * 0.5) * 0.3;
                             
-                            // Layering a multi-octave noise profile removes checkerboard stamps
-                            float fbmNoise = noise2d(shearedUV) * 0.65 + noise2d(shearedUV * 2.5 + u_time) * 0.35;
-                            float noiseFactor = 0.72 + 0.28 * fbmNoise;
-
-                            float T = (6800.0 * pow(R_in / hit_r, 0.62) * noiseFactor) * cinematicDoppler * grav;
+                            float noiseFactor = 0.82 + 0.18 * (dynamicWaves + secondaryWaves);
+                            float T = (6600.0 * pow(R_in / hit_r, 0.6) * noiseFactor) * cinematicDoppler * grav;
 
                             finalColor = blackbody(T);
                             hitSomething = true;
