@@ -502,6 +502,18 @@
   </div>
 </div>
 
+<script>
+  // Open modal
+  document.getElementById("blackhole-open").onclick = function () {
+    document.getElementById("blackhole-modal-overlay").style.display = "flex";
+  };
+
+  // Close modal
+  document.getElementById("blackhole-close").onclick = function () {
+    document.getElementById("blackhole-modal-overlay").style.display = "none";
+  };
+</script>
+
 <!-- External scripts -->
 <script src="videotool.js"></script>
 <script src="planner.js"></script>
