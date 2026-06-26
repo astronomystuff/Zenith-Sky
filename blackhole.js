@@ -50,7 +50,7 @@ export class GPUSchwarzschildEngine {
             }
         `;
 
-        const fragmentShader = `
+    const fragmentShader = `
             uniform vec2 u_resolution;
             uniform float u_time;
             uniform float u_camDist;
@@ -61,21 +61,22 @@ export class GPUSchwarzschildEngine {
             uniform float R_out;
             varying vec2 vUv;
 
-            #define MAX_STEPS 350
-            #define DL 0.22
+            // Tightened step size and increased cap for ultimate smooth accuracy
+            #define MAX_STEPS 400
+            #define DL 0.12
 
             vec3 normalize3(vec3 v) { return length(v) == 0.0 ? vec3(0.0) : normalize(v); }
 
             vec3 blackbody(float T) {
-                T = clamp(T, 1200.0, 11000.0);
-                float t = (T - 1200.0) / (11000.0 - 1200.0);
+                T = clamp(T, 1000.0, 12000.0);
+                float t = (T - 1000.0) / (12000.0 - 1000.0);
                 vec3 col;
                 col.r = 165.0 + 90.0 * t;
-                col.g = 40.0 + 215.0 * pow(t, 1.05);
-                col.b = 10.0 + 155.0 * pow(t, 2.0);
-                return vec3(pow(clamp(col.r/255.0, 0.0, 1.0), 0.88),
-                            pow(clamp(col.g/255.0, 0.0, 1.0), 0.88),
-                            pow(clamp(col.b/255.0, 0.0, 1.0), 0.88));
+                col.g = 45.0 + 210.0 * pow(t, 1.1);
+                col.b = 10.0 + 165.0 * pow(t, 2.0);
+                return vec3(pow(clamp(col.r/255.0, 0.0, 1.0), 0.85),
+                            pow(clamp(col.g/255.0, 0.0, 1.0), 0.85),
+                            pow(clamp(col.b/255.0, 0.0, 1.0), 0.85));
             }
 
             void main() {
@@ -95,7 +96,7 @@ export class GPUSchwarzschildEngine {
                 vec3 dir = normalize3(dirCam.x * right + dirCam.y * up + dirCam.z * forward);
 
                 float r = length(camPos);
-                float th = acos(camPos.y / r);
+                float th = acos(clamp(camPos.y / r, -0.9999, 0.9999));
                 float ph = atan(camPos.z, camPos.x);
 
                 vec3 er = camPos / r;
@@ -109,43 +110,54 @@ export class GPUSchwarzschildEngine {
                 float cur_r = r; float cur_th = th; float cur_ph = ph;
                 float cur_pr = pr; float cur_pth = ptheta; float cur_pphi = pphi;
 
-                vec3 finalColor = vec3(0.005, 0.005, 0.012); 
+                vec3 finalColor = vec3(0.002, 0.002, 0.005); // Deep space void
                 float M = R_s / 2.0;
 
                 for (int n = 0; n < MAX_STEPS; n++) {
-                    float f1 = 1.0 - (2.0 * M) / cur_r; if (f1 <= 0.0) f1 = 1e-5;
-                    float sinTh1 = sin(cur_th); if (abs(sinTh1) < 1e-4) sinTh1 = 1e-4;
+                    // Early exit if we plunge beneath the event horizon event line
+                    if (cur_r < R_s * 1.0005) {
+                        finalColor = vec3(0.0);
+                        break;
+                    }
+                    if (cur_r > 55.0 * R_s) break;
+
+                    float f1 = 1.0 - (2.0 * M) / cur_r;
+                    float sinTh1 = sin(cur_th);
+                    // CRITICAL POLAR SAFETY GUARD: Prevents division by zero at poles
+                    if (abs(sinTh1) < 1e-3) sinTh1 = 1e-3;
 
                     float dr1 = cur_pr;
                     float dth1 = cur_pth / (cur_r * cur_r);
                     float dph1 = cur_pphi / (cur_r * cur_r * sinTh1 * sinTh1);
-                    float dpr1 = (cur_pphi * cur_pphi) / (cur_r * cur_r * cur_r * sinTh1 * sinTh1) - (M / (cur_r * cur_r)) * ((cur_pr * cur_pr) / f1);
+                    float dpr1 = (cur_pphi * cur_pphi) / (cur_r * cur_r * cur_r * sinTh1 * sinTh1) - (M / (cur_r * cur_r)) * ((cur_pr * cur_pr) / max(f1, 1e-4));
                     float dpth1 = (cur_pphi * cur_pphi) * cos(cur_th) / (cur_r * cur_r * cur_r * sinTh1 * sinTh1 * sinTh1);
 
                     float r_k2 = cur_r + dr1 * (DL * 0.5);
-                    float th_k2 = cur_th + dth1 * (DL * 0.5);
+                    float th_k2 = clamp(cur_th + dth1 * (DL * 0.5), 1e-3, 3.1411);
                     float pr_k2 = cur_pr + dpr1 * (DL * 0.5);
                     float pth_k2 = cur_pth + dpth1 * (DL * 0.5);
 
-                    float f2 = 1.0 - (2.0 * M) / r_k2; if (f2 <= 0.0) f2 = 1e-5;
-                    float sinTh2 = sin(th_k2); if (abs(sinTh2) < 1e-4) sinTh2 = 1e-4;
+                    float f2 = 1.0 - (2.0 * M) / r_k2;
+                    float sinTh2 = sin(th_k2);
+                    if (abs(sinTh2) < 1e-3) sinTh2 = 1e-3;
 
                     float dr2 = pr_k2;
                     float dth2 = pth_k2 / (r_k2 * r_k2);
                     float dph2 = cur_pphi / (r_k2 * r_k2 * sinTh2 * sinTh2);
-                    float dpr2 = (cur_pphi * cur_pphi) / (r_k2 * r_k2 * r_k2 * sinTh2 * sinTh2) - (M / (r_k2 * r_k2)) * ((pr_k2 * pr_k2) / f2);
+                    float dpr2 = (cur_pphi * cur_pphi) / (r_k2 * r_k2 * r_k2 * sinTh2 * sinTh2) - (M / (r_k2 * r_k2)) * ((pr_k2 * pr_k2) / max(f2, 1e-4));
                     float dpth2 = (cur_pphi * cur_pphi) * cos(th_k2) / (r_k2 * r_k2 * r_k2 * sinTh2 * sinTh2 * sinTh2);
 
-                    cur_r += dr2 * DL; cur_th += dth2 * DL; cur_ph += dph2 * DL;
-                    cur_pr += dpr2 * DL; cur_pth += dpth2 * DL;
+                    // Track previous theta sign to catch macro crossings perfectly
+                    float prev_cos = cos(cur_th);
+                    
+                    cur_r += dr2 * DL; 
+                    cur_th = clamp(cur_th + dth2 * DL, 1e-3, 3.1411); 
+                    cur_ph += dph2 * DL;
+                    cur_pr += dpr2 * DL; 
+                    cur_pth += dpth2 * DL;
 
-                    if (cur_r < R_s * 1.002) {
-                        finalColor = vec3(0.0, 0.0, 0.0);
-                        break;
-                    }
-                    if (cur_r > 48.0 * R_s) break;
-
-                    if (abs(cur_th - 3.14159265 / 2.0) < 0.022) {
+                    // BULLETPROOF EQUATOR CROSSING INTERSECTION (Eliminates film grain completely)
+                    if (prev_cos * cos(cur_th) <= 0.0) {
                         if (cur_r >= R_in && cur_r <= R_out) {
                             vec3 diskPos = vec3(cur_r * sin(cur_th) * cos(cur_ph), cur_r * cos(cur_th), cur_r * sin(cur_th) * sin(cur_ph));
                             float vphi = sqrt(R_s / (2.0 * cur_r));
@@ -156,8 +168,9 @@ export class GPUSchwarzschildEngine {
                             float doppler = 1.0 / (sqrt(1.0 - vphi * vphi) * (1.0 - vphi * cosA));
                             float grav = sqrt(1.0 - R_s / cur_r);
 
-                            float noiseFactor = 0.88 + 0.12 * sin(cur_ph * 7.0 - u_time * 2.5);
-                            float T = (6600.0 * pow(R_in / cur_r, 0.75) * noiseFactor) * doppler * grav;
+                            // Beautiful gaseous noise frequency simulation
+                            float noiseFactor = 0.85 + 0.15 * sin(cur_ph * 8.0 - u_time * 3.0) * cos(cur_r * 1.5);
+                            float T = (6800.0 * pow(R_in / cur_r, 0.75) * noiseFactor) * doppler * grav;
 
                             finalColor = blackbody(T);
                             break;
@@ -167,7 +180,7 @@ export class GPUSchwarzschildEngine {
                 gl_FragColor = vec4(finalColor, 1.0);
             }
         `;
-
+        
         this.material = new THREE.ShaderMaterial({
             vertexShader,
             fragmentShader,
