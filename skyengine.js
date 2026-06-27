@@ -513,6 +513,7 @@ async function loadStarCSV(url) {
     y:      header.indexOf("y0"),
     z:      header.indexOf("z0"),
     mag:    header.indexOf("mag"),
+    absmag: header.indexOf("absmag"),
     rv:     header.indexOf("rv"),
     pmRa:   header.indexOf("pm_ra"),
     pmDec:  header.indexOf("pm_dec"),
@@ -546,6 +547,7 @@ async function loadStarCSV(url) {
     const pmDec= parseFloat(cols[idx.pmDec]);
     const rv   = parseFloat(cols[idx.rv]);
     const mag  = parseFloat(cols[idx.mag]);
+    const absmag = parseFloat(cols[idx.absmag]);
     const raDeg  = parseFloat(cols[idx.ra]);
     const decDeg = parseFloat(cols[idx.dec]);
 
@@ -572,7 +574,7 @@ async function loadStarCSV(url) {
       dist,
       raDeg0: raDeg,
       decDeg0:  decDeg,
-      pmRa, pmDec, rv, mag,
+      pmRa, pmDec, rv, mag, absmag, 
       vx: parseFloat(cols[idx.vx]),
       vy: parseFloat(cols[idx.vy]),
       vz: parseFloat(cols[idx.vz]),
@@ -1956,7 +1958,22 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   const jd = toJulianDate(civil);
   const years = (jd - 2451545.0) / 365.25;
   const pm = applyProperMotionFromXYZ(star, years);
+  const pmTotal = Math.sqrt(pm.pmRA**2 + pm.pmDec**2);
   const prec = applyPrecession(pm.raDeg, pm.decDeg, jd);
+  const desigs = [];
+    if (star.hip) desigs.push(`HIP ${star.hip}`);
+    if (star.hd)  desigs.push(`HD ${star.hd}`);
+    if (star.hr)  desigs.push(`HR ${star.hr}`);
+    if (star.gl)  desigs.push(`GL ${star.gl}`);
+    if (star.bayer) {
+    const bayerFormatted = formatBayer(star.bayer, star.con);
+    if (bayerFormatted) desigs.push(bayerFormatted);
+    }
+    if (star.flam) {
+    const flamFormatted = `${star.flam} ${star.con}`;
+    desigs.push(flamFormatted);
+    }
+    if (star.proper) desigs.push(star.proper);
   const raRad  = prec.raDeg * Math.PI / 180;
   const decRad = prec.decDeg * Math.PI / 180;
   const latRad = latDeg * Math.PI / 180;
@@ -1979,9 +1996,17 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
     `RA: ${raHoursDisplay.toFixed(2)}h, Dec: ${pm.decDeg.toFixed(2)}°`;
   document.getElementById("sky3d-object-alt-az").textContent =
     `Alt: ${(alt * 180/Math.PI).toFixed(2)}°, Az: ${(az * 180/Math.PI).toFixed(2)}°`;
+  document.getElementById("sky3d-object-pm-speed").textContent =
+    `PM: ${pmTotal.toFixed(3)}″/yr`;
   document.getElementById("sky3d-object-mag").textContent = `Mag: ${star.mag}`;
+  document.getElementById("sky3d-object-absmag").textContent =
+  `Abs Mag: ${star.absmag.toFixed(2)}`;
   document.getElementById("sky3d-object-distance").textContent =
     `Dist: ${(star.dist * 3.26156).toFixed(2)} ly`;
+  document.getElementById("sky3d-object-spectral").textContent =
+    `Spectral: ${star.spect}`;
+  document.getElementById("sky3d-object-designations").textContent =
+    `Designations: ${desigs.join(", ")}`;
 
   const lockBtn = document.getElementById("sky3d-lock");
   if (lockBtn) lockBtn.disabled = false;
