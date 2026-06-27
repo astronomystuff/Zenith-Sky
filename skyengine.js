@@ -1497,7 +1497,7 @@ for (let i = 0; i < sky3dStarBase.length; i++) {
     const az = Math.atan2(sinAz, cosAz);
 
     // Convert alt/az → XYZ
-    const x = Math.cos(alt) * Math.sin(az);
+    const x = -Math.cos(alt) * Math.sin(az);
     const y = Math.sin(alt);
     const z = Math.cos(alt) * Math.cos(az);
 
@@ -1593,7 +1593,7 @@ for (let i = 0; i < sky3dStarBase.length; i++) {
     const sinAz = -Math.cos(decRad)*Math.sin(H) / Math.cos(alt);
     const az = Math.atan2(sinAz, cosAz);
 
-    const x = Math.cos(alt) * Math.sin(az);
+    const x = -Math.cos(alt) * Math.sin(az);
     const y = Math.sin(alt);
     const z = Math.cos(alt) * Math.cos(az);
 
