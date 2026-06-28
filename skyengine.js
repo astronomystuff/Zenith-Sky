@@ -1984,15 +1984,10 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   const jd = toJulianDate(civil);
   const years = (jd - 2451545.0) / 365.25;
   const pm = applyProperMotionFromXYZ(star, years);
-  const ra0  = star.raDeg0;
-  const dec0 = star.decDeg0;
-  const ra1  = pm.raDeg;
-  const dec1 = pm.decDeg;
-  const dra  = ra1  - ra0;   // deg
-  const ddec = dec1 - dec0;  // deg
-  const pmRaArcsec  = (dra  * 3600) / years;
-  const pmDecArcsec = (ddec * 3600) / years;
-  const pmTotal = Math.sqrt(pmRaArcsec**2 + pmDecArcsec**2);
+  const pmRaMas  = star.pmRa;   // mas/yr
+  const pmDecMas = star.pmDec;  // mas/yr
+  const pmTotalMas = Math.sqrt(pmRaMas * pmRaMas + pmDecMas * pmDecMas);
+  const pmTotal = pmTotalMas / 1000;
   const prec = applyPrecession(pm.raDeg, pm.decDeg, jd);
   const desigs = [];
     if (star.proper) desigs.push(star.proper);
