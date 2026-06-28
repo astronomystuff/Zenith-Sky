@@ -1411,6 +1411,24 @@ function computePlanetMagnitude(name, r, delta, phaseDeg, B = null, Bp = null) {
     }
 }
 
+async function computePlanetElongation(name, JD) {
+    const planet = VSOP87_Planet(name, JD);   // heliocentric XYZ
+    const earth  = VSOP87_Earth(JD);          // heliocentric XYZ
+
+    const vecSub = (a, b) => ({ x: a.x - b.x, y: a.y - b.y, z: a.z - b.z });
+    const dot = (a, b) => a.x*b.x + a.y*b.y + a.z*b.z;
+    const mag = (v) => Math.sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
+
+    const rPE = vecSub(planet, earth);
+    const rSE = vecSub({x:0,y:0,z:0}, earth);
+
+    const elongRad = Math.acos(
+        dot(rPE, rSE) / (mag(rPE) * mag(rSE))
+    );
+
+    return elongRad * 180 / Math.PI;  // degrees
+}
+
 
 // ===========================
 // computeBodyPosition 
@@ -1844,6 +1862,7 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   const D = body.dist * 149597870.7;
   const theta = 2 * Math.atan(R / D);
   const arcsec = theta * 206265;
+  const elongDeg = await computePlanetElongation(body.name, JD);
 
   sky3dClearInfo();
   document.getElementById("sky3d-object-name").textContent = body.name;
@@ -1852,6 +1871,8 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
     `RA: ${(body.ra/15).toFixed(2)}h, Dec: ${body.dec.toFixed(2)}°`;
   document.getElementById("sky3d-object-alt-az").textContent =
     `Alt: ${body.alt.toFixed(2)}°, Az: ${body.az.toFixed(2)}°`;
+  document.getElementById("sky3d-object-elongation").textContent =
+  `Elongation: ${elongDeg.toFixed(1)}°`;
   document.getElementById("sky3d-object-mag").textContent = `Mag: ${body.mag.toFixed(2)}`;
   document.getElementById("sky3d-object-phase").textContent =
   `Phase: ${(phase * 100).toFixed(1)}%`;
