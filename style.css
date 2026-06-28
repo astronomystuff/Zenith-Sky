@@ -441,6 +441,10 @@ button:active,
   color: #fff;
 }
 
+#sky3d-info h3 { margin: 0 0 4px 0; }
+#sky3d-info h4 { margin: 0 0 0px 0; }
+#sky3d-info h5 { margin: 0 0 12px 0; }
+
 /* SMALL SCREENS */
 
 @page { size: 8.5in 11in; margin: 0; }
