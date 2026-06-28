@@ -1830,6 +1830,21 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   const phaseDeg = body.phaseDeg;
   const phaseRad = phaseDeg * Math.PI / 180;
   const phase = (1 + Math.cos(phaseRad)) / 2;
+  const PLANET_RADII_KM = {
+    Mercury: 2439.7,
+    Venus:   6051.8,
+    Earth:   6378.1,
+    Mars:    3389.5,
+    Jupiter: 69911,
+    Saturn:  58232,
+    Uranus:  25362,
+    Neptune: 24622
+  };
+  const R = PLANET_RADII_KM[body.name];
+  const D = body.dist * 149597870.7;
+  const theta = 2 * Math.atan(R / D);
+  const arcsec = theta * 206265;
+
   sky3dClearInfo();
   document.getElementById("sky3d-object-name").textContent = body.name;
   document.getElementById("sky3d-object-type").textContent = "Planet";
@@ -1840,6 +1855,8 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   document.getElementById("sky3d-object-mag").textContent = `Mag: ${body.mag.toFixed(2)}`;
   document.getElementById("sky3d-object-phase").textContent =
   `Phase: ${(phase * 100).toFixed(1)}%`;
+  document.getElementById("sky3d-object-size").textContent =
+    `Angular Size: ${arcsec.toFixed(2)}″`;
   document.getElementById("sky3d-object-distance").textContent = `Dist: ${body.dist.toFixed(2)} AU`;
 
   const lockBtn = document.getElementById("sky3d-lock");
