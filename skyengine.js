@@ -1984,13 +1984,18 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   const jd = toJulianDate(civil);
   const years = (jd - 2451545.0) / 365.25;
   const pm = applyProperMotionFromXYZ(star, years);
-  const pmTotal = Math.sqrt(pm.pmRA**2 + pm.pmDec**2);
+  const ra0  = star.raDeg0;
+  const dec0 = star.decDeg0;
+  const ra1  = pm.raDeg;
+  const dec1 = pm.decDeg;
+  const dra  = ra1  - ra0;   // deg
+  const ddec = dec1 - dec0;  // deg
+  const pmRaArcsec  = (dra  * 3600) / years;
+  const pmDecArcsec = (ddec * 3600) / years;
+  const pmTotal = Math.sqrt(pmRaArcsec**2 + pmDecArcsec**2);
   const prec = applyPrecession(pm.raDeg, pm.decDeg, jd);
   const desigs = [];
-    if (star.hip) desigs.push(`HIP ${star.hip}`);
-    if (star.hd)  desigs.push(`HD ${star.hd}`);
-    if (star.hr)  desigs.push(`HR ${star.hr}`);
-    if (star.gl)  desigs.push(`GL ${star.gl}`);
+    if (star.proper) desigs.push(star.proper);
     if (star.bayer) {
     const bayerFormatted = formatBayer(star.bayer, star.con);
     if (bayerFormatted) desigs.push(bayerFormatted);
@@ -1999,7 +2004,12 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
     const flamFormatted = `${star.flam} ${star.con}`;
     desigs.push(flamFormatted);
     }
-    if (star.proper) desigs.push(star.proper);
+    if (star.hd)  desigs.push(`HD ${star.hd}`);
+    if (star.hip) desigs.push(`HIP ${star.hip}`);
+    if (star.hr)  desigs.push(`HR ${star.hr}`);
+    if (star.gl)  desigs.push(`GL ${star.gl}`);
+    if (star.tyc) desigs.push(`TYC ${star.tyc}`);
+    if (star.gaia) desigs.push(`Gaia ${star.gaia}`);
   const raRad  = prec.raDeg * Math.PI / 180;
   const decRad = prec.decDeg * Math.PI / 180;
   const latRad = latDeg * Math.PI / 180;
