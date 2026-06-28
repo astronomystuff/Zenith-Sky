@@ -1756,6 +1756,19 @@ function onSky3DClick(event) {
 }
 
 
+function sky3dClearInfo() {
+  document.getElementById("sky3d-object-name").textContent = "";
+  document.getElementById("sky3d-object-type").textContent = "";
+  document.getElementById("sky3d-object-ra-dec").textContent = "";
+  document.getElementById("sky3d-object-alt-az").textContent = "";
+  document.getElementById("sky3d-object-pm-speed").textContent = "";
+  document.getElementById("sky3d-object-mag").textContent = "";
+  document.getElementById("sky3d-object-absmag").textContent = "";
+  document.getElementById("sky3d-object-distance").textContent = "";
+  document.getElementById("sky3d-object-spectral").textContent = "";
+  document.getElementById("sky3d-object-designations").textContent = "";
+  document.getElementById("sky3d-object-luminosity").textContent = "";
+}
 
 function searchSkyPlanet(planetPoint) {
   const body = planetPoint.userData;
@@ -1813,6 +1826,7 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
 
 
   // --- 6. Update UI ---
+  sky3dClearInfo();
   document.getElementById("sky3d-object-name").textContent = body.name;
   document.getElementById("sky3d-object-type").textContent = "Planet";
   document.getElementById("sky3d-object-ra-dec").textContent =
@@ -2005,6 +2019,8 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
     if (star.gl)  desigs.push(`GL ${star.gl}`);
     if (star.tyc) desigs.push(`TYC ${star.tyc}`);
     if (star.gaia) desigs.push(`Gaia ${star.gaia}`);
+  const absMag = star.absmag;
+  const lum = Math.pow(10, (4.83 - absMag) / 2.5);  // L/L☉
   const raRad  = prec.raDeg * Math.PI / 180;
   const decRad = prec.decDeg * Math.PI / 180;
   const latRad = latDeg * Math.PI / 180;
@@ -2019,6 +2035,7 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
                 (Math.cos(alt) * Math.cos(latRad));
   const az = Math.atan2(sinAz, cosAz);
 
+  sky3dClearInfo();
   document.getElementById("sky3d-object-name").textContent =
     getStarNameFromRecord(star);
   document.getElementById("sky3d-object-type").textContent = "Star";
@@ -2032,6 +2049,8 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   document.getElementById("sky3d-object-mag").textContent = `Mag: ${star.mag}`;
   document.getElementById("sky3d-object-absmag").textContent =
   `Abs Mag: ${star.absmag.toFixed(2)}`;
+  document.getElementById("sky3d-object-luminosity").textContent =
+  `Luminosity: ${lum.toFixed(2)} L☉`;
   document.getElementById("sky3d-object-distance").textContent =
     `Dist: ${(star.dist * 3.26156).toFixed(2)} ly`;
   document.getElementById("sky3d-object-spectral").textContent =
