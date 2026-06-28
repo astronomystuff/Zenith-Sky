@@ -1466,7 +1466,7 @@ async function computeBodyMagnitude(name, JD) {
     }
 
     const mag = computePlanetMagnitude(name, r, delta, phaseDeg, B, Bp);
-    return { mag, dist: delta };
+    return { mag, dist: delta, phaseDeg};
 }
 
 // ===========================
@@ -1474,9 +1474,9 @@ async function computeBodyMagnitude(name, JD) {
 // ===========================
 async function computeBody(name, JD, latDeg, lonDeg) {
     const { ra, dec } = await computeBodyPosition(name, JD, latDeg, lonDeg);
-    const { mag, dist } = await computeBodyMagnitude(name, JD);
+    const { mag, dist, phaseDeg } = await computeBodyMagnitude(name, JD);
 
-    return { ra, dec, mag, dist };
+    return { ra, dec, mag, dist, phaseDeg };
 }
 
 
@@ -1657,6 +1657,7 @@ planetPoint.userData = {
   name,
   mag: body.mag,
   dist: body.dist,
+  phaseDeg: body.phaseDeg,
   ra: body.ra,
   dec: body.dec,
   alt: alt * 180/Math.PI,
@@ -1826,6 +1827,9 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
 
 
   // --- 6. Update UI ---
+  const phaseDeg = body.phaseDeg;
+  const phaseRad = phaseDeg * Math.PI / 180;
+  const phase = (1 + Math.cos(phaseRad)) / 2;
   sky3dClearInfo();
   document.getElementById("sky3d-object-name").textContent = body.name;
   document.getElementById("sky3d-object-type").textContent = "Planet";
@@ -1834,6 +1838,8 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   document.getElementById("sky3d-object-alt-az").textContent =
     `Alt: ${body.alt.toFixed(2)}°, Az: ${body.az.toFixed(2)}°`;
   document.getElementById("sky3d-object-mag").textContent = `Mag: ${body.mag.toFixed(2)}`;
+  document.getElementById("sky3d-object-phase").textContent =
+  `Phase: ${(phase * 100).toFixed(1)}%`;
   document.getElementById("sky3d-object-distance").textContent = `Dist: ${body.dist.toFixed(2)} AU`;
 
   const lockBtn = document.getElementById("sky3d-lock");
