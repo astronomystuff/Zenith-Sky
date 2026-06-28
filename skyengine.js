@@ -1086,6 +1086,32 @@ function sky3dShowSuggestions(list) {
   box.style.display = "block";
 }
 
+function formatBayer(rawBayer, con) {
+  if (!rawBayer || !con) return null;
+  let b = rawBayer.toLowerCase().replace(/\s+/g, "");
+
+  const match = b.match(/^([a-z]+)(\d*)$/);
+  if (!match) return null;
+
+  const greekKey = match[1];
+  const comp     = match[2];
+
+  const GREEK = {
+    alp:"α", bet:"β", gam:"γ", del:"δ", eps:"ε", zet:"ζ", eta:"η",
+    the:"θ", iot:"ι", kap:"κ", lam:"λ", mu:"μ",  nu:"ν",  xi:"ξ",
+    omi:"ο", pi:"π",  rho:"ρ", sig:"σ", tau:"τ", ups:"υ", phi:"φ",
+    chi:"χ", psi:"ψ", ome:"ω"
+  };
+
+  const greek = GREEK[greekKey];
+  if (!greek) return null;
+
+  const SUP = { "1":"¹", "2":"²", "3":"³", "4":"⁴", "5":"⁵" };
+  const sup = comp ? (SUP[comp] || comp) : "";
+
+  return `${greek}${sup} ${con}`;
+}
+
 function isStarAboveHorizon(star) {
   const civil = getCivilFieldsFromUI();
   const { latDeg, lonDeg } = getLocationFromUI();
