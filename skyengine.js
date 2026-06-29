@@ -36,7 +36,7 @@ const VSOP = {
     Neptune: null
 };
 
-async function loadAllVSOP() {
+async function loadAllCoefficients() {
     VSOP.Mercury = await loadVSOP87File("vsop/VSOP87A.mer.txt");
     VSOP.Venus   = await loadVSOP87File("vsop/VSOP87A.ven.txt");
     VSOP.Earth   = await loadVSOP87File("vsop/VSOP87A.ear.txt");
@@ -1453,6 +1453,15 @@ function computePlanetElongation(name, JD) {
     return elongRad * 180 / Math.PI;  // degrees
 }
 
+function computePlanetHeliocentricDistance(name, JD) {
+    const planet = VSOP87_Planet(name, JD); // heliocentric XYZ in AU
+
+    return Math.sqrt(
+        planet.x * planet.x +
+        planet.y * planet.y +
+        planet.z * planet.z
+    );
+}
 
 // ===========================
 // computeBodyPosition 
@@ -1811,6 +1820,11 @@ function sky3dClearInfo() {
   document.getElementById("sky3d-object-spectral").textContent = "";
   document.getElementById("sky3d-object-designations").textContent = "";
   document.getElementById("sky3d-object-luminosity").textContent = "";
+  document.getElementById("sky3d-object-helio-dist").textContent = "";
+  document.getElementById("sky3d-object-elongation").textContent = "";
+  document.getElementById("sky3d-object-constellation").textContent = "";
+  document.getElementById("sky3d-object-size").textContent = "";
+  document.getElementById("sky3d-object-speed").textContent = "";
 }
 
 function searchSkyPlanet(planetPoint) {
@@ -1893,6 +1907,7 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   const arcsec = theta * 206265;
   const elongDeg = computePlanetElongation(body.name, jd);
   const constellation = nearestStarConstellation(body.ra, body.dec, sky3dStarBase);
+  const helioDist = computePlanetHeliocentricDistance(body.name, jd);
 
   sky3dClearInfo();
   document.getElementById("sky3d-object-name").textContent = body.name;
@@ -1903,6 +1918,8 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   `Alt: ${body.alt.toFixed(2)}°, Az: ${body.az.toFixed(2)}°`;
   document.getElementById("sky3d-object-elongation").textContent =
   `Elongation: ${elongDeg.toFixed(1)}°`;
+  document.getElementById("sky3d-object-helio-dist").textContent =
+  `Helio Dist: ${helioDist.toFixed(3)} AU`;
   document.getElementById("sky3d-object-mag").textContent = 
   `Mag: ${body.mag.toFixed(2)}`;
   document.getElementById("sky3d-object-phase").textContent =
@@ -2170,7 +2187,7 @@ async function rebuildCelestialSphere() {
 async function startSky3D() {
   const canvas = document.getElementById("sky3d-canvas");
   sky3dUpdateLoading("Loading Planetary Data…");
-  await loadAllVSOP();
+  await loadAllCoefficients();
   
   sky3dRenderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   sky3dRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
@@ -2434,7 +2451,7 @@ window.getLocationFromUI = getLocationFromUI;
 window.getLSTRadians = getLSTRadians;
 window.buildCelestialSphere = buildCelestialSphere;
 window.xyzToRaDec = xyzToRaDec;
-window.loadAllVSOP = loadAllVSOP;
+window.loadAllCoefficients = loadAllCoefficients;
 window.loadVSOP87File = loadVSOP87File;
 window.VSOP87_Mercury = VSOP87_Mercury;
 window.VSOP87_Venus   = VSOP87_Venus;
