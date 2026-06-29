@@ -1845,6 +1845,11 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
 
 
   // --- 6. Update UI ---
+  const civil = getCivilFieldsFromUI();
+  const { latDeg, lonDeg } = getLocationFromUI();
+  const lst = getLSTRadians(civil, lonDeg);
+  const jd = toJulianDate(civil);
+  const years = (jd - 2451545.0) / 365.25;
   const phaseDeg = body.phaseDeg;
   const phaseRad = phaseDeg * Math.PI / 180;
   const phase = (1 + Math.cos(phaseRad)) / 2;
@@ -1862,7 +1867,7 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   const D = body.dist * 149597870.7;
   const theta = 2 * Math.atan(R / D);
   const arcsec = theta * 206265;
-  const elongDeg = computePlanetElongation(body.name, JD);
+  const elongDeg = computePlanetElongation(body.name, jd);
 
   sky3dClearInfo();
   document.getElementById("sky3d-object-name").textContent = body.name;
