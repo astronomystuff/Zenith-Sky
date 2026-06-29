@@ -1129,6 +1129,30 @@ function isStarAboveHorizon(star) {
   return sinAlt > 0;
 }
 
+function nearestStarConstellation(raDeg, decDeg, stars) {
+    let best = null;
+    let bestDist = Infinity;
+
+    const raRad = raDeg * Math.PI/180;
+    const decRad = decDeg * Math.PI/180;
+
+    for (const s of stars) {
+        const sRa = s.ra * Math.PI/180;
+        const sDec = s.dec * Math.PI/180;
+
+        const cosD = Math.sin(decRad)*Math.sin(sDec) +
+                     Math.cos(decRad)*Math.cos(sDec)*Math.cos(raRad - sRa);
+
+        const angDist = Math.acos(Math.max(-1, Math.min(1, cosD)));
+
+        if (angDist < bestDist) {
+            bestDist = angDist;
+            best = s;
+        }
+    }
+
+    return best ? best.con : "Unknown";
+}
 
 async function horizonsStateVector(name, JD) {
     const jdString = JD.toFixed(6);
@@ -1868,23 +1892,27 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   const theta = 2 * Math.atan(R / D);
   const arcsec = theta * 206265;
   const elongDeg = computePlanetElongation(body.name, jd);
+  const constellation = nearestStarConstellation(body.ra, body.dec, sky3dStarBase);
 
   sky3dClearInfo();
   document.getElementById("sky3d-object-name").textContent = body.name;
   document.getElementById("sky3d-object-type").textContent = "Planet";
   document.getElementById("sky3d-object-ra-dec").textContent =
-    `RA: ${(body.ra/15).toFixed(2)}h, Dec: ${body.dec.toFixed(2)}°`;
+  `RA: ${(body.ra/15).toFixed(2)}h, Dec: ${body.dec.toFixed(2)}°`;
   document.getElementById("sky3d-object-alt-az").textContent =
-    `Alt: ${body.alt.toFixed(2)}°, Az: ${body.az.toFixed(2)}°`;
-  console.log("ElongDeg =", elongDeg, typeof elongDeg);
+  `Alt: ${body.alt.toFixed(2)}°, Az: ${body.az.toFixed(2)}°`;
   document.getElementById("sky3d-object-elongation").textContent =
   `Elongation: ${elongDeg.toFixed(1)}°`;
-  document.getElementById("sky3d-object-mag").textContent = `Mag: ${body.mag.toFixed(2)}`;
+  document.getElementById("sky3d-object-mag").textContent = 
+  `Mag: ${body.mag.toFixed(2)}`;
   document.getElementById("sky3d-object-phase").textContent =
   `Phase: ${(phase * 100).toFixed(1)}%`;
   document.getElementById("sky3d-object-size").textContent =
-    `Angular Size: ${arcsec.toFixed(2)}″`;
-  document.getElementById("sky3d-object-distance").textContent = `Dist: ${body.dist.toFixed(2)} AU`;
+  `Angular Size: ${arcsec.toFixed(2)}″`;
+  document.getElementById("sky3d-object-distance").textContent =
+  `Dist: ${body.dist.toFixed(2)} AU`;
+  document.getElementById("sky3d-object-constellation").textContent =
+  `Constellation: ${constellation}`;
 
   const lockBtn = document.getElementById("sky3d-lock");
   if (lockBtn) lockBtn.disabled = false;
