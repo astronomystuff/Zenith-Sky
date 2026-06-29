@@ -1876,6 +1876,7 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
     `RA: ${(body.ra/15).toFixed(2)}h, Dec: ${body.dec.toFixed(2)}°`;
   document.getElementById("sky3d-object-alt-az").textContent =
     `Alt: ${body.alt.toFixed(2)}°, Az: ${body.az.toFixed(2)}°`;
+  console.log("ElongDeg =", elongDeg, typeof elongDeg);
   document.getElementById("sky3d-object-elongation").textContent =
   `Elongation: ${elongDeg.toFixed(1)}°`;
   document.getElementById("sky3d-object-mag").textContent = `Mag: ${body.mag.toFixed(2)}`;
