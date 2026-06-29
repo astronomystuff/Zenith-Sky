@@ -1411,7 +1411,7 @@ function computePlanetMagnitude(name, r, delta, phaseDeg, B = null, Bp = null) {
     }
 }
 
-async function computePlanetElongation(name, JD) {
+function computePlanetElongation(name, JD) {
     const planet = VSOP87_Planet(name, JD);   // heliocentric XYZ
     const earth  = VSOP87_Earth(JD);          // heliocentric XYZ
 
