@@ -1862,7 +1862,7 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   const D = body.dist * 149597870.7;
   const theta = 2 * Math.atan(R / D);
   const arcsec = theta * 206265;
-  const elongDeg = await computePlanetElongation(body.name, JD);
+  const elongDeg = computePlanetElongation(body.name, JD);
 
   sky3dClearInfo();
   document.getElementById("sky3d-object-name").textContent = body.name;
