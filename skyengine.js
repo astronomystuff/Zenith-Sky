@@ -1905,6 +1905,7 @@ function sky3dClearInfo() {
   document.getElementById("sky3d-object-size").textContent = "";
   document.getElementById("sky3d-object-speed").textContent = "";
   document.getElementById("sky3d-object-phase").textContent = "";
+}
 
 function searchSkyPlanet(planetPoint) {
   const body = planetPoint.userData;
