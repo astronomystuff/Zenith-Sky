@@ -50,8 +50,8 @@ async function loadAllCoefficients() {
     VSOP.Saturn  = await loadVSOP87File("vsop/VSOP87A.sat.txt");
     VSOP.Uranus  = await loadVSOP87File("vsop/VSOP87A.ura.txt");
     VSOP.Neptune = await loadVSOP87File("vsop/VSOP87A.nep.txt");
-    const pastText   = await fetch("laskar/ORBELN.ASC").then(r => r.text());
-    const futureText = await fetch("laskar/ORBELP.ASC").then(r => r.text());
+    const pastText   = await fetch("laskar/ORBELN.txt").then(r => r.text());
+    const futureText = await fetch("laskar/ORBELP.txt").then(r => r.text());
     LASKAR.past   = parseLaskarFile(pastText);
     LASKAR.future = parseLaskarFile(futureText);
 }
