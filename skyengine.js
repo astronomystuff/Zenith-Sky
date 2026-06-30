@@ -1322,7 +1322,32 @@ function VSOP87_Generic(planet, JD) {
         vsopSeries(T.Z5, t) * t*t*t*t*t
     );
 
-    return { x: X, y: Y, z: Z };
+    // Velocity
+    const VX = (
+        vsopSeries(T.X1, t) +
+        2 * vsopSeries(T.X2, t) * t +
+        3 * vsopSeries(T.X3, t) * t*t +
+        4 * vsopSeries(T.X4, t) * t*t*t +
+        5 * vsopSeries(T.X5, t) * t*t*t*t
+    );
+
+    const VY = (
+        vsopSeries(T.Y1, t) +
+        2 * vsopSeries(T.Y2, t) * t +
+        3 * vsopSeries(T.Y3, t) * t*t +
+        4 * vsopSeries(T.Y4, t) * t*t*t +
+        5 * vsopSeries(T.Y5, t) * t*t*t*t
+    );
+
+    const VZ = (
+        vsopSeries(T.Z1, t) +
+        2 * vsopSeries(T.Z2, t) * t +
+        3 * vsopSeries(T.Z3, t) * t*t +
+        4 * vsopSeries(T.Z4, t) * t*t*t +
+        5 * vsopSeries(T.Z5, t) * t*t*t*t
+    );
+
+    return { x: X, y: Y, z: Z, vx: VX, vy: VY, vz: VZ };
 }
 
 function phaseAngle(sunToPlanet, earthToPlanet) {
@@ -1461,6 +1486,20 @@ function computePlanetHeliocentricDistance(name, JD) {
         planet.y * planet.y +
         planet.z * planet.z
     );
+}
+
+function computePlanetOrbitalVelocity(name, JD) {
+    const p = VSOP87_Planet(name, JD);
+    const v = Math.sqrt(
+        p.vx*p.vx +
+        p.vy*p.vy +
+        p.vz*p.vz
+    );
+
+    const AU_KM = 149597870.7;
+    const v_kms = v * AU_KM / 86400;
+
+    return v_kms;
 }
 
 // ===========================
@@ -1825,7 +1864,7 @@ function sky3dClearInfo() {
   document.getElementById("sky3d-object-constellation").textContent = "";
   document.getElementById("sky3d-object-size").textContent = "";
   document.getElementById("sky3d-object-speed").textContent = "";
-}
+  document.getElementById("sky3d-object-phase").textContent = "";
 
 function searchSkyPlanet(planetPoint) {
   const body = planetPoint.userData;
@@ -1908,6 +1947,7 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   const elongDeg = computePlanetElongation(body.name, jd);
   const constellation = nearestStarConstellation(body.ra, body.dec, sky3dStarBase);
   const helioDist = computePlanetHeliocentricDistance(body.name, jd);
+  const velocity = computePlanetOrbitalVelocity(body.name, jd);
 
   sky3dClearInfo();
   document.getElementById("sky3d-object-name").textContent = body.name;
@@ -1928,6 +1968,8 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   `Angular Size: ${arcsec.toFixed(2)}″`;
   document.getElementById("sky3d-object-distance").textContent =
   `Dist: ${body.dist.toFixed(2)} AU`;
+  document.getElementById("sky3d-object-velocity").textContent =
+  `Velocity: ${velocity.toFixed(2)} km/s`;
   document.getElementById("sky3d-object-constellation").textContent =
   `Constellation: ${constellation}`;
 
