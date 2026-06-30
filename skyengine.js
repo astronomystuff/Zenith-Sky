@@ -36,6 +36,11 @@ const VSOP = {
     Neptune: null
 };
 
+const LASKAR = {
+    past:  [null, null, null, null, null, null, null, null],
+    future:[null, null, null, null, null, null, null, null]
+};
+
 async function loadAllCoefficients() {
     VSOP.Mercury = await loadVSOP87File("vsop/VSOP87A.mer.txt");
     VSOP.Venus   = await loadVSOP87File("vsop/VSOP87A.ven.txt");
@@ -2530,6 +2535,7 @@ window.buildCelestialSphere = buildCelestialSphere;
 window.xyzToRaDec = xyzToRaDec;
 window.loadAllCoefficients = loadAllCoefficients;
 window.loadVSOP87File = loadVSOP87File;
+window.parseLaskarFile = parseLaskarFile;
 window.VSOP87_Mercury = VSOP87_Mercury;
 window.VSOP87_Venus   = VSOP87_Venus;
 window.VSOP87_Earth   = VSOP87_Earth;
@@ -2541,6 +2547,7 @@ window.VSOP87_Neptune = VSOP87_Neptune;
 window.VSOP87_Generic = VSOP87_Generic;
 window.computeBodyPosition = computeBodyPosition;
 window.VSOP = VSOP;
+window.LASKAR = LASKAR;
 window.vsopSeries = vsopSeries;
 window.raDecToXYZ= raDecToXYZ;
 window.saturnRingAngles = saturnRingAngles;
