@@ -50,10 +50,6 @@ async function loadAllCoefficients() {
     VSOP.Saturn  = await loadVSOP87File("vsop/VSOP87A.sat.txt");
     VSOP.Uranus  = await loadVSOP87File("vsop/VSOP87A.ura.txt");
     VSOP.Neptune = await loadVSOP87File("vsop/VSOP87A.nep.txt");
-    const pastText   = await fetch("vsop/ORBELN.txt").then(r => r.text());
-    const futureText = await fetch("vsop/ORBELP.txt").then(r => r.text());
-    LASKAR.past   = parseLaskarFile(pastText);
-    LASKAR.future = parseLaskarFile(futureText);
 }
 
 async function loadVSOP87File(url) {
@@ -105,37 +101,6 @@ async function loadVSOP87File(url) {
     }
 
     return data;
-}
-
-function parseLaskarFile(text) {
-    const lines = text.split(/\r?\n/);
-
-    const planets = [[], [], [], [], [], [], [], []]; // 8 planets
-    let currentPlanet = 0;
-
-    for (const line of lines) {
-        const t = line.trim();
-        if (!t) continue;
-
-        const parts = t.split(/\s+/);
-        if (parts.length !== 5) continue;
-
-        // Convert Fortran D → JS E
-        const step = parseFloat(parts[0]);
-        const h = parseFloat(parts[1].replace('D', 'E'));
-        const k = parseFloat(parts[2].replace('D', 'E'));
-        const p = parseFloat(parts[3].replace('D', 'E'));
-        const q = parseFloat(parts[4].replace('D', 'E'));
-
-        // Detect block boundary
-        if (step === 0 && planets[currentPlanet].length > 0) {
-            currentPlanet++;
-        }
-
-        planets[currentPlanet].push({ step, h, k, p, q });
-    }
-
-    return planets;
 }
 
 /* ============================================================
