@@ -2266,6 +2266,7 @@ async function rebuildCelestialSphere() {
 
   sky3dCelestialSphere = await buildCelestialSphere(dateCivil, latDeg, lonDeg);
   sky3dRootGroup.add(sky3dCelestialSphere);
+  drawConstellationLines(linesJson, sky3dStarBase, sky3dRootGroup);
 }
 
 /* ============================================================
