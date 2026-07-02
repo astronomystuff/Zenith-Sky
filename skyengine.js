@@ -1913,7 +1913,7 @@ function sky3dClearInfo() {
   document.getElementById("sky3d-object-elongation").textContent = "";
   document.getElementById("sky3d-object-constellation").textContent = "";
   document.getElementById("sky3d-object-size").textContent = "";
-  document.getElementById("sky3d-object-speed").textContent = "";
+  document.getElementById("sky3d-object-velocity").textContent = "";
   document.getElementById("sky3d-object-phase").textContent = "";
 }
 
