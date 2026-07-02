@@ -1768,6 +1768,50 @@ group.add(planetPoint);
 }
 
 
+// ============================
+// drawConstellationLines
+// ============================
+export function drawConstellationLines(linesJson, sky3dStarBase, sky3dRootGroup) {
+  const material = new THREE.LineBasicMaterial({
+    color: 0xffffff,
+    opacity: 0.85,
+    transparent: true
+  });
+
+  const group = new THREE.Group();
+  group.name = "sky3dConstellationLines";
+
+  for (const [constName, segments] of Object.entries(linesJson)) {
+    const positions = [];
+
+    for (const [idA, idB] of segments) {
+      const A = sky3dStarBase[idA];
+      const B = sky3dStarBase[idB];
+      if (!A || !B) continue;
+
+      // RA/Dec already PM+precessed by buildCelestialSphere()
+      const pA = raDecToXYZ(A.raDeg, A.decDeg);
+      const pB = raDecToXYZ(B.raDeg, B.decDeg);
+
+      positions.push(pA.x, pA.y, pA.z);
+      positions.push(pB.x, pB.y, pB.z);
+    }
+
+    if (positions.length === 0) continue;
+
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+
+    const lineSeg = new THREE.LineSegments(geom, material);
+    lineSeg.name = `constellation-${constName}`;
+
+    group.add(lineSeg);
+  }
+
+  sky3dRootGroup.add(group);
+  return group;
+}
+
 /* ============================================================
    onSky3DClick
    ============================================================ */
@@ -2236,6 +2280,7 @@ async function startSky3D() {
   const canvas = document.getElementById("sky3d-canvas");
   sky3dUpdateLoading("Loading Planetary Data…");
   await loadAllCoefficients();
+  const linesJson = await fetch("lines.json").then(r => r.json());
   
   sky3dRenderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   sky3dRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
