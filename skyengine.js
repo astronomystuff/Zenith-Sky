@@ -2311,7 +2311,7 @@ async function startSky3D() {
   
   sky3dUpdateLoading("Loading Stars…");
   sky3dStarBase = await loadStarCSV(
-    "https://astro-proxy.niamnbhakta.workers.dev/?url=" +F
+    "https://astro-proxy.niamnbhakta.workers.dev/?url="
     encodeURIComponent("https://github.com/astronomystuff/Zenith-Sky/releases/download/At-HYG/stars.csv")
   );
   
