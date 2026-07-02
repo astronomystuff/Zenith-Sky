@@ -276,8 +276,6 @@ function colorForSpectralType(raw) {
   return 0xffffff;
 }
 
-
-
 function makeStarTexture() {
   const size = 64;
   const canvas = document.createElement("canvas");
@@ -456,12 +454,20 @@ class minimalCameraControls {
     const now = performance.now();
     if (now - this.lastRebuild > 50) {
       this.lastRebuild = now;
-      rebuildCelestialSphere();
+      rebuildCelestialSphere(
+        window.linesJson,
+        window.sky3dStarBase,
+        window.sky3dRootGroup
+      );
     }
 
     clearTimeout(this.finalRebuildTimer);
     this.finalRebuildTimer = setTimeout(() => {
-      rebuildCelestialSphere();
+      rebuildCelestialSphere(
+        window.linesJson,
+        window.sky3dStarBase,
+        window.sky3dRootGroup
+      );
     }, 120);
   }
 }
@@ -2247,7 +2253,7 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
 /* ============================================================
    Rebuild Sphere
    ============================================================ */
-async function rebuildCelestialSphere() {
+async function rebuildCelestialSphere(linesJson, sky3dStarBase, sky3dRootGroup) {
   if (!sky3dScene || sky3dStarBase.length === 0) return;
 
   if (sky3dCelestialSphere) {
@@ -2305,12 +2311,12 @@ async function startSky3D() {
   
   sky3dUpdateLoading("Loading Stars…");
   sky3dStarBase = await loadStarCSV(
-    "https://astro-proxy.niamnbhakta.workers.dev/?url=" +
+    "https://astro-proxy.niamnbhakta.workers.dev/?url=" +F
     encodeURIComponent("https://github.com/astronomystuff/Zenith-Sky/releases/download/At-HYG/stars.csv")
   );
   
   sky3dUpdateLoading("Building Sky…");
-  await rebuildCelestialSphere();
+  await rebuildCelestialSphere(linesJson, sky3dStarBase, sky3dRootGroup);
   animateSky3D();
   sky3dHideLoading();
 }
@@ -2413,7 +2419,11 @@ openBtn.onclick = () => {
       startSky3D();
     } else {
       sky3dUpdateLoading("Updating sky…");
-      rebuildCelestialSphere();
+      rebuildCelestialSphere(
+        window.linesJson,
+        window.sky3dStarBase,
+        window.sky3dRootGroup
+      );
       animateSky3D();
       sky3dHideLoading();
     }
@@ -2437,8 +2447,12 @@ if (applyDT) {
       alert("Please input a real value:\n\n" + errors.join("\n"));
       return;
     }
-
-    rebuildCelestialSphere();
+    
+      rebuildCelestialSphere(
+        window.linesJson,
+        window.sky3dStarBase,
+        window.sky3dRootGroup
+      );
   };
 }
 
@@ -2455,7 +2469,11 @@ if (applyLoc) {
       return;
     }
 
-    rebuildCelestialSphere();
+      rebuildCelestialSphere(
+        window.linesJson,
+        window.sky3dStarBase,
+        window.sky3dRootGroup
+      );
   };
 }
 
@@ -2559,4 +2577,7 @@ window.saturnRingAngles = saturnRingAngles;
 window.computePlanetMagnitude = computePlanetMagnitude;
 window.computeBodyMagnitude = computeBodyMagnitude;
 window.computeBody = computeBody;
+window.linesJson = linesJson;
+window.drawConstellationLines = drawConstellationLines;
+
 window.estimateStarAgeAndLifetime = estimateStarAgeAndLifetime;
