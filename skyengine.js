@@ -2283,6 +2283,7 @@ async function startSky3D() {
   sky3dUpdateLoading("Loading Planetary Data…");
   await loadAllCoefficients();
   const linesJson = await fetch("lines.json").then(r => r.json());
+  window.linesJson = linesJson;
   
   sky3dRenderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   sky3dRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
@@ -2577,7 +2578,6 @@ window.saturnRingAngles = saturnRingAngles;
 window.computePlanetMagnitude = computePlanetMagnitude;
 window.computeBodyMagnitude = computeBodyMagnitude;
 window.computeBody = computeBody;
-window.linesJson = linesJson;
 window.drawConstellationLines = drawConstellationLines;
 
 window.estimateStarAgeAndLifetime = estimateStarAgeAndLifetime;
