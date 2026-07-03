@@ -1786,8 +1786,11 @@ export function drawConstellationLines(linesJson, sky3dStarBase, sky3dRootGroup)
     const positions = [];
 
     for (const [idA, idB] of segments) {
-      const A = sky3dStarBase[idA];
-      const B = sky3dStarBase[idB];
+      const idxA = sky3dStarIndexMap[idA];
+      const idxB = sky3dStarIndexMap[idB];
+      const A = sky3dStarBase[idxA];
+      const B = sky3dStarBase[idxB];
+
       if (!A || !B) continue;
 
       // RA/Dec already PM+precessed by buildCelestialSphere()
@@ -2315,7 +2318,13 @@ async function startSky3D() {
     "https://astro-proxy.niamnbhakta.workers.dev/?url=" +
     encodeURIComponent("https://github.com/astronomystuff/Zenith-Sky/releases/download/At-HYG/stars.csv")
   );
-  
+
+  window.sky3dStarIndexMap = {};
+  for (let i = 0; i < sky3dStarBase.length; i++) {
+    const id = sky3dStarBase[i].id;
+    if (id) window.sky3dStarIndexMap[id] = i;
+  }
+
   sky3dUpdateLoading("Building Sky…");
   await rebuildCelestialSphere(linesJson, sky3dStarBase, sky3dRootGroup);
   animateSky3D();
