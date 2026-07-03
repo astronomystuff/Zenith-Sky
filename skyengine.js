@@ -1782,6 +1782,12 @@ export function drawConstellationLines(linesJson, sky3dStarBase, sky3dRootGroup)
   const group = new THREE.Group();
   group.name = "sky3dConstellationLines";
 
+  const civil = getCivilFieldsFromUI();
+  const { latDeg, lonDeg } = getLocationFromUI();
+  const latRad = latDeg * Math.PI/180;
+  const lstRad = getLSTRadians(civil, lonDeg);
+
+
   for (const [constName, segments] of Object.entries(linesJson)) {
     const positions = [];
 
@@ -1792,10 +1798,40 @@ export function drawConstellationLines(linesJson, sky3dStarBase, sky3dRootGroup)
       const B = sky3dStarBase[idxB];
 
       if (!A || !B) continue;
+      
+      // --- A ---
+      const raA  = A.raDeg  * Math.PI/180;
+      const decA = A.decDeg * Math.PI/180;
+      const haA = lstRad - raA;
+      const sinAltA = Math.sin(decA)*Math.sin(latRad) +
+                Math.cos(decA)*Math.cos(latRad)*Math.cos(haA);
+      const altA = Math.asin(sinAltA);
+      const cosAzA = (Math.sin(decA) - Math.sin(altA)*Math.sin(latRad)) /
+               (Math.cos(altA)*Math.cos(latRad));
+      let azA = azA + Math.PI;
+      if (azA > 2*Math.PI) azA -= 2*Math.PI;
+      const pA = {
+        x: -Math.cos(altA) * Math.sin(azA),
+        y:  Math.sin(altA),
+        z:  Math.cos(altA) * Math.cos(azA)
+      };
 
-      // RA/Dec already PM+precessed by buildCelestialSphere()
-      const pA = raDecToXYZ(A.raDeg, A.decDeg);
-      const pB = raDecToXYZ(B.raDeg, B.decDeg);
+      // --- B ---
+      const raB  = B.raDeg  * Math.PI/180;
+      const decB = B.decDeg * Math.PI/180;
+      const haB = lstRad - raB;
+      const sinAltB = Math.sin(decB)*Math.sin(latRad) +
+                Math.cos(decB)*Math.cos(latRad)*Math.cos(haB);
+      const altB = Math.asin(sinAltB);
+      const cosAzB = (Math.sin(decB) - Math.sin(altB)*Math.sin(latRad)) /
+               (Math.cos(altB)*Math.cos(latRad));
+      let azB = azB + Math.PI;
+      if (azB > 2*Math.PI) azB -= 2*Math.PI;
+      const pB = {
+        x: -Math.cos(altB) * Math.sin(azB),
+        y:  Math.sin(altB),
+        z:  Math.cos(altB) * Math.cos(azB)
+      };
 
       positions.push(pA.x, pA.y, pA.z);
       positions.push(pB.x, pB.y, pB.z);
