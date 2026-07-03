@@ -1,2 +1,4 @@
 Hello!
 This is the placeholder for the vsop folder.
+
+I edit this file when the "pages build and deployment" fails, to force a new deployement.
