@@ -2579,5 +2579,4 @@ window.computePlanetMagnitude = computePlanetMagnitude;
 window.computeBodyMagnitude = computeBodyMagnitude;
 window.computeBody = computeBody;
 window.drawConstellationLines = drawConstellationLines;
-
 window.estimateStarAgeAndLifetime = estimateStarAgeAndLifetime;
