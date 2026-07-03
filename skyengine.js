@@ -545,7 +545,7 @@ async function loadStarCSV(url) {
       await new Promise(requestAnimationFrame);  // <-- THIS is the magic
     }
 
-    const id   = parseFloat(cols[idx.id]);
+    const id   = parseInt(cols[idx.id], 10);
     const x0   = parseFloat(cols[idx.x]);
     const y0   = parseFloat(cols[idx.y]);
     const z0   = parseFloat(cols[idx.z]);
