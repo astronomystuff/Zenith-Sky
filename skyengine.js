@@ -545,6 +545,7 @@ async function loadStarCSV(url) {
       await new Promise(requestAnimationFrame);  // <-- THIS is the magic
     }
 
+    const id   = parseFloat(cols[idx.id]);
     const x0   = parseFloat(cols[idx.x]);
     const y0   = parseFloat(cols[idx.y]);
     const z0   = parseFloat(cols[idx.z]);
@@ -564,7 +565,6 @@ async function loadStarCSV(url) {
     ) continue;
 
     stars.push({
-      id:     cols[idx.id],
       tyc:    cols[idx.tyc],
       gaia:   cols[idx.gaia],
       hyg:    cols[idx.hyg],
@@ -576,7 +576,7 @@ async function loadStarCSV(url) {
       flam:   cols[idx.flam],
       con:    cols[idx.con],
       proper: cols[idx.proper],
-      x0, y0, z0,
+      id, x0, y0, z0,
       dist,
       raDeg0: raDeg,
       decDeg0:  decDeg,
