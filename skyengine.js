@@ -1788,54 +1788,85 @@ export function drawConstellationLines(linesJson, sky3dStarBase, sky3dRootGroup)
   const lstRad = getLSTRadians(civil, lonDeg);
 
 
-  for (const [constName, segments] of Object.entries(linesJson)) {
-    const positions = [];
+for (const [idA, idB] of segments) {
+  const idxA = sky3dStarIndexMap[idA];
+  const idxB = sky3dStarIndexMap[idB];
+  const A = sky3dStarBase[idxA];
+  const B = sky3dStarBase[idxB];
 
-    for (const [idA, idB] of segments) {
-      const idxA = sky3dStarIndexMap[idA];
-      const idxB = sky3dStarIndexMap[idB];
-      const A = sky3dStarBase[idxA];
-      const B = sky3dStarBase[idxB];
+  if (!A || !B) continue;
 
-      if (!A || !B) continue;
-      
-      // --- A ---
-      const raA  = A.raDeg  * Math.PI/180;
-      const decA = A.decDeg * Math.PI/180;
-      const haA = lstRad - raA;
-      const sinAltA = Math.sin(decA)*Math.sin(latRad) +
-                Math.cos(decA)*Math.cos(latRad)*Math.cos(haA);
-      const altA = Math.asin(sinAltA);
-      const sinAzA = -Math.cos(decA) * Math.sin(haA) / Math.cos(altA);
-      const cosAzA = (Math.sin(decA) - Math.sin(altA)*Math.sin(latRad)) /
-               (Math.cos(altA)*Math.cos(latRad));
-      const azA = Math.atan2(sinAzA, cosAzA);
-      const pA = {
-        x: -Math.cos(altA) * Math.sin(azA),
-        y:  Math.sin(altA),
-        z:  Math.cos(altA) * Math.cos(azA)
-      };
+  // --- A ---
+  const raA  = A.raDeg  * Math.PI/180;
+  const decA = A.decDeg * Math.PI/180;
+  const haA = lstRad - raA;
 
-      // --- B ---
-      const raB  = B.raDeg  * Math.PI/180;
-      const decB = B.decDeg * Math.PI/180;
-      const haB = lstRad - raB;
-      const sinAltB = Math.sin(decB)*Math.sin(latRad) +
-                Math.cos(decB)*Math.cos(latRad)*Math.cos(haB);
-      const altB = Math.asin(sinAltB);
-      const sinAzB = -Math.cos(decB) * Math.sin(haB) / Math.cos(altB);
-      const cosAzB = (Math.sin(decB) - Math.sin(altB)*Math.sin(latRad)) /
-               (Math.cos(altB)*Math.cos(latRad));
-      const azB = Math.atan2(sinAzB, cosAzB);
-      const pB = {
-        x: -Math.cos(altB) * Math.sin(azB),
-        y:  Math.sin(altB),
-        z:  Math.cos(altB) * Math.cos(azB)
-      };
+  const sinAltA = Math.sin(decA)*Math.sin(latRad) +
+                  Math.cos(decA)*Math.cos(latRad)*Math.cos(haA);
+  const altA = Math.asin(sinAltA);
 
-      positions.push(pA.x, pA.y, pA.z);
-      positions.push(pB.x, pB.y, pB.z);
-    }
+  const sinAzA = -Math.cos(decA) * Math.sin(haA) / Math.cos(altA);
+  const cosAzA = (Math.sin(decA) - Math.sin(altA)*Math.sin(latRad)) /
+                 (Math.cos(altA)*Math.cos(latRad));
+  const azA = Math.atan2(sinAzA, cosAzA);
+
+  const pA = {
+    x: -Math.cos(altA) * Math.sin(azA),
+    y:  Math.sin(altA),
+    z:  Math.cos(altA) * Math.cos(azA)
+  };
+
+  // --- B ---
+  const raB  = B.raDeg  * Math.PI/180;
+  const decB = B.decDeg * Math.PI/180;
+  const haB = lstRad - raB;
+
+  const sinAltB = Math.sin(decB)*Math.sin(latRad) +
+                  Math.cos(decB)*Math.cos(latRad)*Math.cos(haB);
+  const altB = Math.asin(sinAltB);
+
+  const sinAzB = -Math.cos(decB) * Math.sin(haB) / Math.cos(altB);
+  const cosAzB = (Math.sin(decB) - Math.sin(altB)*Math.sin(latRad)) /
+                 (Math.cos(altB)*Math.cos(latRad));
+  const azB = Math.atan2(sinAzB, cosAzB);
+
+  const pB = {
+    x: -Math.cos(altB) * Math.sin(azB),
+    y:  Math.sin(altB),
+    z:  Math.cos(altB) * Math.cos(azB)
+  };
+
+  const yA = pA.y;
+  const yB = pB.y;
+
+  // Case 1: both above horizon
+  if (yA > 0 && yB > 0) {
+    positions.push(pA.x, pA.y, pA.z);
+    positions.push(pB.x, pB.y, pB.z);
+    continue;
+  }
+
+  // Case 2: both below horizon
+  if (yA <= 0 && yB <= 0) {
+    continue;
+  }
+
+  // Case 3: one above, one below
+  const t = -yA / (yB - yA);
+
+  const xI = pA.x + t * (pB.x - pA.x);
+  const zI = pA.z + t * (pB.z - pA.z);
+
+  if (yA > 0) {
+    // A above, B below
+    positions.push(pA.x, pA.y, pA.z);
+    positions.push(xI, 0, zI);
+  } else {
+    // B above, A below
+    positions.push(xI, 0, zI);
+    positions.push(pB.x, pB.y, pB.z);
+  }
+}
 
     if (positions.length === 0) continue;
 
