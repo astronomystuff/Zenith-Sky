@@ -86,7 +86,8 @@ This License does not grant permission to use the ‘Zenith Sky’ name, logo, o
 # Asset License — CC BY‑NC 4.0<br>
 <br>
 All non‑code materials in this directory are licensed under the<br>
-Creative Commons Attribution–NonCommercial 4.0 International License.<br>
+Creative Commons Attribution–NonCommercial 4.0 International License unless <br>
+if the material is in the public domain.<br>
 <br>
 Commercial use is prohibited without given consent by the project maintainers.<br>
 <br>
