@@ -1824,7 +1824,7 @@ export function drawConstellationLines(linesJson, sky3dStarBase, sky3dRootGroup)
                 Math.cos(decB)*Math.cos(latRad)*Math.cos(haB);
       const altB = Math.asin(sinAltB);
       const sinAzB = -Math.cos(decB) * Math.sin(haB) / Math.cos(altB);
-      const cosAzA = (Math.sin(decB) - Math.sin(altB)*Math.sin(latRad)) /
+      const cosAzB = (Math.sin(decB) - Math.sin(altB)*Math.sin(latRad)) /
                (Math.cos(altB)*Math.cos(latRad));
       const azB = Math.atan2(sinAzB, cosAzB);
       const pB = {
