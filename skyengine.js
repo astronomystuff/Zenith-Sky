@@ -2342,6 +2342,16 @@ async function rebuildCelestialSphere(linesJson, sky3dStarBase, sky3dRootGroup) 
 
   sky3dCelestialSphere = await buildCelestialSphere(dateCivil, latDeg, lonDeg);
   sky3dRootGroup.add(sky3dCelestialSphere);
+
+  const oldLines = sky3dRootGroup.getObjectByName("sky3dConstellationLines");
+  if (oldLines) {
+    oldLines.traverse(obj => {
+      if (obj.geometry) obj.geometry.dispose();
+      if (obj.material) obj.material.dispose();
+    });
+    sky3dRootGroup.remove(oldLines);
+  }
+
   drawConstellationLines(linesJson, sky3dStarBase, sky3dRootGroup);
 }
 
