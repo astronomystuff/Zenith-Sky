@@ -1800,8 +1800,9 @@ export function drawConstellationLines(linesJson, sky3dStarBase, sky3dRootGroup)
     const x = segments.length;
     let frac = Math.pow(Math.log(x) / Math.log(25), 1.01) / 2;
     if (frac > 0.35) frac = 0.35;
-    const maxLineStars = Math.floor(visibleStars.length * frac);
-    if (maxLineStars < 2) continue;
+    const allowedSegments = Math.floor(segments.length * frac);
+    if (visibleStars.length < 2) continue;
+    if (allowedSegments < 1) continue;
 
     for (const [idA, idB] of segments) {
       const idxA = sky3dStarIndexMap[idA];
