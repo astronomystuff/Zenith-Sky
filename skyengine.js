@@ -1592,7 +1592,7 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
 
   const chosen = [];
 
-for (let i = 0; i < sky3dStarBase.length; i++) {
+  for (let i = 0; i < sky3dStarBase.length; i++) {
     const s = sky3dStarBase[i];
     const pm = applyProperMotionFromXYZ(s, years);
     const prec = applyPrecession(pm.raDeg, pm.decDeg, jd);
@@ -1734,7 +1734,6 @@ for (let i = 0; i < sky3dStarBase.length; i++) {
     }[name];
 
 const geo = new THREE.BufferGeometry();
-
 geo.setAttribute("position", new THREE.Float32BufferAttribute([0, 0, 0], 3));
 geo.setAttribute("sizeAttr", new THREE.Float32BufferAttribute([size], 1));
 geo.setAttribute("color", new THREE.Float32BufferAttribute([
@@ -1786,14 +1785,17 @@ export function drawConstellationLines(linesJson, sky3dStarBase, sky3dRootGroup)
   const { latDeg, lonDeg } = getLocationFromUI();
   const latRad = latDeg * Math.PI/180;
   const lstRad = getLSTRadians(civil, lonDeg);
-
+  let fov = sky3dCamera ? sky3dCamera.fov : 60;
+  let dynamicMagLimit = 6 + 1.8 * Math.log2(60 / fov);
+  dynamicMagLimit = Math.max(2, Math.min(15, dynamicMagLimit));
+  
   for (const [constName, segments] of Object.entries(linesJson)) {
     const positions = [];
 
     const visibleStars = segments
       .flatMap(([idA, idB]) => [idA, idB])
       .map(id => sky3dStarBase[sky3dStarIndexMap[id]])
-      .filter(star => star && star.mag <= magCutoff);
+      .filter(star => star && star.mag <= dynamicMagLimit);
     if (visibleStars.length < 2) continue;
     const x = segments.length;
     let frac = Math.pow(Math.log(x) / Math.log(25), 1.01) / 2;
