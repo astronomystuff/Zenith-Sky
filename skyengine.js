@@ -652,7 +652,11 @@ function applyProperMotionFromXYZ(star, years) {
     Number.isFinite(star.z0);
 
   if (!hasPosition) {
-    return { raDeg: 0, decDeg: 0, distance: 1 };
+    return {
+        raDeg: star.raDeg0,
+        decDeg: star.decDeg0,
+        distance: star.dist
+    };
   }
 
   // Base position (parsecs)
