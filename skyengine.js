@@ -2367,8 +2367,12 @@ async function rebuildCelestialSphere(linesJson, sky3dStarBase, sky3dRootGroup) 
     });
     sky3dRootGroup.remove(oldLines);
   }
-
-  drawConstellationLines(linesJson, sky3dStarBase, sky3dRootGroup);
+  
+  const showConstellations =
+    document.getElementById("sky3d-constellations").checked;
+  if (showConstellations) {
+      drawConstellationLines(linesJson, sky3dStarBase, sky3dRootGroup);
+  }
 }
 
 /* ============================================================
