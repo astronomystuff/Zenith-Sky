@@ -558,11 +558,32 @@ async function loadStarCSV(url) {
     const raDeg  = parseFloat(cols[idx.ra]);
     const decDeg = parseFloat(cols[idx.dec]);
 
-    if (
-      isNaN(x0) || isNaN(y0) || isNaN(z0) ||
-      isNaN(dist) || isNaN(mag) ||
-      isNaN(raDeg) || isNaN(decDeg)
-    ) continue;
+if ((isNaN(x0) || isNaN(y0) || isNaN(z0)) && !isNaN(raDeg) && !isNaN(decDeg) && !isNaN(dist)) {
+    const raRad  = raDeg  * Math.PI / 180;
+    const decRad = decDeg * Math.PI / 180;
+
+    x0 = dist * Math.cos(decRad) * Math.cos(raRad);
+    y0 = dist * Math.cos(decRad) * Math.sin(raRad);
+    z0 = dist * Math.sin(decRad);
+}
+
+if (isNaN(dist) && !isNaN(x0) && !isNaN(y0) && !isNaN(z0)) {
+    dist = Math.sqrt(x0*x0 + y0*y0 + z0*z0);
+}
+    
+if ((isNaN(raDeg) || isNaN(decDeg)) && !isNaN(x0) && !isNaN(y0) && !isNaN(z0)) {
+    const r = Math.sqrt(x0*x0 + y0*y0 + z0*z0);
+    const raRad  = Math.atan2(y0, x0);
+    const decRad = Math.asin(z0 / r);
+
+    raDeg  = raRad  * 180 / Math.PI;
+    decDeg = decRad * 180 / Math.PI;
+
+    if (raDeg < 0) raDeg += 360;
+}
+if (isNaN(mag) && !isNaN(absmag) && !isNaN(dist) && dist > 0) {
+    mag = absmag + 5 * Math.log10(dist) - 5;
+}
 
     stars.push({
       tyc:    cols[idx.tyc],
