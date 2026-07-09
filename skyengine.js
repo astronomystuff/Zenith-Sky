@@ -643,9 +643,15 @@ function rvToParsecPerYear(rvKmPerSec) {
 
 const KM_S_TO_PC_YR = 1 / 977792.221;
 
-function applyProperMotionFromXYZ(star, years) {
-  
-  // Require valid base position
+const KM_S_TO_PC_YR = 1 / 977792.221;
+
+/* ============================================================
+   Proper Motion in 3D + heliocentric → geocentric
+   (Earth XYZ is fetched INSIDE this function)
+   ============================================================ */
+async function applyProperMotionFromXYZ(star, years, jd) {
+
+  // 1) Require valid heliocentric star position
   const hasPosition =
     Number.isFinite(star.x0) &&
     Number.isFinite(star.y0) &&
@@ -653,31 +659,45 @@ function applyProperMotionFromXYZ(star, years) {
 
   if (!hasPosition) {
     return {
-        raDeg: star.raDeg0,
-        decDeg: star.decDeg0,
-        distance: star.dist
+      raDeg: star.raDeg0,
+      decDeg: star.decDeg0,
+      distance: star.dist
     };
   }
 
-  // Base position (parsecs)
-  let x = star.x0;
-  let y = star.y0;
-  let z = star.z0;
+  // 2) Propagate star in heliocentric 3D
+  let xs = star.x0;
+  let ys = star.y0;
+  let zs = star.z0;
 
-  // Propagate using Cartesian velocity
   if (
     Number.isFinite(star.vx) &&
     Number.isFinite(star.vy) &&
     Number.isFinite(star.vz)
   ) {
-
-    x += star.vx * KM_S_TO_PC_YR * years;
-    y += star.vy * KM_S_TO_PC_YR * years;
-    z += star.vz * KM_S_TO_PC_YR * years;
+    xs += star.vx * KM_S_TO_PC_YR * years;
+    ys += star.vy * KM_S_TO_PC_YR * years;
+    zs += star.vz * KM_S_TO_PC_YR * years;
   }
 
-  return xyzToRaDec(x, y, z);
+  // 3) Fetch Earth heliocentric XYZ
+  const earthHelio = await computeEarthHeliocentricXYZ(jd);
+
+  const xe = earthHelio.x;
+  const ye = earthHelio.y;
+  const ze = earthHelio.z;
+
+  // 4) Convert heliocentric → geocentric
+  const xg = xs - xe;
+  const yg = ys - ye;
+  const zg = zs - ze;
+
+  // 5) Convert geocentric XYZ → RA/Dec
+  const { raDeg, decDeg, distance } = xyzToRaDec(xg, yg, zg);
+
+  return { raDeg, decDeg, distance };
 }
+
 
 
 function applyPrecession(raDeg, decDeg, jd) {
@@ -1562,6 +1582,16 @@ async function computeBodyPosition(name, JD, latDeg, lonDeg) {
     return toObserverRADEC(x, y, z, JD, latDeg, lonDeg);
 }
 
+async function computeEarthHeliocentricXYZ(JD) {
+  const earth = VSOP87_Earth(JD);  
+  const AU_TO_PC = 1 / 206265;
+  return {
+    x: earth.x * AU_TO_PC,
+    y: earth.y * AU_TO_PC,
+    z: earth.z * AU_TO_PC
+  };
+}
+
 // ===========================
 // computeBodyMagnitude 
 // ===========================
@@ -1791,7 +1821,6 @@ group.add(planetPoint);
   
   return group;
 }
-
 
 // ============================
 // drawConstellationLines
