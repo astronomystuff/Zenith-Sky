@@ -2641,10 +2641,12 @@ document.addEventListener("click", e => {
 });
 
 document.getElementById("sky3d-constellations").addEventListener("change", (e) => {
-    if (window.sky3dConstellationLinesGroup) {
-        window.sky3dConstellationLinesGroup.visible = e.target.checked;
-    }
+    if (!window.sky3dRootGroup) return;
+
+    const group = window.sky3dRootGroup.getObjectByName("sky3dConstellationLines");
+    if (group) group.visible = e.target.checked;
 });
+
 
 /* ============================================================
    Ensure modal wiring runs
