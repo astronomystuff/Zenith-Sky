@@ -643,12 +643,6 @@ function rvToParsecPerYear(rvKmPerSec) {
 
 const KM_S_TO_PC_YR = 1 / 977792.221;
 
-const KM_S_TO_PC_YR = 1 / 977792.221;
-
-/* ============================================================
-   Proper Motion in 3D + heliocentric → geocentric
-   (Earth XYZ is fetched INSIDE this function)
-   ============================================================ */
 async function applyProperMotionFromXYZ(star, years, jd) {
 
   // 1) Require valid heliocentric star position
@@ -697,8 +691,6 @@ async function applyProperMotionFromXYZ(star, years, jd) {
 
   return { raDeg, decDeg, distance };
 }
-
-
 
 function applyPrecession(raDeg, decDeg, jd) {
   const PI = Math.PI;
