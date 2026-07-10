@@ -546,20 +546,20 @@ async function loadStarCSV(url) {
     }
 
     const id   = parseInt(cols[idx.id], 10);
-    const x0   = parseFloat(cols[idx.x]);
-    const y0   = parseFloat(cols[idx.y]);
-    const z0   = parseFloat(cols[idx.z]);
-    const dist = parseFloat(cols[idx.dist]);
-    const pmRa = parseFloat(cols[idx.pmRa]);
-    const pmDec= parseFloat(cols[idx.pmDec]);
-    const rv   = parseFloat(cols[idx.rv]);
-    const mag  = parseFloat(cols[idx.mag]);
-    const absmag = parseFloat(cols[idx.absmag]);
-    const raDeg  = parseFloat(cols[idx.ra]);
-    const decDeg = parseFloat(cols[idx.dec]);
-    const vx = parseFloat(cols[idx.vx]);
-    const vy = parseFloat(cols[idx.vy]);
-    const vz = parseFloat(cols[idx.vz]);
+    let x0   = parseFloat(cols[idx.x]);
+    let y0   = parseFloat(cols[idx.y]);
+    let z0   = parseFloat(cols[idx.z]);
+    let dist = parseFloat(cols[idx.dist]);
+    let pmRa = parseFloat(cols[idx.pmRa]);
+    let pmDec= parseFloat(cols[idx.pmDec]);
+    let rv   = parseFloat(cols[idx.rv]);
+    let mag  = parseFloat(cols[idx.mag]);
+    let absmag = parseFloat(cols[idx.absmag]);
+    let raDeg  = parseFloat(cols[idx.ra]);
+    let decDeg = parseFloat(cols[idx.dec]);
+    let vx = parseFloat(cols[idx.vx]);
+    let vy = parseFloat(cols[idx.vy]);
+    let vz = parseFloat(cols[idx.vz]);
 
 const finite = Number.isFinite;
 
