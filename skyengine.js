@@ -558,82 +558,153 @@ async function loadStarCSV(url) {
     const raDeg  = parseFloat(cols[idx.ra]);
     const decDeg = parseFloat(cols[idx.dec]);
 
-// ============================================================
-// SANITIZER: Fix dist, XYZ, RA/Dec, mag, PM, velocities
-// ============================================================
+const finite = Number.isFinite;
 
 // ---------- 1. Distance ----------
-if (!Number.isFinite(dist) || dist <= 0) {
+if (!finite(dist) || dist <= 0) {
+
     // If XYZ exists, compute distance
-    if (Number.isFinite(x0) && Number.isFinite(y0) && Number.isFinite(z0)) {
+    if (finite(x0) && finite(y0) && finite(z0)) {
         dist = Math.sqrt(x0*x0 + y0*y0 + z0*z0);
-    } else {
-        // If magnitude exists, estimate distance
-        if (Number.isFinite(mag)) {
-            const M = 5; // typical absolute magnitude
-            dist = Math.pow(10, (mag - M + 5) / 5);
-        } else {
-            dist = 1000; // fallback 1 kpc
-        }
+    }
+
+    // If absolute magnitude exists, compute distance from absmag + mag
+    else if (finite(absmag) && finite(mag)) {
+        // m - M = 5 log10(d) - 5
+        dist = Math.pow(10, ((mag - absmag + 5) / 5));
+    }
+
+    // If only apparent magnitude exists, estimate distance
+    else if (finite(mag)) {
+        const M = 5;
+        dist = Math.pow(10, (mag - M + 5) / 5);
+    }
+
+    else {
+        dist = 1000;
     }
 }
 
 // ---------- 2. XYZ ----------
-if (!Number.isFinite(x0) || !Number.isFinite(y0) || !Number.isFinite(z0)) {
-    if (Number.isFinite(raDeg) && Number.isFinite(decDeg)) {
-        const raRad  = raDeg  * Math.PI / 180;
-        const decRad = decDeg * Math.PI / 180;
+if (!finite(x0) || !finite(y0) || !finite(z0)) {
 
-        x0 = dist * Math.cos(decRad) * Math.cos(raRad);
-        y0 = dist * Math.cos(decRad) * Math.sin(raRad);
-        z0 = dist * Math.sin(decRad);
-    } else {
-        // fallback: put star at origin
-        x0 = 0;
-        y0 = 0;
-        z0 = 0;
-    }
+    // Always reconstruct XYZ from RA/Dec + sanitized dist
+    const raRad  = raDeg  * Math.PI / 180;
+    const decRad = decDeg * Math.PI / 180;
+
+    x0 = dist * Math.cos(decRad) * Math.cos(raRad);
+    y0 = dist * Math.cos(decRad) * Math.sin(raRad);
+    z0 = dist * Math.sin(decRad);
 }
 
-// ---------- 3. RA/Dec ----------
-if (!Number.isFinite(raDeg) || !Number.isFinite(decDeg)) {
-    const r = Math.sqrt(x0*x0 + y0*y0 + z0*z0);
-    if (r > 0) {
-        const raRad  = Math.atan2(y0, x0);
-        const decRad = Math.asin(z0 / r);
+// ---------- 3. Magnitude ----------
+if (!finite(mag)) {
 
-        raDeg  = raRad * 180 / Math.PI;
-        if (raDeg < 0) raDeg += 360;
-
-        decDeg = decRad * 180 / Math.PI;
-    } else {
-        raDeg = 0;
-        decDeg = 0;
-    }
-}
-
-// ---------- 4. Magnitude ----------
-if (!Number.isFinite(mag)) {
-    if (Number.isFinite(absmag) && Number.isFinite(dist) && dist > 0) {
+    // If absmag exists, compute apparent magnitude
+    if (finite(absmag) && finite(dist) && dist > 0) {
         mag = absmag + 5 * Math.log10(dist) - 5;
-    } else {
-        mag = 10; // faint fallback
+    }
+
+    // If XYZ exists, estimate brightness from distance
+    else if (finite(x0) && finite(y0) && finite(z0)) {
+        const d = Math.sqrt(x0*x0 + y0*y0 + z0*z0);
+        mag = 5 * Math.log10(d) + 5; // assume M=0
+    }
+
+    else {
+        mag = 10;
     }
 }
 
-// ---------- 5. PM ----------
-if (!Number.isFinite(pmRa))  pmRa  = 0;
-if (!Number.isFinite(pmDec)) pmDec = 0;
+// ---------- 4. Proper Motion ----------
 
-// ---------- 6. Velocities ----------
-if (!Number.isFinite(rv)) rv = 0;
-if (!Number.isFinite(cols[idx.vx])) vx = 0;
-if (!Number.isFinite(cols[idx.vy])) vy = 0;
-if (!Number.isFinite(cols[idx.vz])) vz = 0;
+if (finite(pmRa) && finite(pmDec)) {
+} 
+
+// If velocities exist, reconstruct pmRa/pmDec
+else if (finite(vx) && finite(vy) && finite(vz)) {
+    const r = Math.sqrt(x0*x0 + y0*y0 + z0*z0);
+    const ux = x0 / r;
+    const uy = y0 / r;
+    const uz = z0 / r;
+    const vr = vx*ux + vy*uy + vz*uz;
+    const vtx = vx - vr * ux;
+    const vty = vy - vr * uy;
+    const vtz = vz - vr * uz;
+    const raRad  = raDeg * Math.PI/180;
+    const decRad = decDeg * Math.PI/180;
+    const erax = -Math.sin(raRad);
+    const eray =  Math.cos(raRad);
+    const eraz =  0;
+    const edecx = -Math.cos(raRad) * Math.sin(decRad);
+    const edecy = -Math.sin(raRad) * Math.sin(decRad);
+    const edeccz =  Math.cos(decRad);
+    const pmRaRadPerYear  = (vtx*erax + vty*eray + vtz*eraz) / (dist * 977792.221);
+    const pmDecRadPerYear = (vtx*edecx + vty*edecy + vtz*edeccz) / (dist * 977792.221);
+    pmRa  = pmRaRadPerYear  * (180/Math.PI) * 3600 * 1000;
+    pmDec = pmDecRadPerYear * (180/Math.PI) * 3600 * 1000;
+}
+
+// If still missing, fallback to zero
+else {
+    pmRa  = 0;
+    pmDec = 0;
+}
 
 
-if (!Number.isFinite(dist) || dist <= 0) dist = 1000;
+// ---------- 5. Velocities ----------
+if (finite(vx) && finite(vy) && finite(vz)) {
+}
 
+// If PM exists, reconstruct velocities
+else if (finite(pmRa) && finite(pmDec)) {
+
+    const pmRaRad  = pmRa  / (3600 * 1000) * Math.PI/180;
+    const pmDecRad = pmDec / (3600 * 1000) * Math.PI/180;
+
+    const vtRa  = pmRaRad  * dist * 977792.221;
+    const vtDec = pmDecRad * dist * 977792.221;
+
+    const raRad  = raDeg * Math.PI/180;
+    const decRad = decDeg * Math.PI/180;
+
+    const erax = -Math.sin(raRad);
+    const eray =  Math.cos(raRad);
+    const eraz =  0;
+
+    const edecx = -Math.cos(raRad) * Math.sin(decRad);
+    const edecy = -Math.sin(raRad) * Math.sin(decRad);
+    const edeccz =  Math.cos(decRad);
+
+    const vtx = vtRa  * erax + vtDec * edecx;
+    const vty = vtRa  * eray + vtDec * edecy;
+    const vtz = vtRa  * eraz + vtDec * edeccz;
+
+    const r = Math.sqrt(x0*x0 + y0*y0 + z0*z0);
+    const ux = x0 / r;
+    const uy = y0 / r;
+    const uz = z0 / r;
+
+    if (finite(rv)) {
+        vx = vtx + rv * ux;
+        vy = vty + rv * uy;
+        vz = vtz + rv * uz;
+    } else {
+        vx = vtx;
+        vy = vty;
+        vz = vtz;
+    }
+}
+
+// If still missing, fallback to zero
+else {
+    vx = 0;
+    vy = 0;
+    vz = 0;
+}
+
+
+if (!finite(dist) || dist <= 0) dist = 1000;
 
     stars.push({
       tyc:    cols[idx.tyc],
