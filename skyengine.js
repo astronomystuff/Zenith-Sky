@@ -557,6 +557,9 @@ async function loadStarCSV(url) {
     const absmag = parseFloat(cols[idx.absmag]);
     const raDeg  = parseFloat(cols[idx.ra]);
     const decDeg = parseFloat(cols[idx.dec]);
+    const vx = parseFloat(cols[idx.vx]),
+    const vy = parseFloat(cols[idx.vy]),
+    const vz = parseFloat(cols[idx.vz]),
 
 const finite = Number.isFinite;
 
@@ -723,9 +726,7 @@ if (!finite(dist) || dist <= 0) dist = 1000;
       raDeg0: raDeg,
       decDeg0:  decDeg,
       pmRa, pmDec, rv, mag, absmag, 
-      vx: parseFloat(cols[idx.vx]),
-      vy: parseFloat(cols[idx.vy]),
-      vz: parseFloat(cols[idx.vz]),
+      vx, vy, vz
       spect: cols[idx.spect]
     });
   }
