@@ -557,9 +557,9 @@ async function loadStarCSV(url) {
     const absmag = parseFloat(cols[idx.absmag]);
     const raDeg  = parseFloat(cols[idx.ra]);
     const decDeg = parseFloat(cols[idx.dec]);
-    const vx = parseFloat(cols[idx.vx]),
-    const vy = parseFloat(cols[idx.vy]),
-    const vz = parseFloat(cols[idx.vz]),
+    const vx = parseFloat(cols[idx.vx]);
+    const vy = parseFloat(cols[idx.vy]);
+    const vz = parseFloat(cols[idx.vz]);
 
 const finite = Number.isFinite;
 
