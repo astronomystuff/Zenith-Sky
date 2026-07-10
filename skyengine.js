@@ -558,32 +558,82 @@ async function loadStarCSV(url) {
     const raDeg  = parseFloat(cols[idx.ra]);
     const decDeg = parseFloat(cols[idx.dec]);
 
-if ((isNaN(x0) || isNaN(y0) || isNaN(z0)) && !isNaN(raDeg) && !isNaN(decDeg) && !isNaN(dist)) {
-    const raRad  = raDeg  * Math.PI / 180;
-    const decRad = decDeg * Math.PI / 180;
+// ============================================================
+// SANITIZER: Fix dist, XYZ, RA/Dec, mag, PM, velocities
+// ============================================================
 
-    x0 = dist * Math.cos(decRad) * Math.cos(raRad);
-    y0 = dist * Math.cos(decRad) * Math.sin(raRad);
-    z0 = dist * Math.sin(decRad);
+// ---------- 1. Distance ----------
+if (!Number.isFinite(dist) || dist <= 0) {
+    // If XYZ exists, compute distance
+    if (Number.isFinite(x0) && Number.isFinite(y0) && Number.isFinite(z0)) {
+        dist = Math.sqrt(x0*x0 + y0*y0 + z0*z0);
+    } else {
+        // If magnitude exists, estimate distance
+        if (Number.isFinite(mag)) {
+            const M = 5; // typical absolute magnitude
+            dist = Math.pow(10, (mag - M + 5) / 5);
+        } else {
+            dist = 1000; // fallback 1 kpc
+        }
+    }
 }
 
-if (isNaN(dist) && !isNaN(x0) && !isNaN(y0) && !isNaN(z0)) {
-    dist = Math.sqrt(x0*x0 + y0*y0 + z0*z0);
+// ---------- 2. XYZ ----------
+if (!Number.isFinite(x0) || !Number.isFinite(y0) || !Number.isFinite(z0)) {
+    if (Number.isFinite(raDeg) && Number.isFinite(decDeg)) {
+        const raRad  = raDeg  * Math.PI / 180;
+        const decRad = decDeg * Math.PI / 180;
+
+        x0 = dist * Math.cos(decRad) * Math.cos(raRad);
+        y0 = dist * Math.cos(decRad) * Math.sin(raRad);
+        z0 = dist * Math.sin(decRad);
+    } else {
+        // fallback: put star at origin
+        x0 = 0;
+        y0 = 0;
+        z0 = 0;
+    }
 }
-    
-if ((isNaN(raDeg) || isNaN(decDeg)) && !isNaN(x0) && !isNaN(y0) && !isNaN(z0)) {
+
+// ---------- 3. RA/Dec ----------
+if (!Number.isFinite(raDeg) || !Number.isFinite(decDeg)) {
     const r = Math.sqrt(x0*x0 + y0*y0 + z0*z0);
-    const raRad  = Math.atan2(y0, x0);
-    const decRad = Math.asin(z0 / r);
+    if (r > 0) {
+        const raRad  = Math.atan2(y0, x0);
+        const decRad = Math.asin(z0 / r);
 
-    raDeg  = raRad  * 180 / Math.PI;
-    decDeg = decRad * 180 / Math.PI;
+        raDeg  = raRad * 180 / Math.PI;
+        if (raDeg < 0) raDeg += 360;
 
-    if (raDeg < 0) raDeg += 360;
+        decDeg = decRad * 180 / Math.PI;
+    } else {
+        raDeg = 0;
+        decDeg = 0;
+    }
 }
-if (isNaN(mag) && !isNaN(absmag) && !isNaN(dist) && dist > 0) {
-    mag = absmag + 5 * Math.log10(dist) - 5;
+
+// ---------- 4. Magnitude ----------
+if (!Number.isFinite(mag)) {
+    if (Number.isFinite(absmag) && Number.isFinite(dist) && dist > 0) {
+        mag = absmag + 5 * Math.log10(dist) - 5;
+    } else {
+        mag = 10; // faint fallback
+    }
 }
+
+// ---------- 5. PM ----------
+if (!Number.isFinite(pmRa))  pmRa  = 0;
+if (!Number.isFinite(pmDec)) pmDec = 0;
+
+// ---------- 6. Velocities ----------
+if (!Number.isFinite(rv)) rv = 0;
+if (!Number.isFinite(cols[idx.vx])) vx = 0;
+if (!Number.isFinite(cols[idx.vy])) vy = 0;
+if (!Number.isFinite(cols[idx.vz])) vz = 0;
+
+
+if (!Number.isFinite(dist) || dist <= 0) dist = 1000;
+
 
     stars.push({
       tyc:    cols[idx.tyc],
