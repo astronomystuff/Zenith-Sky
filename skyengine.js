@@ -600,38 +600,6 @@ if (!finite(x0) || !finite(y0) || !finite(z0)) {
     z0 = dist * Math.sin(decRad);
 }
 
-// ---------- 2b. Fix XYZ if RA/Dec and XYZ don't match ----------
-{
-    if (Number.isFinite(raDeg) &&
-        Number.isFinite(decDeg) &&
-        Number.isFinite(dist) && dist > 0 &&
-        Number.isFinite(x0) &&
-        Number.isFinite(y0) &&
-        Number.isFinite(z0)) {
-        const d2r = 0.017453292519943295;   // PI/180
-        const r2d = 57.29577951308232;      // 180/PI
-        const raRad  = raDeg * d2r;
-        const decRad = decDeg * d2r;
-        const cdec   = Math.cos(decRad);
-        const ux = cdec * Math.cos(raRad);
-        const uy = cdec * Math.sin(raRad);
-        const uz = Math.sin(decRad);
-        const r = Math.sqrt(x0*x0 + y0*y0 + z0*z0);
-        const vxu = x0 / r;
-        const vyu = y0 / r;
-        const vzu = z0 / r;
-        let dot = ux*vxu + uy*vyu + uz*vzu;
-        if (dot > 1) dot = 1;
-        else if (dot < -1) dot = -1;
-        const sepDeg = Math.acos(dot) * r2d;
-        if (sepDeg > 1.0) {
-            x0 = dist * ux;
-            y0 = dist * uy;
-            z0 = dist * uz;
-        }
-    }
-}
-
 // ---------- 3. Magnitude ----------
 if (!finite(mag)) {
 
