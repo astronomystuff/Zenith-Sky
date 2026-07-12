@@ -765,26 +765,6 @@ function rvToParsecPerYear(rvKmPerSec) {
 const KM_S_TO_PC_YR = 1 / 977792.221;
 
 function applyProperMotionFromXYZ(star, years) {
-
-  const hasXYZ =
-    Number.isFinite(star.x0) &&
-    Number.isFinite(star.y0) &&
-    Number.isFinite(star.z0);
-
-  const hasVel =
-    Number.isFinite(star.vx) &&
-    Number.isFinite(star.vy) &&
-    Number.isFinite(star.vz);
-  
-  // Tier 1: Full 3D Cartesian PM
-  if (hasXYZ && hasVel) {
-    let x = star.x0 + star.vx * KM_S_TO_PC_YR * years;
-    let y = star.y0 + star.vy * KM_S_TO_PC_YR * years;
-    let z = star.z0 + star.vz * KM_S_TO_PC_YR * years;
-    return xyzToRaDec(x, y, z);
-  }
-
-  // Tier 2: Angular PM fallback
   const hasAngularPM =
     Number.isFinite(star.pm_ra) &&
     Number.isFinite(star.pm_dec);
@@ -800,13 +780,13 @@ function applyProperMotionFromXYZ(star, years) {
     };
   }
 
-  // Tier 3: Raw RA/Dec fallback
   return {
     raDeg: star.raDeg0,
     decDeg: star.decDeg0,
     distance: star.dist
   };
 }
+
 
 
 function applyPrecession(raDeg, decDeg, jd) {
