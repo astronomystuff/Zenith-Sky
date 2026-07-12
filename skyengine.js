@@ -602,26 +602,23 @@ if (!finite(x0) || !finite(y0) || !finite(z0)) {
 
 // ---------- 2b. RA/Dec vs XYZ ----------
 {
-    const fromXYZ = xyzToRaDec(x0, y0, z0);
-    const d2r = Math.PI / 180;
-    const ra1  = raDeg  * d2r;
-    const dec1 = decDeg * d2r;
-    const ra2  = fromXYZ.raDeg  * d2r;
-    const dec2 = fromXYZ.decDeg * d2r;
-    const cosSep =
-        Math.sin(dec1) * Math.sin(dec2) +
-        Math.cos(dec1) * Math.cos(dec2) * Math.cos(ra1 - ra2);
-    const sepDeg = Math.acos(Math.min(1, Math.max(-1, cosSep))) / d2r;
-
-    if (sepDeg > 0.1) { 
-        const raRad  = raDeg  * Math.PI / 180;
-        const decRad = decDeg * Math.PI / 180;
-
-        x0 = dist * Math.cos(decRad) * Math.cos(raRad);
-        y0 = dist * Math.cos(decRad) * Math.sin(raRad);
-        z0 = dist * Math.sin(decRad);
-
-        console.log(`Sanitized XYZ for id=${id}, sep=${sepDeg.toFixed(5)}°`);
+    const raRad  = raDeg  * Math.PI / 180;
+    const decRad = decDeg * Math.PI / 180;
+    const ux = Math.cos(decRad) * Math.cos(raRad);
+    const uy = Math.cos(decRad) * Math.sin(raRad);
+    const uz = Math.sin(decRad);
+    const r = Math.sqrt(x0*x0 + y0*y0 + z0*z0);
+    const vxu = x0 / r;
+    const vyu = y0 / r;
+    const vzu = z0 / r;
+    let dot = ux*vxu + uy*vyu + uz*vzu;
+    if (dot > 1) dot = 1;
+    else if (dot < -1) dot = -1;
+    const sepDeg = Math.acos(dot) * 180 / Math.PI;
+    if (sepDeg > 0.1) {
+        x0 = dist * ux;
+        y0 = dist * uy;
+        z0 = dist * uz;
     }
 }
     
