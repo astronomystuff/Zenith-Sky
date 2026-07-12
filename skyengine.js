@@ -600,6 +600,31 @@ if (!finite(x0) || !finite(y0) || !finite(z0)) {
     z0 = dist * Math.sin(decRad);
 }
 
+// ---------- 2b. RA/Dec vs XYZ ----------
+{
+    const fromXYZ = xyzToRaDec(x0, y0, z0);
+    const d2r = Math.PI / 180;
+    const ra1  = raDeg  * d2r;
+    const dec1 = decDeg * d2r;
+    const ra2  = fromXYZ.raDeg  * d2r;
+    const dec2 = fromXYZ.decDeg * d2r;
+    const cosSep =
+        Math.sin(dec1) * Math.sin(dec2) +
+        Math.cos(dec1) * Math.cos(dec2) * Math.cos(ra1 - ra2);
+    const sepDeg = Math.acos(Math.min(1, Math.max(-1, cosSep))) / d2r;
+
+    if (sepDeg > 0.1) { 
+        const raRad  = raDeg  * Math.PI / 180;
+        const decRad = decDeg * Math.PI / 180;
+
+        x0 = dist * Math.cos(decRad) * Math.cos(raRad);
+        y0 = dist * Math.cos(decRad) * Math.sin(raRad);
+        z0 = dist * Math.sin(decRad);
+
+        console.log(`Sanitized XYZ for id=${id}, sep=${sepDeg.toFixed(5)}°`);
+    }
+}
+    
 // ---------- 3. Magnitude ----------
 if (!finite(mag)) {
 
