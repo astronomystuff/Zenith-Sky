@@ -766,12 +766,12 @@ const KM_S_TO_PC_YR = 1 / 977792.221;
 
 function applyProperMotionFromXYZ(star, years) {
   const hasAngularPM =
-    Number.isFinite(star.pm_ra) &&
-    Number.isFinite(star.pm_dec);
+    Number.isFinite(star.pmRa) &&
+    Number.isFinite(star.pmDec);
 
   if (hasAngularPM) {
-    const draDeg  = (star.pm_ra  / 3600000) * years; // mas → deg
-    const ddecDeg = (star.pm_dec / 3600000) * years;
+    const draDeg  = (star.pmRa  / 3600000) * years; // mas → deg
+    const ddecDeg = (star.pmDec / 3600000) * years;
 
     return {
       raDeg: star.raDeg0 + draDeg,
