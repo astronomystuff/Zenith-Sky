@@ -762,7 +762,7 @@ const KM_S_TO_PC_YR = 1 / 977792.221;
 
 function applyProperMotionFromXYZ(star, years) {
 
-/*  const hasXYZ =
+  const hasXYZ =
     Number.isFinite(star.x0) &&
     Number.isFinite(star.y0) &&
     Number.isFinite(star.z0);
@@ -779,7 +779,6 @@ function applyProperMotionFromXYZ(star, years) {
     let z = star.z0 + star.vz * KM_S_TO_PC_YR * years;
     return xyzToRaDec(x, y, z);
   }
-*/
   
   // Tier 2: Angular PM fallback
   const hasAngularPM =
