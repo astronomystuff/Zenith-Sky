@@ -589,12 +589,16 @@ if (!finite(dist) || dist <= 0) {
 }
 
 // ---------- 2. XYZ ----------
-const raRad  = raDeg  * Math.PI / 180;
-const decRad = decDeg * Math.PI / 180;
+if (!finite(x0) || !finite(y0) || !finite(z0)) {
 
-x0 = dist * Math.cos(decRad) * Math.cos(raRad);
-y0 = dist * Math.cos(decRad) * Math.sin(raRad);
-z0 = dist * Math.sin(decRad);
+    // Always reconstruct XYZ from RA/Dec + sanitized dist
+    const raRad  = raDeg  * Math.PI / 180;
+    const decRad = decDeg * Math.PI / 180;
+
+    x0 = dist * Math.cos(decRad) * Math.cos(raRad);
+    y0 = dist * Math.cos(decRad) * Math.sin(raRad);
+    z0 = dist * Math.sin(decRad);
+}
 
 // ---------- 3. Magnitude ----------
 if (!finite(mag)) {
@@ -779,7 +783,7 @@ function applyProperMotionFromXYZ(star, years) {
     let z = star.z0 + star.vz * KM_S_TO_PC_YR * years;
     return xyzToRaDec(x, y, z);
   }
-  
+
   // Tier 2: Angular PM fallback
   const hasAngularPM =
     Number.isFinite(star.pmRa) &&
