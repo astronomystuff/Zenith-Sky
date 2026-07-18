@@ -765,7 +765,7 @@ function rvToParsecPerYear(rvKmPerSec) {
 
 const KM_S_TO_PC_YR = 1 / 977792.221;
 
-applyProperMotionFromXYZ(star, years) {
+function applyProperMotionFromXYZ (star, years) {
   if (star.xyz0 === false) {
     let x = star.x0 + star.vx * KM_S_TO_PC_YR * years;
     let y = star.y0 + star.vy * KM_S_TO_PC_YR * years;
