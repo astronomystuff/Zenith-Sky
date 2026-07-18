@@ -727,7 +727,7 @@ if (!finite(dist) || dist <= 0) dist = 1000;
       raDeg0: raDeg,
       decDeg0:  decDeg,
       pmRa, pmDec, rv, mag, absmag, 
-      vx, vy, vz, xyz0
+      vx, vy, vz, xyz0,
       spect: cols[idx.spect]
     });
   }
