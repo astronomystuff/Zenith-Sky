@@ -590,8 +590,8 @@ if (!finite(dist) || dist <= 0) {
 }
 
 // ---------- 2. XYZ ----------
-if (!finite(x0) || !finite(y0) || !finite(z0)) {
-    xyz0 = true
+//if (!finite(x0) || !finite(y0) || !finite(z0)) {
+//   xyz0 = true
     // Always reconstruct XYZ from RA/Dec + sanitized dist
     const raRad  = raDeg  * Math.PI / 180;
     const decRad = decDeg * Math.PI / 180;
@@ -599,7 +599,7 @@ if (!finite(x0) || !finite(y0) || !finite(z0)) {
     x0 = dist * Math.cos(decRad) * Math.cos(raRad);
     y0 = dist * Math.cos(decRad) * Math.sin(raRad);
     z0 = dist * Math.sin(decRad);
-}
+//}
 
 // ---------- 3. Magnitude ----------
 if (!finite(mag)) {
