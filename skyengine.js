@@ -560,6 +560,7 @@ async function loadStarCSV(url) {
     let vx = parseFloat(cols[idx.vx]);
     let vy = parseFloat(cols[idx.vy]);
     let vz = parseFloat(cols[idx.vz]);
+    let xyz0 = false
 
 const finite = Number.isFinite;
 
@@ -590,7 +591,7 @@ if (!finite(dist) || dist <= 0) {
 
 // ---------- 2. XYZ ----------
 if (!finite(x0) || !finite(y0) || !finite(z0)) {
-
+    xyz0 = true
     // Always reconstruct XYZ from RA/Dec + sanitized dist
     const raRad  = raDeg  * Math.PI / 180;
     const decRad = decDeg * Math.PI / 180;
@@ -726,7 +727,7 @@ if (!finite(dist) || dist <= 0) dist = 1000;
       raDeg0: raDeg,
       decDeg0:  decDeg,
       pmRa, pmDec, rv, mag, absmag, 
-      vx, vy, vz,
+      vx, vy, vz, xyz0
       spect: cols[idx.spect]
     });
   }
@@ -764,50 +765,21 @@ function rvToParsecPerYear(rvKmPerSec) {
 
 const KM_S_TO_PC_YR = 1 / 977792.221;
 
-function applyProperMotionFromXYZ(star, years) {
-
-  const hasXYZ =
-    Number.isFinite(star.x0) &&
-    Number.isFinite(star.y0) &&
-    Number.isFinite(star.z0);
-
-  const hasVel =
-    Number.isFinite(star.vx) &&
-    Number.isFinite(star.vy) &&
-    Number.isFinite(star.vz);
-  
-  // Tier 1: Full 3D Cartesian PM
-  if (hasXYZ && hasVel) {
+applyProperMotionFromXYZ(star, years) {
+  if (star.xyz0 === false) {
     let x = star.x0 + star.vx * KM_S_TO_PC_YR * years;
     let y = star.y0 + star.vy * KM_S_TO_PC_YR * years;
     let z = star.z0 + star.vz * KM_S_TO_PC_YR * years;
     return xyzToRaDec(x, y, z);
   }
-
-  // Tier 2: Angular PM fallback
-  const hasAngularPM =
-    Number.isFinite(star.pmRa) &&
-    Number.isFinite(star.pmDec);
-
-  if (hasAngularPM) {
-    const draDeg  = (star.pmRa  / 3600000) * years; // mas → deg
-    const ddecDeg = (star.pmDec / 3600000) * years;
-
-    return {
-      raDeg: star.raDeg0 + draDeg,
-      decDeg: star.decDeg0 + ddecDeg,
-      distance: star.dist
-    };
-  }
-
-  // Tier 3: Raw RA/Dec fallback
+ 
+  // Tier 2: Raw RA/Dec fallback
   return {
     raDeg: star.raDeg0,
     decDeg: star.decDeg0,
     distance: star.dist
   };
 }
-
 
 function applyPrecession(raDeg, decDeg, jd) {
   const PI = Math.PI;
