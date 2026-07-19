@@ -1031,7 +1031,7 @@ function getStarNameFromRecord(s) {
 
   // --- Greek Letter Lookup ---
   const GREEK = {
-    alf: "α", bet: "β", gam: "γ", del: "δ", eps: "ε",
+    alp: "α", bet: "β", gam: "γ", del: "δ", eps: "ε",
     zet: "ζ", eta: "η", the: "θ", iot: "ι", kap: "κ",
     lam: "λ", mu: "μ",  nu: "ν",  xi: "ξ", omi: "ο",
     pi:  "π", rho: "ρ", sig: "σ", tau: "τ", ups: "υ",
