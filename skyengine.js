@@ -555,7 +555,7 @@ async function loadStarCSV(url) {
     let rv   = parseFloat(cols[idx.rv]);
     let mag  = parseFloat(cols[idx.mag]);
     let absmag = parseFloat(cols[idx.absmag]);
-    let raDeg  = parseFloat(cols[idx.ra]);
+    let raDeg = parseFloat(cols[idx.ra]) * 15;
     let decDeg = parseFloat(cols[idx.dec]);
     let vx = parseFloat(cols[idx.vx]);
     let vy = parseFloat(cols[idx.vy]);
