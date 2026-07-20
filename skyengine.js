@@ -2036,7 +2036,7 @@ function onSky3DClick(event) {
 
   if (starHits.length > 0) {
     for (const hit of starHits) {
-      if (hit.distance > MAX_HIT_DISTANCE) continue;
+      if (hit.distanceToRay > MAX_HIT_DISTANCE) continue;
 
       const idx = hit.index;
       const starIdx = starPoints.geometry.userData.starIndices[idx];
