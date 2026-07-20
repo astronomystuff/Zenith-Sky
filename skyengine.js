@@ -2026,6 +2026,7 @@ function onSky3DClick(event) {
 
   if (!sky3dCelestialSphere) return;
 
+  const starPoints = sky3dCelestialSphere.children[0];
   const starHits = sky3dRaycaster.intersectObject(starPoints);
 
   let bestStar = null;
