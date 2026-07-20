@@ -2,6 +2,6 @@ Hello!
 This is the placeholder for the vsop folder.
 
 I edit this file when the "pages build and deployment" fails, to force a new deployement.
-For some reson sometimes it fails and sometimes it doesn't even run.
+For some reason sometimes it fails and sometimes it doesn't even run.
 It works most of the time though.
 Sometimes there may be an outage, so I just edit this and force a rebuild. 
