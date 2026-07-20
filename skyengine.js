@@ -2026,15 +2026,17 @@ function onSky3DClick(event) {
 
   if (!sky3dCelestialSphere) return;
 
-  const starPoints = sky3dCelestialSphere.children[0];
   const starHits = sky3dRaycaster.intersectObject(starPoints);
 
   let bestStar = null;
   let bestStarHit = null;
   let bestStarMag = Infinity;
+  const MAX_HIT_DISTANCE = 0.015;
 
   if (starHits.length > 0) {
     for (const hit of starHits) {
+      if (hit.distance > MAX_HIT_DISTANCE) continue;
+
       const idx = hit.index;
       const starIdx = starPoints.geometry.userData.starIndices[idx];
       const star = sky3dStarBase[starIdx];
