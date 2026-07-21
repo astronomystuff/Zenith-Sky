@@ -2032,7 +2032,7 @@ function onSky3DClick(event) {
   let bestStar = null;
   let bestStarHit = null;
   let bestStarMag = Infinity;
-  const MAX_HIT_DISTANCE = 0.015;
+  const MAX_HIT_DISTANCE = 0.0015;
 
   if (starHits.length > 0) {
     for (const hit of starHits) {
