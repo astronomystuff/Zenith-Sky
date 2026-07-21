@@ -127,33 +127,30 @@ function normalizeSpectral(raw) {
 
 function estimateStarAgeAndLifetime(star) {
   const spect = normalizeSpectral(star.spect || "");
-  const Mv = star.absmag;
-
-  // --- 1. Parse ---
-  const classMatch = spect.match(/^([OBAFGKMLTYCRNSDW])([0-9]?)/i);
-  const lumMatch   = spect.match(/(I{1,3}|IV|V)/i);
-
+  const classMatch = spect.match(/^([OBAFGKMLTYCRNSDWHQZ])([0-9]?)/i);
+  const lumMatch   = spect.match(/(Ia|Ib|I{1,3}|II|III|IV|V)/i);
   const cls = classMatch ? classMatch[1].toUpperCase() : null;
   const subtype = classMatch && classMatch[2] ? Number(classMatch[2]) : 5;
   const lumClass = lumMatch ? lumMatch[1].toUpperCase() : "V";
 
-  // --- 2. Absolute Magnitude To Luminosity ---
-  function luminosityFromAbsMag(M) {
-    return Math.pow(10, (4.83 - M) / 2.5);
-  }
-  const L = luminosityFromAbsMag(Mv);
+  // --- Luminosity from absolute magnitude ---
+  const Mv = star.absmag;
+  const L = Math.pow(10, (4.83 - Mv) / 2.5); // L/Lsun
 
-  // --- 3. Estimate Mass ---
-  function estimateMass(L) {
-    if (L < 0.03) return Math.pow(L, 1/2.0);   // M dwarfs
-    if (L < 16)   return Math.pow(L, 1/4.0);   // Sun-like
-    return Math.pow(L, 1/3.5);                 // massive stars
+  // --- Mass from luminosity ---
+  let massLum;
+  if (L < 0.03) {
+    massLum = Math.pow(L / 0.23, 1 / 2.3);     // low-mass regime
+  } else if (L < 16) {
+    massLum = Math.pow(L, 1 / 4.0);            // solar-like
+  } else {
+    massLum = Math.pow(L / 1.4, 1 / 3.5);      // high-mass
   }
-  let mass = estimateMass(L);
 
-  // --- 4. Refine Mass ---
+  // --- Spectral-based mass estimate ---
+  let massSpec = null;
   if (cls && "OBAFGKM".includes(cls)) {
-    const subtypeFrac = subtype / 9;
+    const subtypeFrac = Math.min(1, Math.max(0, subtype / 9));
     const classMass = {
       O: [16, 60],
       B: [2.5, 16],
@@ -166,18 +163,26 @@ function estimateStarAgeAndLifetime(star) {
 
     if (classMass) {
       const [minM, maxM] = classMass;
-      const subtypeMass = minM + (maxM - minM) * (1 - subtypeFrac);
-      mass = (mass + subtypeMass) / 2;
+      massSpec = minM + (maxM - minM) * (1 - subtypeFrac);
     }
   }
 
-  // --- 5. Main-sequence From Mass ---
-  function lifetimeYears(m) {
-    return 1e10 * Math.pow(m, -2.5);
-  }
-  const lifetime = lifetimeYears(mass);
+  // --- Blend mass estimates ---
+  const mass = (massSpec == null)
+    ? massLum
+    : 0.7 * massLum + 0.3 * massSpec;
 
-  // --- 6. White Dwarfs ---
+  // --- Lifetime from mass ---
+  let lifetime;
+  if (mass < 0.7) {
+    lifetime = 1e11 * Math.pow(mass, -2.0);   // red dwarfs
+  } else if (mass < 1.5) {
+    lifetime = 1e10 * Math.pow(mass, -2.5);   // sun-like
+  } else {
+    lifetime = 5e9 * Math.pow(mass, -3.0);    // massive stars
+  }
+
+  // --- White dwarfs ---
   if (cls === "D") {
     return {
       age: 0,
@@ -186,29 +191,26 @@ function estimateStarAgeAndLifetime(star) {
     };
   }
 
-  // --- 7. Probabilistic Age Fraction---
+  // --- Age fraction ---
   let ageFrac;
-
-  if (cls === "W") {
-    ageFrac = 0.99 + Math.random() * 0.01;
-  }
-  else if (["C","R","N","S"].includes(cls)) {
-    ageFrac = 0.95 + Math.random() * 0.05;
-  }
-  else if (lumClass === "V") {
-    ageFrac = 0.1 + Math.random() * 0.8;
-  }
-  else if (lumClass === "IV") {
-    ageFrac = 0.8 + Math.random() * 0.1;
-  }
-  else if (lumClass === "III") {
-    ageFrac = 0.9 + Math.random() * 0.05;
-  }
-  else if (lumClass === "II" || lumClass === "I") {
-    ageFrac = 0.97 + Math.random() * 0.02;
-  }
-  else {
-    ageFrac = 0.5; // Fallback
+  if (lumClass === "V") {
+    if (mass > 2) {
+      ageFrac = 0.5 + Math.random() * 0.4;
+    } else if (mass < 0.7) {
+      ageFrac = 0.05 + Math.random() * 0.2;
+    } else {
+      ageFrac = 0.1 + Math.random() * 0.8;
+    }
+  } else if (lumClass === "IV") {
+    ageFrac = 0.75 + Math.random() * 0.15;
+  } else if (lumClass === "III") {
+    ageFrac = 0.85 + Math.random() * 0.10;
+  } else if (lumClass === "II") {
+    ageFrac = 0.90 + Math.random() * 0.08;
+  } else if (lumClass === "I" || lumClass === "Ia" || lumClass === "Ib") {
+    ageFrac = 0.95 + Math.random() * 0.04;
+  } else {
+    ageFrac = 0.5;
   }
 
   const age = lifetime * ageFrac;
