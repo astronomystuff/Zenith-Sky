@@ -2483,6 +2483,7 @@ async function startSky3D() {
   const canvas = document.getElementById("sky3d-canvas");
   sky3dUpdateLoading("Loading Planetary Data…");
   await loadAllCoefficients();
+  sky3dUpdateLoading("Loading Constellations…");
   const linesJson = await fetch("lines.json").then(r => r.json());
   window.linesJson = linesJson;
   
@@ -2511,7 +2512,7 @@ async function startSky3D() {
   installSky3DLockSystem();
   canvas.addEventListener("click", onSky3DClick);
   
-  sky3dUpdateLoading("Loading Stars…");
+  sky3dUpdateLoading("Loading Star Data…");
   sky3dStarBase = await loadStarCSV(
     "https://astro-proxy.niamnbhakta.workers.dev/?url=" +
     encodeURIComponent("https://github.com/astronomystuff/Zenith-Sky/releases/download/At-HYG/stars.csv")
