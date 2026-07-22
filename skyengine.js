@@ -763,13 +763,11 @@ function applyProperMotionFromXYZ (star, years) {
     return xyzToRaDec(x, y, z);
 }
 
-function applyPrecession(raDeg, decDeg, jd) {
+function precessionMatrixIAU2006(jd) {
   const PI = Math.PI;
-  const DJ00 = 2451545.0;          // J2000.0
-  const DJC  = 36525.0;            // days per Julian century
-  const DAS2R = (PI / 180) / 3600; // arcsec → rad
-  const deg2rad = PI / 180;
-  const rad2deg = 180 / PI;
+  const DJ00 = 2451545.0;
+  const DJC  = 36525.0;
+  const DAS2R = (PI / 180) / 3600;
 
   function meanObliquityIAU2006(jd) {
     const t = (jd - DJ00) / DJC;
@@ -811,10 +809,9 @@ function applyPrecession(raDeg, decDeg, jd) {
       (-0.0000000148)*t)*t)*t)*t)*t) * DAS2R;
 
     const epsa = meanObliquityIAU2006(jd);
-
     return { gamb, phib, psib, epsa };
   }
-  
+
   function matMul(a, b) {
     const r = [[0,0,0],[0,0,0],[0,0,0]];
     for (let i = 0; i < 3; i++) {
@@ -856,10 +853,14 @@ function applyPrecession(raDeg, decDeg, jd) {
     return r;
   }
 
-  function precessionMatrixIAU2006(jd) {
-    const { gamb, phib, psib, epsa } = computeP03Angles(jd);
-    return fw2m(gamb, phib, psib, epsa);
-  }
+  const { gamb, phib, psib, epsa } = computeP03Angles(jd);
+  return fw2m(gamb, phib, psib, epsa);
+}
+
+function applyPrecession(raDeg, decDeg, rbp) {
+  const PI = Math.PI;
+  const deg2rad = PI / 180;
+  const rad2deg = 180 / PI;
 
   const ra = raDeg * deg2rad;
   const dec = decDeg * deg2rad;
@@ -867,8 +868,6 @@ function applyPrecession(raDeg, decDeg, jd) {
   const x0 = Math.cos(dec) * Math.cos(ra);
   const y0 = Math.cos(dec) * Math.sin(ra);
   const z0 = Math.sin(dec);
-
-  const rbp = precessionMatrixIAU2006(jd);
 
   const x = rbp[0][0]*x0 + rbp[0][1]*y0 + rbp[0][2]*z0;
   const y = rbp[1][0]*x0 + rbp[1][1]*y0 + rbp[1][2]*z0;
@@ -884,6 +883,7 @@ function applyPrecession(raDeg, decDeg, jd) {
     decDeg: decNew * rad2deg
   };
 }
+
 
 /* ============================================================
    Civil Time → LMT → LST
@@ -1691,13 +1691,14 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
   let fov = sky3dCamera ? sky3dCamera.fov : 60;
   let dynamicMagLimit = 6 + 1.8 * Math.log2(60 / fov);
   dynamicMagLimit = Math.max(2, Math.min(15, dynamicMagLimit));
+  const rbp = precessionMatrixIAU2006(jd);
 
   const chosen = [];
 
   for (let i = 0; i < sky3dStarBase.length; i++) {
     const s = sky3dStarBase[i];
     const pm = applyProperMotionFromXYZ(s, years);
-    const prec = applyPrecession(pm.raDeg, pm.decDeg, jd);
+    const prec = applyPrecession(pm.raDeg, pm.decDeg, rbp);
     s.raDeg = prec.raDeg;
     s.decDeg = prec.decDeg;
     const raRad  = prec.raDeg * Math.PI / 180;
