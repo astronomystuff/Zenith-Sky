@@ -2513,10 +2513,21 @@ async function startSky3D() {
   canvas.addEventListener("click", onSky3DClick);
   
   sky3dUpdateLoading("Loading Star Data…");
-  sky3dStarBase = await loadStarCSV(
+  let csvURLPrimary =
+    "https://astronomystuff.github.io/Zenith-Sky/stars.csv";
+  let csvURLFallback =
     "https://astro-proxy.niamnbhakta.workers.dev/?url=" +
-    encodeURIComponent("https://github.com/astronomystuff/Zenith-Sky/releases/download/At-HYG/stars.csv")
-  );
+    encodeURIComponent(
+      "https://github.com/astronomystuff/Zenith-Sky/releases/download/At-HYG/stars.csv"
+    );
+  let stars;
+  try {
+    stars = await loadStarCSV(csvURLPrimary);
+  } catch (err) {
+    console.warn("Primary CSV fetch failed, falling back to Worker:", err);
+    stars = await loadStarCSV(csvURLFallback);
+  }
+  sky3dStarBase = stars;
 
   window.sky3dStarIndexMap = {};
   for (let i = 0; i < sky3dStarBase.length; i++) {
