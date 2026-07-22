@@ -2798,3 +2798,5 @@ window.computeBodyMagnitude = computeBodyMagnitude;
 window.computeBody = computeBody;
 window.drawConstellationLines = drawConstellationLines;
 window.estimateStarAgeAndLifetime = estimateStarAgeAndLifetime;
+window.formatBayer = formatBayer;
+window.rebuildCelestialSphere = rebuildCelestialSphere;
