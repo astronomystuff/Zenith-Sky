@@ -2511,7 +2511,7 @@ async function startSky3D() {
   
   sky3dUpdateLoading("Loading Star Data…");
   let csvURLPrimary =
-    "https://astronomystuff.github.io/Zenith-Sky/stars.csv";
+    "https://github.com/astronomystuff/Zenith-Sky/releases/download/At-HYG/stars.csv";
   let csvURLFallback =
     "https://astro-proxy.niamnbhakta.workers.dev/?url=" +
     encodeURIComponent(
