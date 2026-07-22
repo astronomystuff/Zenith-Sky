@@ -2510,14 +2510,7 @@ async function startSky3D() {
   canvas.addEventListener("click", onSky3DClick);
   
   sky3dUpdateLoading("Loading Star Data…");
-  let csvURL=
-    "https://astro-proxy.niamnbhakta.workers.dev/?url=" +
-    encodeURIComponent(
-      "https://github.com/astronomystuff/Zenith-Sky/releases/download/At-HYG/stars.csv"
-    );
-  let stars;
-  stars = await loadStarCSV(csvURL);
-  sky3dStarBase = stars;
+  sky3dStarBase = await window.sky3dStarBasePromise;
 
   window.sky3dStarIndexMap = {};
   for (let i = 0; i < sky3dStarBase.length; i++) {
@@ -2763,6 +2756,26 @@ if (document.readyState === "loading") {
 } else {
   initSky3DModal();
 }
+
+window.sky3dStarBasePromise = (async () => {
+  try {
+    const releaseURL =
+      "https://github.com/astronomystuff/Zenith-Sky/releases/download/At-HYG/stars.csv";
+    const response = await fetch(releaseURL).catch(() => null);
+    if (response && response.ok) {
+      const text = await response.text().catch(() => null);
+      if (text) return loadStarCSV_fromText(text);
+    }
+  } catch (_) {}
+
+  const workerURL =
+    "https://astro-proxy.niamnbhakta.workers.dev/?url=" +
+    encodeURIComponent(
+      "https://github.com/astronomystuff/Zenith-Sky/releases/download/At-HYG/stars.csv"
+    );
+
+  return loadStarCSV(workerURL);
+})();
 
 window.sky3dStarBase = sky3dStarBase;
 window.sky3dCelestialSphere = sky3dCelestialSphere;
