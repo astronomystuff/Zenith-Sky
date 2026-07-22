@@ -2802,3 +2802,4 @@ window.estimateStarAgeAndLifetime = estimateStarAgeAndLifetime;
 window.formatBayer = formatBayer;
 window.rebuildCelestialSphere = rebuildCelestialSphere;
 window.colorForSpectralType = colorForSpectralType;
+window.precessionMatrixIAU2006 = precessionMatrixIAU2006;
