@@ -478,6 +478,8 @@ class minimalCameraControls {
    CSV Loader
    ============================================================ */
 async function loadStarCSV(url) {
+  const deg2rad = Math.PI / 180;
+  const KM_PER_AU_PER_YEAR = 977792.221;
   let text;
 
   try {
@@ -593,8 +595,8 @@ if (!finite(dist) || dist <= 0) {
 
 // ---------- 2. XYZ ----------
 // Always reconstruct XYZ from RA/Dec + sanitized dist
-const raRad  = raDeg  * Math.PI / 180;
-const decRad = decDeg * Math.PI / 180;
+const raRad  = raDeg  * deg2rad;
+const decRad = decDeg * deg2rad;
 
 x0 = dist * Math.cos(decRad) * Math.cos(raRad);
 y0 = dist * Math.cos(decRad) * Math.sin(raRad);
@@ -619,92 +621,85 @@ if (!finite(mag)) {
     }
 }
 
-// ---------- 4. Proper Motion ----------
+// ---------- 4. Proper Motion / Velocity Reconstruction ----------
 
-if (finite(pmRa) && finite(pmDec)) {
-} 
+// Precompute shared values ONCE
+const r = Math.sqrt(x0*x0 + y0*y0 + z0*z0);
+const ux = x0 / r;
+const uy = y0 / r;
+const uz = z0 / r;
 
-// If velocities exist, reconstruct pmRa/pmDec
-else if (finite(vx) && finite(vy) && finite(vz)) {
-    const r = Math.sqrt(x0*x0 + y0*y0 + z0*z0);
-    const ux = x0 / r;
-    const uy = y0 / r;
-    const uz = z0 / r;
-    const vr = vx*ux + vy*uy + vz*uz;
-    const vtx = vx - vr * ux;
-    const vty = vy - vr * uy;
-    const vtz = vz - vr * uz;
-    const raRad  = raDeg * Math.PI/180;
-    const decRad = decDeg * Math.PI/180;
-    const erax = -Math.sin(raRad);
-    const eray =  Math.cos(raRad);
-    const eraz =  0;
-    const edecx = -Math.cos(raRad) * Math.sin(decRad);
-    const edecy = -Math.sin(raRad) * Math.sin(decRad);
-    const edeccz =  Math.cos(decRad);
-    const pmRaRadPerYear  = (vtx*erax + vty*eray + vtz*eraz) / (dist * 977792.221);
-    const pmDecRadPerYear = (vtx*edecx + vty*edecy + vtz*edeccz) / (dist * 977792.221);
-    pmRa  = pmRaRadPerYear  * (180/Math.PI) * 3600 * 1000;
-    pmDec = pmDecRadPerYear * (180/Math.PI) * 3600 * 1000;
-}
+const raRad  = raDeg * deg2rad;
+const decRad = decDeg * deg2rad;
 
-// If still missing, fallback to zero
-else {
-    pmRa  = 0;
-    pmDec = 0;
-}
+const sinRA = Math.sin(raRad);
+const cosRA = Math.cos(raRad);
+const sinDec = Math.sin(decRad);
+const cosDec = Math.cos(decRad);
 
+// RA/Dec basis vectors (compute ONCE)
+const erax = -sinRA;
+const eray =  cosRA;
+const eraz =  0;
 
-// ---------- 5. Velocities ----------
-if (finite(vx) && finite(vy) && finite(vz)) {
-}
+const edecx = -cosRA * sinDec;
+const edecy = -sinRA * sinDec;
+const edeccz =  cosDec;
 
-// If PM exists, reconstruct velocities
-else if (finite(pmRa) && finite(pmDec)) {
+// ---------- PM reconstruction from velocities ----------
+if (!finite(pmRa) || !finite(pmDec)) {
 
-    const pmRaRad  = pmRa  / (3600 * 1000) * Math.PI/180;
-    const pmDecRad = pmDec / (3600 * 1000) * Math.PI/180;
+    if (finite(vx) && finite(vy) && finite(vz)) {
 
-    const vtRa  = pmRaRad  * dist * 977792.221;
-    const vtDec = pmDecRad * dist * 977792.221;
+        const vr = vx*ux + vy*uy + vz*uz;
+        const vtx = vx - vr * ux;
+        const vty = vy - vr * uy;
+        const vtz = vz - vr * uz;
 
-    const raRad  = raDeg * Math.PI/180;
-    const decRad = decDeg * Math.PI/180;
+        const pmRaRadPerYear  = (vtx*erax + vty*eray + vtz*eraz) / (dist * 977792.221);
+        const pmDecRadPerYear = (vtx*edecx + vty*edecy + vtz*edeccz) / (dist * 977792.221);
 
-    const erax = -Math.sin(raRad);
-    const eray =  Math.cos(raRad);
-    const eraz =  0;
+        pmRa  = pmRaRadPerYear  * rad2deg * 3600 * 1000;
+        pmDec = pmDecRadPerYear * rad2deg * 3600 * 1000;
 
-    const edecx = -Math.cos(raRad) * Math.sin(decRad);
-    const edecy = -Math.sin(raRad) * Math.sin(decRad);
-    const edeccz =  Math.cos(decRad);
-
-    const vtx = vtRa  * erax + vtDec * edecx;
-    const vty = vtRa  * eray + vtDec * edecy;
-    const vtz = vtRa  * eraz + vtDec * edeccz;
-
-    const r = Math.sqrt(x0*x0 + y0*y0 + z0*z0);
-    const ux = x0 / r;
-    const uy = y0 / r;
-    const uz = z0 / r;
-
-    if (finite(rv)) {
-        vx = vtx + rv * ux;
-        vy = vty + rv * uy;
-        vz = vtz + rv * uz;
     } else {
-        vx = vtx;
-        vy = vty;
-        vz = vtz;
+        pmRa = 0;
+        pmDec = 0;
     }
 }
 
-// If still missing, fallback to zero
-else {
-    vx = 0;
-    vy = 0;
-    vz = 0;
+// ---------- Velocity reconstruction from PM ----------
+if (!finite(vx) || !finite(vy) || !finite(vz)) {
+
+    if (finite(pmRa) && finite(pmDec)) {
+
+        const pmRaRad  = pmRa  / (3600 * 1000) * deg2rad;
+        const pmDecRad = pmDec / (3600 * 1000) * deg2rad;
+
+        const vtRa  = pmRaRad  * dist * 977792.221;
+        const vtDec = pmDecRad * dist * 977792.221;
+
+        const vtx = vtRa * erax + vtDec * edecx;
+        const vty = vtRa * eray + vtDec * edecy;
+        const vtz = vtRa * eraz + vtDec * edeccz;
+
+        if (finite(rv)) {
+            vx = vtx + rv * ux;
+            vy = vty + rv * uy;
+            vz = vtz + rv * uz;
+        } else {
+            vx = vtx;
+            vy = vty;
+            vz = vtz;
+        }
+
+    } else {
+        vx = 0;
+        vy = 0;
+        vz = 0;
+    }
 }
+
 
 
 if (!finite(dist) || dist <= 0) dist = 1000;
