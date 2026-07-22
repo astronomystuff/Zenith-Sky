@@ -629,9 +629,6 @@ const ux = x0 / r;
 const uy = y0 / r;
 const uz = z0 / r;
 
-const raRad  = raDeg * deg2rad;
-const decRad = decDeg * deg2rad;
-
 const sinRA = Math.sin(raRad);
 const cosRA = Math.cos(raRad);
 const sinDec = Math.sin(decRad);
