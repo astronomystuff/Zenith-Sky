@@ -473,6 +473,7 @@ class minimalCameraControls {
     }, 120);
   }
 }
+
 /* ============================================================
    CSV Loader
    ============================================================ */
@@ -562,7 +563,6 @@ async function loadStarCSV(url) {
     let vx = parseFloat(cols[idx.vx]);
     let vy = parseFloat(cols[idx.vy]);
     let vz = parseFloat(cols[idx.vz]);
-    let xyz0 = false
 
 const finite = Number.isFinite;
 
@@ -726,7 +726,7 @@ if (!finite(dist) || dist <= 0) dist = 1000;
       raDeg0: raDeg,
       decDeg0:  decDeg,
       pmRa, pmDec, rv, mag, absmag, 
-      vx, vy, vz, xyz0,
+      vx, vy, vz,
       spect: cols[idx.spect]
     });
   }
@@ -754,14 +754,6 @@ function xyzToRaDec(x, y, z) {
 /* ============================================================
    Proper Motion & Precession
    ============================================================ */
-function masToRad(mas) {
-  return mas * (Math.PI / (180 * 3600 * 1000));
-}
-
-function rvToParsecPerYear(rvKmPerSec) {
-  return rvKmPerSec / 977792.221;
-}
-
 const KM_S_TO_PC_YR = 1 / 977792.221;
 
 function applyProperMotionFromXYZ (star, years) {
@@ -938,20 +930,6 @@ function getLSTRadians(civil, lonEastDeg) {
 }
 
 /* ============================================================
-   RA/Dec → Unit Sphere XYZ
-   ============================================================ */
-function raDecToXYZ(raDeg, decDeg) {
-  const ra = raDeg * Math.PI / 180;
-  const dec = decDeg * Math.PI / 180;
-
-  return {
-    x: Math.cos(dec) * Math.cos(ra),
-    y: Math.sin(dec),
-    z: Math.cos(dec) * Math.sin(ra)
-  };
-}
-
-/* ============================================================
    Helpers
    ============================================================ */
 function getCivilFieldsFromUI() {
@@ -1075,7 +1053,11 @@ function getStarNameFromRecord(s) {
 
         const greek = GREEK[root];
         if (greek) {
-          const SUP = { "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵" };
+          const SUP = {
+            "0":"⁰","1":"¹","2":"²","3":"³","4":"⁴","5":"⁵",
+            "6":"⁶","7":"⁷","8":"⁸","9":"⁹",
+            "10":"¹⁰","11":"¹¹","12":"¹²"
+          };
           const sup = SUP[comp] || (comp || "");
           return `${greek}${sup} ${s.con}`;
         }
@@ -1228,7 +1210,11 @@ function formatBayer(rawBayer, con) {
   const greek = GREEK[greekKey];
   if (!greek) return null;
 
-  const SUP = { "1":"¹", "2":"²", "3":"³", "4":"⁴", "5":"⁵" };
+  const SUP = {
+      "0":"⁰","1":"¹","2":"²","3":"³","4":"⁴","5":"⁵",
+      "6":"⁶","7":"⁷","8":"⁸","9":"⁹",
+      "10":"¹⁰","11":"¹¹","12":"¹²"
+  };
   const sup = comp ? (SUP[comp] || comp) : "";
 
   return `${greek}${sup} ${con}`;
@@ -2806,7 +2792,6 @@ window.VSOP87_Generic = VSOP87_Generic;
 window.computeBodyPosition = computeBodyPosition;
 window.VSOP = VSOP;
 window.vsopSeries = vsopSeries;
-window.raDecToXYZ= raDecToXYZ;
 window.saturnRingAngles = saturnRingAngles;
 window.computePlanetMagnitude = computePlanetMagnitude;
 window.computeBodyMagnitude = computeBodyMagnitude;
