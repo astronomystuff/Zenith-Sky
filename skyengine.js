@@ -2800,3 +2800,4 @@ window.drawConstellationLines = drawConstellationLines;
 window.estimateStarAgeAndLifetime = estimateStarAgeAndLifetime;
 window.formatBayer = formatBayer;
 window.rebuildCelestialSphere = rebuildCelestialSphere;
+window.colorForSpectralType = colorForSpectralType;
