@@ -222,171 +222,61 @@ function estimateStarAgeAndLifetime(star) {
   };
 }
 
-function temperatureToHex(T) {
-  const h = 6.62607015e-34;
-  const c = 2.99792458e8;
-  const k = 1.380649e-23;
 
-  const cmf = [
-    [380,0.0014,0.0000,0.0065],[385,0.0022,0.0001,0.0105],[390,0.0042,0.0001,0.0201],
-    [395,0.0076,0.0002,0.0362],[400,0.0143,0.0004,0.0679],[405,0.0232,0.0006,0.1102],
-    [410,0.0435,0.0012,0.2074],[415,0.0776,0.0022,0.3713],[420,0.1344,0.0040,0.6456],
-    [425,0.2148,0.0073,1.0391],[430,0.2839,0.0116,1.3856],[435,0.3285,0.0168,1.6230],
-    [440,0.3483,0.0230,1.7471],[445,0.3481,0.0298,1.7826],[450,0.3362,0.0380,1.7721],
-    [455,0.3187,0.0480,1.7441],[460,0.2908,0.0600,1.6692],[465,0.2511,0.0739,1.5281],
-    [470,0.1954,0.0910,1.2876],[475,0.1421,0.1126,1.0419],[480,0.0956,0.1390,0.8130],
-    [485,0.0579,0.1693,0.6162],[490,0.0320,0.2080,0.4652],[495,0.0147,0.2586,0.3533],
-    [500,0.0049,0.3230,0.2720],[505,0.0024,0.4073,0.2123],[510,0.0093,0.5030,0.1582],
-    [515,0.0291,0.6082,0.1117],[520,0.0633,0.7100,0.0782],[525,0.1096,0.7932,0.0573],
-    [530,0.1655,0.8620,0.0422],[535,0.2257,0.9149,0.0298],[540,0.2904,0.9540,0.0203],
-    [545,0.3597,0.9803,0.0134],[550,0.4334,0.9950,0.0087],[555,0.5121,1.0000,0.0057],
-    [560,0.5945,0.9950,0.0039],[565,0.6784,0.9786,0.0027],[570,0.7621,0.9520,0.0021],
-    [575,0.8425,0.9154,0.0018],[580,0.9163,0.8700,0.0017],[585,0.9786,0.8163,0.0014],
-    [590,1.0263,0.7570,0.0011],[595,1.0567,0.6949,0.0010],[600,1.0622,0.6310,0.0008],
-    [605,1.0456,0.5668,0.0006],[610,1.0026,0.5030,0.0003],[615,0.9384,0.4412,0.0002],
-    [620,0.8544,0.3810,0.0002],[625,0.7514,0.3210,0.0001],[630,0.6424,0.2650,0.0000],
-    [635,0.5419,0.2170,0.0000],[640,0.4479,0.1750,0.0000],[645,0.3608,0.1382,0.0000],
-    [650,0.2835,0.1070,0.0000],[655,0.2187,0.0816,0.0000],[660,0.1649,0.0610,0.0000],
-    [665,0.1212,0.0446,0.0000],[670,0.0874,0.0320,0.0000],[675,0.0636,0.0232,0.0000],
-    [680,0.0468,0.0170,0.0000],[685,0.0329,0.0119,0.0000],[690,0.0227,0.0082,0.0000],
-    [695,0.0158,0.0057,0.0000],[700,0.0114,0.0041,0.0000],[705,0.0081,0.0029,0.0000],
-    [710,0.0058,0.0021,0.0000],[715,0.0041,0.0015,0.0000],[720,0.0029,0.0010,0.0000],
-    [725,0.0020,0.0007,0.0000],[730,0.0014,0.0005,0.0000],[735,0.0010,0.0004,0.0000],
-    [740,0.0007,0.0003,0.0000],[745,0.0005,0.0002,0.0000],[750,0.0003,0.0002,0.0000],
-    [755,0.0002,0.0001,0.0000],[760,0.0002,0.0001,0.0000],[765,0.0001,0.0001,0.0000],
-    [770,0.0001,0.0000,0.0000],[775,0.0001,0.0000,0.0000],[780,0.0000,0.0000,0.0000]
-  ];
+function colorForSpectralType(raw) {
+  if (!raw) return 0xffffff;
 
-  // --- Integrate Planck * CMF ---
-  let X = 0, Y = 0, Z = 0;
-  const dLambda = 5e-9;
+  const s = normalizeSpectral(raw);
+  const first = s[0].toUpperCase();
 
-  for (const [lambdaNm, xBar, yBar, zBar] of cmf) {
-    const λ = lambdaNm * 1e-9;
-    const exponent = (h * c) / (λ * k * T);
-    const denom = Math.expm1(exponent); // more accurate
-
-    if (denom <= 0 || !isFinite(denom)) continue;
-
-    let B = (2 * h * c * c) / (Math.pow(λ, 5) * denom);
-    if (!isFinite(B) || B < 0) B = 0;
-    
-    X += B * xBar * dLambda;
-    Y += B * yBar * dLambda;
-    Z += B * zBar * dLambda;
-  }
-
-  let norm = X + Y + Z;
-  if (!isFinite(norm) || norm <= 0) norm = 1;
-  X /= norm; Y /= norm; Z /= norm;
-  
-  let r =  3.2406*X - 1.5372*Y - 0.4986*Z;
-  let g = -0.9689*X + 1.8758*Y + 0.0415*Z;
-  let b =  0.0557*X - 0.2040*Y + 1.0570*Z;
-  r = Math.max(0, r);
-  g = Math.max(0, g);
-  b = Math.max(0, b);
-
-  const maxRGB = Math.max(r, g, b);
-  if (maxRGB > 0) {
-    r /= maxRGB;
-    g /= maxRGB;
-    b /= maxRGB;
-  }
-
-  const gamma = c => (c <= 0.0031308 ? 12.92*c : 1.055*Math.pow(c,1/2.4)-0.055);
-  r = gamma(r); g = gamma(g); b = gamma(b);
-
-  r = Math.min(1, Math.max(0, r));
-  g = Math.min(1, Math.max(0, g));
-  b = Math.min(1, Math.max(0, b));
-  const R = Math.round(r * 255);
-  const G = Math.round(g * 255);
-  const B = Math.round(b * 255);
-
-  return "#" +
-    R.toString(16).padStart(2,"0") +
-    G.toString(16).padStart(2,"0") +
-    B.toString(16).padStart(2,"0");
-}
-
-function temperatureFromBV(bv) {
-  return 4600 * (
-    1 / (0.92 * bv + 1.7) +
-    1 / (0.92 * bv + 0.62)
-  );
-}
-
-function temperatureFromSpectral(s) {
-  const letter = s[0].toUpperCase();
-  const subtype = parseInt(s.slice(1), 10);
-
-  if (!Number.isFinite(subtype)) return null;
-
-  const ranges = {
-    O: [30000, 50000],
-    B: [10000, 30000],
-    A: [7500, 10000],
-    F: [6000, 7500],
-    G: [5200, 6000],
-    K: [3700, 5200],
-    M: [2400, 3700]
+  // OBAFGKM
+  const canonical = {
+    O: 0x9bb0ff,
+    B: 0xaabfff,
+    A: 0xcad7ff,
+    F: 0xfbf8ff,
+    G: 0xfff4e8,
+    K: 0xffddb4,
+    M: 0xffbd6f
   };
+  if (canonical[first]) return canonical[first];
 
-  const r = ranges[letter];
-  if (!r) return null;
+  // Carbon stars (R)
+  if (first === "R") return 0x8b0000;
 
-  const [minT, maxT] = r;
-  const t = maxT - (maxT - minT) * (subtype / 9);
+  // S-type stars
+  if (first === "S") return 0xff8c4a;
 
-  return t;
-}
+  // Wolf-Rayet
+  if (first === "W") return 0x6A00FF;
 
-function colorForSpectralType(star) {
-  if (Number.isFinite(star.bv)) {
-    const T = temperatureFromBV(star.bv);
-    const hex = temperatureToHex(T);
-    return parseInt(hex.slice(1), 16);
+  // White dwarfs
+  if (first === "D") return 0xd0e0ff;
+
+  // N-type
+  if (first === "N") {
+    if (s.includes("C")) return 0x8b0000; // carbon-N
+    if (s.includes("NEB")) return 0xffffff; // nebular central star
+    if (s.includes("NOV") || s.includes("0v") || s.includes("var"))
+      return 0xd0e0ff; // nova / variable
+    return 0xffffff;
   }
 
-  if (star.spect) {
-    const s = normalizeSpectral(star.spect);
-    const first = s[0].toUpperCase();
-
-    if (first === "R") return 0x8b0000;
-    if (first === "S") return 0xff8c4a;
-    if (first === "W") return 0x6A00FF;
-    if (first === "D") return 0xd0e0ff;
-    if (first === "N") return 0xffffff;
-    if (first === "P") return 0xd0e0ff;
-    if (first === "E") return 0xffffff;
-
-    const Tsub = temperatureFromSpectral(s);
-    if (Tsub) {
-      const hex = temperatureToHex(Tsub);
-      return parseInt(hex.slice(1), 16);
-    }
-
-    const classTemp = {
-      O: 40000,
-      B: 20000,
-      A: 9000,
-      F: 6500,
-      G: 5800,
-      K: 4500,
-      M: 3500
-    };
-
-    const T = classTemp[first];
-    if (T) {
-      const hex = temperatureToHex(T);
-      return parseInt(hex.slice(1), 16);
-    }
+  // P-type inspection
+  if (first === "P") {
+    if (s.includes("PLANETARY")) return 0xd0e0ff;
+    return 0xffffff;
   }
+
+  // E-type
+  if (first === "E") return 0xffffff;
+
+  // k-type already normalized
+  if (first === "M") return canonical.M;
+  if (first === "K") return canonical.K;
 
   return 0xffffff;
 }
-
 
 function makeStarTexture() {
   const size = 64;
