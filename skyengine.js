@@ -317,6 +317,31 @@ function temperatureFromBV(bv) {
   );
 }
 
+function temperatureFromSpectral(s) {
+  const letter = s[0].toUpperCase();
+  const subtype = parseInt(s.slice(1), 10);
+
+  if (!Number.isFinite(subtype)) return null;
+
+  const ranges = {
+    O: [30000, 50000],
+    B: [10000, 30000],
+    A: [7500, 10000],
+    F: [6000, 7500],
+    G: [5200, 6000],
+    K: [3700, 5200],
+    M: [2400, 3700]
+  };
+
+  const r = ranges[letter];
+  if (!r) return null;
+
+  const [minT, maxT] = r;
+  const t = maxT - (maxT - minT) * (subtype / 9);
+
+  return t;
+}
+
 function colorForSpectralType(star) {
   if (Number.isFinite(star.bv)) {
     const T = temperatureFromBV(star.bv);
@@ -324,14 +349,35 @@ function colorForSpectralType(star) {
     return parseInt(hex.slice(1), 16);
   }
 
-  const raw = star.spect;
-  if (raw) {
-    const s = normalizeSpectral(raw);
+  if (star.spect) {
+    const s = normalizeSpectral(star.spect);
     const first = s[0].toUpperCase();
 
-    if (first === "R") return 0x8b0000;  // carbon star
+    if (first === "R") return 0x8b0000;
+    if (first === "S") return 0xff8c4a;
+    if (first === "W") return 0x6A00FF;
+    if (first === "D") return 0xd0e0ff;
+    if (first === "N") return 0xffffff;
+    if (first === "P") return 0xd0e0ff;
+    if (first === "E") return 0xffffff;
 
-    const T = spectralTemperature[first];
+    const Tsub = temperatureFromSpectral(s);
+    if (Tsub) {
+      const hex = temperatureToHex(Tsub);
+      return parseInt(hex.slice(1), 16);
+    }
+
+    const classTemp = {
+      O: 40000,
+      B: 20000,
+      A: 9000,
+      F: 6500,
+      G: 5800,
+      K: 4500,
+      M: 3500
+    };
+
+    const T = classTemp[first];
     if (T) {
       const hex = temperatureToHex(T);
       return parseInt(hex.slice(1), 16);
@@ -340,6 +386,7 @@ function colorForSpectralType(star) {
 
   return 0xffffff;
 }
+
 
 function makeStarTexture() {
   const size = 64;
