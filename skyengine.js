@@ -2697,30 +2697,7 @@ if (searchInput) {
   });
 }
 
-searchInput.addEventListener("keydown", e => {
-  const box = document.getElementById("sky3d-search-suggestions");
-  const items = box.querySelectorAll("div");
-  if (!items.length) return;
 
-  if (e.key === "ArrowDown") {
-    e.preventDefault();
-    sky3dSuggestionIndex = (sky3dSuggestionIndex + 1) % items.length;
-  } else if (e.key === "ArrowUp") {
-    e.preventDefault();
-    sky3dSuggestionIndex = (sky3dSuggestionIndex - 1 + items.length) % items.length;
-  } else if (e.key === "Enter") {
-    e.preventDefault();
-    if (sky3dSuggestionIndex >= 0) {
-      items[sky3dSuggestionIndex].click();
-    }
-    return;
-  } else {
-    return;
-  }
-
-  items.forEach(i => i.classList.remove("active"));
-  items[sky3dSuggestionIndex].classList.add("active");
-});
 
 const planetToggle = document.getElementById("sky3d-planets");
 if (planetToggle) {
