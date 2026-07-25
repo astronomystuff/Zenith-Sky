@@ -21,7 +21,6 @@ window.sky3dPlanetMeshes = [];
 window.sky3dPlanetMap = {};
 window.sky3dStarTexture = makeStarTexture();
 let sky3dLocked = false;
-let sky3dSuggestionIndex = -1;
 const LY_TO_PC = 1 / 3.26156;
 window.sky3dRaycaster = new THREE.Raycaster();
 window.sky3dMouse = new THREE.Vector2();
@@ -1085,101 +1084,6 @@ function sky3dUpdateLoading(text) {
 function sky3dHideLoading() {
   const el = document.getElementById("sky3d-loading");
   if (el) el.style.display = "none";
-}
-
-function sky3dGetSuggestions(rawQuery) {
-  let query = rawQuery
-    .toLowerCase()
-    .replace(/[^a-z0-9 ]+/g, "")
-    .trim();
-
-  if (!query) return [];
-
-  const out = [];
-
-  // --- Planets ---
-  for (const name in sky3dPlanetMap) {
-    if (name.startsWith(query)) {
-      out.push({ type: "planet", name: name.charAt(0).toUpperCase() + name.slice(1) });
-    }
-  }
-
-  // --- Stars ---
-  for (let i = 0; i < sky3dStarBase.length; i++) {
-    const s = sky3dStarBase[i];
-    if (!s._aboveHorizon) continue;
-
-    // Proper name
-    if (s.proper && s.proper.toLowerCase().includes(query)) {
-      out.push({ type: "star", name: s.proper });
-      if (out.length > 12) break;
-      continue;
-    }
-
-    // HIP
-    if (query.startsWith("hip")) {
-      const hip = query.replace("hip", "").trim();
-      if (s.hip && String(s.hip) === hip) {
-        out.push({ type: "star", name: "HIP " + hip });
-        continue;
-      }
-    }
-
-    // Bayer
-    if (s.bayer && s.con) {
-      let b = s.bayer.toLowerCase().replace(/[^a-z0-9]/g, "");
-      const key = `${b} ${s.con.toLowerCase()}`;
-      if (key.includes(query)) {
-        out.push({ type: "star", name: getStarNameFromRecord(s) });
-        continue;
-      }
-    }
-
-    // Flamsteed
-    if (s.flam && s.con) {
-      const key = `${s.flam} ${s.con.toLowerCase()}`;
-      if (key.includes(query)) {
-        out.push({ type: "star", name: getStarNameFromRecord(s) });
-        continue;
-      }
-    }
-
-    // Constellation-only
-    if (s.con && s.con.toLowerCase() === query) {
-      out.push({ type: "star", name: getStarNameFromRecord(s) });
-      continue;
-    }
-
-    if (out.length > 12) break;
-  }
-
-  return out;
-}
-
-function sky3dShowSuggestions(list) {
-  const box = document.getElementById("sky3d-search-suggestions");
-
-  if (!list.length) {
-    box.style.display = "none";
-    return;
-  }
-
-  box.innerHTML = "";
-  list.forEach((item, i) => {
-    const div = document.createElement("div");
-    div.textContent = item.name;
-    div.dataset.index = i;
-
-    div.onclick = () => {
-      document.getElementById("sky3d-search").value = item.name;
-      box.style.display = "none";
-      searchSky3D();
-    };
-
-    box.appendChild(div);
-  });
-
-  box.style.display = "block";
 }
 
 function formatBayer(rawBayer, con) {
@@ -2689,15 +2593,7 @@ if (searchInput) {
   searchInput.addEventListener("keydown", e => {
     if (e.key === "Enter") searchSky3D();
   });
-
-  searchInput.addEventListener("input", e => {
-    const q = e.target.value;
-    const suggestions = sky3dGetSuggestions(q);
-    sky3dShowSuggestions(suggestions);
-  });
 }
-
-
 
 const planetToggle = document.getElementById("sky3d-planets");
 if (planetToggle) {
