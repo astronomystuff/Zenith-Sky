@@ -2607,11 +2607,6 @@ if (planetToggle) {
 
 }
 
-document.addEventListener("click", e => {
-  if (!e.target.closest("#sky3d-search")) {
-    document.getElementById("sky3d-search-suggestions").style.display = "none";
-  }
-});
 
 document.getElementById("sky3d-constellations").addEventListener("change", (e) => {
     if (!window.sky3dRootGroup) return;
