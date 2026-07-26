@@ -1949,6 +1949,8 @@ function proximaCore() {
         if (star.proper) names.push(star.proper.toLowerCase());
         if (star.bayer) names.push(star.bayer.toLowerCase());
         if (star.flam) names.push(String(star.flam).toLowerCase());
+        if (star.hip) names.push("hip" + String(star.hip));
+        if (star.hd)  names.push("hd"  + String(star.hd));
         if (star.con) names.push(star.con.toLowerCase());
 
         for (const name of names) {
