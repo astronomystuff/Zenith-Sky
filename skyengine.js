@@ -1900,6 +1900,76 @@ export function drawConstellationLines(linesJson, sky3dStarBase, sky3dRootGroup)
 }
 
 /* ============================================================
+   Proxima (Alpha)
+   ============================================================ */
+function proximaCore() {
+    let raw = document.getElementById("sky3d-search").value.trim().toLowerCase();
+    if (!raw) return;
+
+    raw = raw.replace(/[^a-z0-9\s]/g, " ");
+
+    let tokens = raw.split(/\s+/);
+
+    const junk = [
+        "show","me","and","center","the","star","please","find","select",
+        "go","to","goto","object","look","at","for","a","an","bright","called"
+    ];
+
+    tokens = tokens.filter(t => !junk.includes(t));
+
+    if (tokens.length === 0) return;
+
+    let query = tokens.join(" ");
+
+    function lev(a, b) {
+        const m = a.length, n = b.length;
+        const dp = Array.from({length: m+1}, () => Array(n+1).fill(0));
+
+        for (let i = 0; i <= m; i++) dp[i][0] = i;
+        for (let j = 0; j <= n; j++) dp[0][j] = j;
+
+        for (let i = 1; i <= m; i++) {
+            for (let j = 1; j <= n; j++) {
+                dp[i][j] = Math.min(
+                    dp[i-1][j] + 1,
+                    dp[i][j-1] + 1,
+                    dp[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1)
+                );
+            }
+        }
+        return dp[m][n];
+    }
+
+    let best = null;
+    let bestDist = Infinity;
+
+    for (const star of sky3dStarBase) {
+        const names = [];
+
+        if (star.proper) names.push(star.proper.toLowerCase());
+        if (star.bayer) names.push(star.bayer.toLowerCase());
+        if (star.flam) names.push(String(star.flam).toLowerCase());
+        if (star.con) names.push(star.con.toLowerCase());
+
+        for (const name of names) {
+            const d = lev(query, name);
+            if (d < bestDist) {
+                bestDist = d;
+                best = name;
+            }
+        }
+    }
+
+    if (best && bestDist <= 3) {
+        searchSky3D(best);
+        return;
+    }
+}
+
+
+
+
+/* ============================================================
    onSky3DClick
    ============================================================ */
 function onSky3DClick(event) {
@@ -2118,8 +2188,8 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
 }
 
 
-function searchSky3D() {
-  let query = document.getElementById("sky3d-search").value
+function searchSky3D(query) {
+  query = query
     .toLowerCase()
     .replace(/[^a-z0-9 ]+/g, "")   // remove punctuation, greek chars, etc.
     .replace(/\s+/g, " ")
@@ -2588,12 +2658,12 @@ if (applyLoc) {
 
 // Search wiring
 const searchBtn = document.getElementById("sky3d-search-btn");
-if (searchBtn) searchBtn.onclick = searchSky3D;
+if (searchBtn) searchBtn.onclick = proximaCore;
 
 const searchInput = document.getElementById("sky3d-search");
 if (searchInput) {
   searchInput.addEventListener("keydown", e => {
-    if (e.key === "Enter") searchSky3D();
+    if (e.key === "Enter") proximaCore();
   });
 }
 
