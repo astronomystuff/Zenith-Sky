@@ -1122,8 +1122,9 @@ function isStarAboveHorizon(star) {
   const lst = getLSTRadians(civil, lonDeg);
   const jd = toJulianDate(civil);
   const years = (jd - 2451545.0) / 365.25;
+  const rbp = precessionMatrixIAU2006(jd);
   const pm = applyProperMotionFromXYZ(star, years);
-  const prec = applyPrecession(pm.raDeg, pm.decDeg, jd);
+  const prec = applyPrecession(pm.raDeg, pm.decDeg, rbp);
   const raRad  = prec.raDeg * Math.PI / 180;
   const decRad = prec.decDeg * Math.PI / 180;
   const latRad = latDeg * Math.PI / 180;
