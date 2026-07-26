@@ -2274,12 +2274,13 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   const lst = getLSTRadians(civil, lonDeg);
   const jd = toJulianDate(civil);
   const years = (jd - 2451545.0) / 365.25;
+  const rbp = precessionMatrixIAU2006(jd);
   const pm = applyProperMotionFromXYZ(star, years);
   const pmRaMas  = star.pmRa;   // mas/yr
   const pmDecMas = star.pmDec;  // mas/yr
   const pmTotalMas = Math.sqrt(pmRaMas * pmRaMas + pmDecMas * pmDecMas);
   const pmTotal = pmTotalMas / 1000;
-  const prec = applyPrecession(pm.raDeg, pm.decDeg, jd);
+  const prec = applyPrecession(pm.raDeg, pm.decDeg, rbp);
   const desigs = [];
     if (star.proper) desigs.push(star.proper);
     if (star.bayer) {
