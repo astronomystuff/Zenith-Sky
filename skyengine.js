@@ -1907,7 +1907,7 @@ function proximaCore() {
     if (!raw) return;
 
     raw = raw.replace(/[^a-z0-9\s]/g, " ");
-    tokens = raw.split(/\s+/).filter(Boolean);
+    let tokens = raw.split(/\s+/).filter(Boolean);
     const filler = new Set([
       "select","show","me","center","star","please","find","look","at",
       "go","to","goto","object","bright","called"
