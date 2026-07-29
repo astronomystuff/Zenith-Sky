@@ -1907,78 +1907,99 @@ function proximaCore() {
     if (!raw) return;
 
     raw = raw.replace(/[^a-z0-9\s]/g, " ");
+    const tokens = raw.split(/\s+/).filter(Boolean);
 
-    let tokens = raw.split(/\s+/);
+    // --- FAST LEVENSHTEIN (single-row DP) ---
+    function lev(a, b) {
+        const m = a.length, n = b.length;
+        if (Math.abs(m - n) > 3) return 99;
 
-    const junk = [
-        "show","me","and","center","the","star","please","find","select",
-        "go","to","goto","object","look","at","for","a","an","bright","called"
-    ];
+        let prev = new Array(n + 1);
+        let curr = new Array(n + 1);
 
-    tokens = tokens.filter(t => !junk.includes(t));
+        for (let j = 0; j <= n; j++) prev[j] = j;
 
-    if (tokens.length === 0) return;
+        for (let i = 1; i <= m; i++) {
+            curr[0] = i;
+            const ai = a.charCodeAt(i - 1);
 
-    let query = tokens.join(" ");
+            for (let j = 1; j <= n; j++) {
+                const cost = ai === b.charCodeAt(j - 1) ? 0 : 1;
+                curr[j] = Math.min(
+                    prev[j] + 1,
+                    curr[j - 1] + 1,
+                    prev[j - 1] + cost
+                );
+            }
 
-function lev(a, b) {
-    const m = a.length, n = b.length;
-    if (Math.abs(m - n) > 3) return 99; // early exit
-
-    let prev = new Array(n + 1);
-    let curr = new Array(n + 1);
-
-    for (let j = 0; j <= n; j++) prev[j] = j;
-
-    for (let i = 1; i <= m; i++) {
-        curr[0] = i;
-        const ai = a.charCodeAt(i - 1);
-
-        for (let j = 1; j <= n; j++) {
-            const cost = ai === b.charCodeAt(j - 1) ? 0 : 1;
-            curr[j] = Math.min(
-                prev[j] + 1,
-                curr[j - 1] + 1,
-                prev[j - 1] + cost
-            );
+            [prev, curr] = [curr, prev];
         }
 
-        [prev, curr] = [curr, prev];
+        return prev[n];
     }
 
-    return prev[n];
-}
+    // --- SCORING ENGINE ---
+    function scoreStar(star) {
+        let score = 0;
 
-    let best = null;
-    let bestDist = Infinity;
-
-    for (const star of sky3dStarBase) {
+        // Build all searchable names for this star
         const names = [];
 
         if (star.proper) names.push(star.proper.toLowerCase());
-        if (star.bayer) names.push(star.bayer.toLowerCase());
-        if (star.flam) names.push(String(star.flam).toLowerCase());
-        if (star.hip) names.push("hip" + String(star.hip));
-        if (star.hd)  names.push("hd"  + String(star.hd));
-        if (star.con) names.push(star.con.toLowerCase());
+        if (star.bayer)  names.push(star.bayer.toLowerCase());
+        if (star.flam)   names.push(String(star.flam).toLowerCase());
+        if (star.con)    names.push(star.con.toLowerCase());
 
-        for (const name of names) {
-            const d = lev(query, name);
-            if (d < bestDist) {
-                bestDist = d;
-                best = name;
+        if (star.hip)    names.push("hip " + String(star.hip));
+        if (star.hd)     names.push("hd "  + String(star.hd));
+        if (star.hr)     names.push("hr "  + String(star.hr));
+        if (star.gl)     names.push("gl "  + String(star.gl));
+        if (star.gj)     names.push("gj "  + String(star.gj));
+        if (star.tyc)    names.push("tyc " + String(star.tyc));
+        if (star.gaia)   names.push("gaia " + String(star.gaia));
+        if (star.hyg)    names.push("hyg " + String(star.hyg));
+        if (star.id)     names.push(String(star.id));
+
+        // Score each token against each name
+        for (const t of tokens) {
+            for (const name of names) {
+
+                if (name === t) {
+                    score += 100;
+                    continue;
+                }
+
+                const d = lev(t, name);
+                if (d === 1) score += 50;
+                else if (d === 2) score += 25;
+                else if (d === 3) score += 10;
+
+                // Partial matches (Bayer Greek, constellation roots)
+                if (name.includes(t)) score += 40;
             }
+        }
+
+        return score;
+    }
+
+    // --- FIND BEST STAR ---
+    let bestStar = null;
+    let bestScore = 0;
+
+    for (const star of sky3dStarBase) {
+        const s = scoreStar(star);
+        if (s > bestScore) {
+            bestScore = s;
+            bestStar = star;
         }
     }
 
-    if (best && bestDist <= 3) {
-        searchSky3D(best);
-        return;
+    // --- THRESHOLD ---
+    if (bestStar && bestScore >= 60) {
+        let bestName = bestStar.proper || bestStar.bayer || bestStar.con || bestStar.hip || bestStar.hd;
+        searchSky3D(bestName.toLowerCase());
     }
 }
-
-
-
 
 /* ============================================================
    onSky3DClick
