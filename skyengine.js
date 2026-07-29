@@ -1915,14 +1915,31 @@ function proximaCore() {
     ]);
 
     const con3 = new Set([
-      "ori","cet","vel","sco","leo","vir","lib","cap","sgr",
-      "uma","umi","and","for","can"
+      "and","ant","aps","aqr","aql","ara","ari","aur","boo","cae","cam","cap",
+      "car","cas","cen","cep","cet","cha","cir","cma","cmi","cnc","col","com",
+      "cra","crb","crv","crt","cru","crx","cyg","del","dor","dra","equ","eri",
+      "for","gem","gru","her","hor","hya","hyi","ind","lac","leo","lep","lib",
+      "lup","lyn","lyr","men","mic","mon","mus","nor","oct","oph","ori","pav",
+      "peg","per","phe","pic","psa","psc","pup","pyx","ret","scl","sco","sct",
+      "ser","sex","sge","sgr","tau","tel","tri","tra","tuc","uma","umi","vel",
+      "vir","vol","vul"
     ]);
 
     const conFull = new Set([
-      "orionis","ceti","velorum","scorpii","leonis","virginis",
-      "librae","capricorni","sagittarii","ursae","andromedae",
-      "fornacis","canis"
+      "andromedae","antliae","apus","aquarii","aquilae","arae","arietis","aurigae",
+      "boötis","caeli","camelopardalis","capricorni","carinae","cassiopeiae",
+      "centauri","cephei","ceti","chamaeleontis","circini","canis majoris",
+      "canis minoris","cancri","columbae","comae berenices","coronae australis",
+      "coronae borealis","corvi","crateris","crucis","cygni","delphini","doradus",
+      "draconis","equulei","eridani","fornacis","geminorum","gruis","herculis",
+      "horologii","hydrae","hydri","indis","lacertae","leonis","leporis","librae",
+      "lupi","lyncis","lyrae","mensae","microscopii","monocerotis","muscae",
+      "normae","octantis","ophiuchi","orionis","pavonis","pegasi","persei",
+      "phoenicis","pictoris","piscis austrini","piscium","puppi","pyxidis",
+      "reticuli","sculptoris","scorpii","scuti","serpentis","sextantis",
+      "sagittae","sagittarii","tauri","telescopii","trianguli",
+      "trianguli australis","tucanae","ursae majoris","ursae minoris","velorum",
+      "virginis","volantis","vulpeculae"
     ]);
 
     function shouldKeep(t, prev, next) {
