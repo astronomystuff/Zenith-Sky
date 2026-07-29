@@ -1908,12 +1908,45 @@ function proximaCore() {
 
     raw = raw.replace(/[^a-z0-9\s]/g, " ");
     let tokens = raw.split(/\s+/).filter(Boolean);
+    const greek = new Set([
+      "alpha","beta","gamma","delta","epsilon","zeta","eta","theta",
+      "iota","kappa","lambda","mu","nu","xi","omicron","pi","rho",
+      "sigma","tau","upsilon","phi","chi","psi","omega"
+    ]);
+
+    const con3 = new Set([
+      "ori","cet","vel","sco","leo","vir","lib","cap","sgr",
+      "uma","umi","and","for","can"
+    ]);
+
+    const conFull = new Set([
+      "orionis","ceti","velorum","scorpii","leonis","virginis",
+      "librae","capricorni","sagittarii","ursae","andromedae",
+      "fornacis","canis"
+    ]);
+
+    function shouldKeep(t, prev, next) {
+        if (t !== "the" && t !== "and" && t !== "for") return true;
+        if (t === "the" && (con3.has(next) || conFull.has(next))) return true;
+        if (t === "and" && greek.has(prev)) return true;
+        if (t === "for" && greek.has(prev)) return true;
+        if ((t === "and" || t === "for") && con3.has(next)) return true;
+
+        return false;
+    }
+
     const filler = new Set([
       "select","show","me","center","star","please","find","look","at",
       "go","to","goto","object","bright","called"
     ]);
 
     tokens = tokens.filter(t => !filler.has(t));
+    tokens = tokens.filter((t, i) => {
+      const prev = tokens[i - 1] || "";
+      const next = tokens[i + 1] || "";
+      return shouldKeep(t, prev, next);
+    });
+
 
     // --- FAST LEVENSHTEIN (single-row DP) ---
     function lev(a, b) {
