@@ -2021,14 +2021,14 @@ function proximaCore() {
             for (const name of names) {
 
                 if (name === t) {
-                    score += 100;
+                    score += 200;
                     continue;
                 }
 
                 const d = lev(t, name);
-                if (d === 1) score += 50;
-                else if (d === 2) score += 25;
-                else if (d === 3) score += 10;
+                if (d === 1) score += 75;
+                else if (d === 2) score += 35;
+                else if (d === 3) score += 7;
 
                 // Partial matches (Bayer Greek, constellation roots)
                 if (name.includes(t)) score += 40;
