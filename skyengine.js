@@ -1907,7 +1907,13 @@ function proximaCore() {
     if (!raw) return;
 
     raw = raw.replace(/[^a-z0-9\s]/g, " ");
-    const tokens = raw.split(/\s+/).filter(Boolean);
+    tokens = raw.split(/\s+/).filter(Boolean);
+    const filler = new Set([
+      "select","show","me","center","star","please","find","look","at",
+      "go","to","goto","object","bright","called"
+    ]);
+
+    tokens = tokens.filter(t => !filler.has(t));
 
     // --- FAST LEVENSHTEIN (single-row DP) ---
     function lev(a, b) {
