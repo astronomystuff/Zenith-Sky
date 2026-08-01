@@ -2259,6 +2259,7 @@ function onSky3DClick(event) {
 
 
 function sky3dClearInfo() {
+  document.getElementById("sky3d-selected-heading").style.display = "";
   document.getElementById("sky3d-object-name").textContent = "";
   document.getElementById("sky3d-object-type").textContent = "";
   document.getElementById("sky3d-object-ra-dec").textContent = "";
@@ -2899,10 +2900,32 @@ if (document.readyState === "loading") {
   initSky3DModal();
 }
 
+window.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("sky3d-selected-heading").style.display = "none";
+    document.getElementById("sky3d-object-name").textContent = "";
+    document.getElementById("sky3d-object-type").textContent = "";
+    document.getElementById("sky3d-object-ra-dec").textContent = "";
+    document.getElementById("sky3d-object-alt-az").textContent = "";
+    document.getElementById("sky3d-object-pm-speed").textContent = "";
+    document.getElementById("sky3d-object-elongation").textContent = "";
+    document.getElementById("sky3d-object-mag").textContent = "";
+    document.getElementById("sky3d-object-absmag").textContent = "";
+    document.getElementById("sky3d-object-luminosity").textContent = "";
+    document.getElementById("sky3d-object-phase").textContent = "";
+    document.getElementById("sky3d-object-size").textContent = "";
+    document.getElementById("sky3d-object-distance").textContent = "";
+    document.getElementById("sky3d-object-helio-dist").textContent = "";
+    document.getElementById("sky3d-object-spectral").textContent = "";
+    document.getElementById("sky3d-object-velocity").textContent = "";
+    document.getElementById("sky3d-object-designations").textContent = "";
+    document.getElementById("sky3d-object-constellation").textContent = "";
+});
+
 window.sky3dStarBasePromise = loadStarCSV(
   "https://astro-proxy.niamnbhakta.workers.dev/?url=" +
   encodeURIComponent("https://github.com/astronomystuff/Zenith-Sky/releases/download/At-HYG/stars.csv")
 );
+
 
 window.sky3dStarBase = sky3dStarBase;
 window.sky3dCelestialSphere = sky3dCelestialSphere;
