@@ -2015,6 +2015,29 @@ function proximaCore() {
         if (star.gaia)   names.push("gaia " + String(star.gaia));
         if (star.hyg)    names.push("hyg " + String(star.hyg));
         if (star.id)     names.push(String(star.id));
+    
+        // --- BAYER → GREEK NORMALIZATION ---
+        if (star.bayer && star.con) {
+        const greekMap = {
+            alp: "alpha", bet: "beta", gam: "gamma", del: "delta", eps: "epsilon",
+            zet: "zeta", eta: "eta", the: "theta", iot: "iota", kap: "kappa",
+            lam: "lambda", mu: "mu", nu: "nu", xi: "xi", omi: "omicron",
+            pi: "pi", rho: "rho", sig: "sigma", tau: "tau", ups: "upsilon",
+            phi: "phi", chi: "chi", psi: "psi", ome: "omega"
+        };
+
+        let b = star.bayer.toLowerCase().replace(/[^a-z0-9]/g, "");
+        const match = b.match(/^([a-z]+)(\d*)$/);
+        if (match) {
+            const root = match[1];
+            const greek = greekMap[root];
+            if (greek) {
+                // e.g. "alpha cru", "alpha crucis"
+                names.push(greek);
+                names.push(`${greek} ${star.con.toLowerCase()}`);
+            }
+        }
+    }
 
         // Score each token against each name
         for (const t of tokens) {
@@ -2031,7 +2054,7 @@ function proximaCore() {
                 else if (d === 3) score += 7;
 
                 // Partial matches (Bayer Greek, constellation roots)
-                if (name.includes(t)) score += 40;
+                if (name.includes(t)) score += 50;
             }
         }
 
