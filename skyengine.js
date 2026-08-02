@@ -1593,6 +1593,7 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
   const chosen = [];
 
   for (let i = 0; i <= sky3dStarBase.length; i++) {
+    let s;
     if (i === sky3dStarBase.length) {
     const ra = 0;
     const dec = 0;
@@ -1660,7 +1661,12 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
 }
 
   // Sort by magnitude
-  chosen.sort((a, b) => sky3dStarBase[a.idx].mag - sky3dStarBase[b.idx].mag);
+  chosen.sort((a, b) => {
+    const magA = (a.idx === sky3dStarBase.length) ? 15.9 : sky3dStarBase[a.idx].mag;
+    const magB = (b.idx === sky3dStarBase.length) ? 15.9 : sky3dStarBase[b.idx].mag;
+    return magA - magB;
+  });
+
   if (chosen.length > maxPoints) chosen.length = maxPoints;
 
   const positions = new Float32Array(chosen.length * 3);
