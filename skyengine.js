@@ -2439,15 +2439,29 @@ if (dir.dot(camForward) < -0.9999) {
 const q = new THREE.Quaternion().setFromUnitVectors(dir, camForward);
 sky3dRootGroup.quaternion.premultiply(q);
 
-// --- 6. Remove Roll ---
-const camForwardWorld = new THREE.Vector3(0, 0, -1)
+// --- 6. Compute camera forward in world space ---
+let camForwardWorld = new THREE.Vector3(0, 0, -1)
   .applyQuaternion(sky3dCamera.quaternion)
   .normalize();
 
-// World up
 const worldUp = new THREE.Vector3(0, 1, 0);
 
-// Sky up
+// --- 7. Detect zenith crossing (camera flipped) ---
+if (camForwardWorld.dot(worldUp) < 0) {
+
+  // Rotate sky 180° around world-up
+  const flipQuat = new THREE.Quaternion()
+    .setFromAxisAngle(worldUp, Math.PI);
+
+  sky3dRootGroup.quaternion.premultiply(flipQuat);
+
+  // Recompute forward after flip
+  camForwardWorld = new THREE.Vector3(0, 0, -1)
+    .applyQuaternion(sky3dCamera.quaternion)
+    .normalize();
+}
+
+// --- 8. Remove Roll ---
 const skyUpWorld = new THREE.Vector3(0, 1, 0)
   .applyQuaternion(sky3dRootGroup.quaternion)
   .normalize();
@@ -2468,11 +2482,11 @@ const angle = Math.acos(dot);
 const cross = projectedSkyUp.clone().cross(projectedWorldUp);
 const sign = cross.dot(camForwardWorld) < 0 ? -1 : 1;
 
-// Apply roll correction
 const rollQuat = new THREE.Quaternion()
   .setFromAxisAngle(camForwardWorld, angle * sign);
 
 sky3dRootGroup.quaternion.premultiply(rollQuat);
+
 
   // 7. Update info panel
   const civil = getCivilFieldsFromUI();
