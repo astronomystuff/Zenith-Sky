@@ -1592,7 +1592,37 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
 
   const chosen = [];
 
-  for (let i = 0; i < sky3dStarBase.length; i++) {
+  for (let i = 0; i <= sky3dStarBase.length; i++) {
+    if (i === sky3dStarBase.length) {
+    const ra = 0;
+    const dec = 0;
+    const raDeg = ra + (187.104 - ra);
+    const decDeg = dec + (31.477 - dec); 
+    const prec = applyPrecession(raDeg, decDeg, rbp);
+    const raRad  = prec.raDeg * Math.PI / 180;
+    const decRad = prec.decDeg * Math.PI / 180;
+    const H = lst - raRad;
+    const sinAlt = Math.sin(latRad) * Math.sin(decRad) +
+                   Math.cos(latRad) * Math.cos(decRad) * Math.cos(H);
+    const alt = Math.asin(sinAlt);
+    if (alt <= 0) continue;
+    if (dynamicMagLimit < 9) continue;
+    if (sky3dCamera.fov > 40) continue;
+    const cosAz = (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
+                  (Math.cos(alt) * Math.cos(latRad));
+    const sinAz = -Math.cos(decRad) * Math.sin(H) / Math.cos(alt);
+    const az = Math.atan2(sinAz, cosAz);
+    const x = -Math.cos(alt) * Math.sin(az);
+    const y = Math.sin(alt);
+    const z = Math.cos(alt) * Math.cos(az);
+      s = {
+        raDeg: prec.raDeg,
+        decDeg: prec.decDeg,
+        mag: 15.9,
+        spect: "QSO"
+      };
+    chosen.push({ idx: i, x, y, z });
+    } else {
     const s = sky3dStarBase[i];
     const pm = applyProperMotionFromXYZ(s, years);
     const prec = applyPrecession(pm.raDeg, pm.decDeg, rbp);
@@ -1627,6 +1657,7 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
 
     chosen.push({ idx: i, x, y, z });
   }
+}
 
   // Sort by magnitude
   chosen.sort((a, b) => sky3dStarBase[a.idx].mag - sky3dStarBase[b.idx].mag);
@@ -1640,7 +1671,16 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
   let ptr = 0;
   for (let i = 0; i < chosen.length; i++) {
     const c = chosen[i];
-    const star = sky3dStarBase[c.idx];
+    let star;
+    if (c.idx === sky3dStarBase.length) {
+      star = {
+        mag: 15.9,
+        spect: "QSO",
+        name: "TON 618"
+      };
+    } else {
+      star = sky3dStarBase[c.idx];
+    }
 
     starIndices[i] = c.idx;
 
@@ -1650,7 +1690,12 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     positions[ptr++] = c.z;
 
     // Size
-    const mag = star.mag;
+    let mag;
+    if (star.spect === "QSO") {
+      mag = 9;
+    } else {
+      mag = star.mag;
+    }
     sizes[i] = 0.001 + 0.0375 * Math.pow(1.5, -0.9 * mag);
 
     // Color
