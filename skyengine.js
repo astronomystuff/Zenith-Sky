@@ -2447,19 +2447,15 @@ let camForwardWorld = new THREE.Vector3(0, 0, -1)
 const worldUp = new THREE.Vector3(0, 1, 0);
 
 // --- 7. Detect zenith crossing (camera flipped) ---
-if (camForwardWorld.dot(worldUp) < 0) {
+if (dot < 0) {
+  dot = Math.abs(dot);
 
-  // Rotate sky 180° around world-up
   const flipQuat = new THREE.Quaternion()
     .setFromAxisAngle(worldUp, Math.PI);
 
   sky3dRootGroup.quaternion.premultiply(flipQuat);
-
-  // Recompute forward after flip
-  camForwardWorld = new THREE.Vector3(0, 0, -1)
-    .applyQuaternion(sky3dCamera.quaternion)
-    .normalize();
 }
+
 
 // --- 8. Remove Roll ---
 const skyUpWorld = new THREE.Vector3(0, 1, 0)
