@@ -2429,12 +2429,14 @@ points.localToWorld(pos);
 
 // --- 4. Direction ---
 const dir = pos.clone().normalize();
-const camForward = new THREE.Vector3( 0, 0, -1);
+const camForward = new THREE.Vector3(0, 0, -1);
+
+// Prevent 180° singularity when dir is opposite camForward
 if (dir.dot(camForward) < -0.9999) {
-    dir.x += 0.001;
-    dir.normalize();
+  dir.x += 0.001;
+  dir.normalize();
 }
-  
+
 // --- 5. Center Star ---
 const q = new THREE.Quaternion().setFromUnitVectors(dir, camForward);
 sky3dRootGroup.quaternion.premultiply(q);
@@ -2447,15 +2449,21 @@ let camForwardWorld = new THREE.Vector3(0, 0, -1)
 const worldUp = new THREE.Vector3(0, 1, 0);
 
 // --- 7. Detect zenith crossing (camera flipped) ---
-if (dot < 0) {
-  dot = Math.abs(dot);
+let zenithDot = camForwardWorld.dot(worldUp);
 
+if (zenithDot < 0) {
+
+  // Flip sky 180 degrees around world-up
   const flipQuat = new THREE.Quaternion()
     .setFromAxisAngle(worldUp, Math.PI);
 
   sky3dRootGroup.quaternion.premultiply(flipQuat);
-}
 
+  // Recompute forward after flip
+  camForwardWorld = new THREE.Vector3(0, 0, -1)
+    .applyQuaternion(sky3dCamera.quaternion)
+    .normalize();
+}
 
 // --- 8. Remove Roll ---
 const skyUpWorld = new THREE.Vector3(0, 1, 0)
@@ -2482,6 +2490,7 @@ const rollQuat = new THREE.Quaternion()
   .setFromAxisAngle(camForwardWorld, angle * sign);
 
 sky3dRootGroup.quaternion.premultiply(rollQuat);
+
 
 
   // 7. Update info panel
