@@ -2362,6 +2362,18 @@ function searchSky3D(query) {
       break;
     }
 
+    // --- HD search ---
+    if (query.startsWith("hd")) {
+      const hd = query.replace("hd", "").trim();
+      for (let i = 0; i < sky3dStarBase.length; i++) {
+        const s = sky3dStarBase[i];
+        if (s.hd && String(s.hd) === hd) {
+          best = { star: s, idx: i };
+          break;
+        }
+      }
+    }
+
     // --- HIP search ---
     if (query.startsWith("hip")) {
       const hip = query.replace("hip", "").trim();
