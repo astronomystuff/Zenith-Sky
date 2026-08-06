@@ -2364,13 +2364,10 @@ function searchSky3D(query) {
 
     // --- HD search ---
     if (query.startsWith("hd")) {
-      const hd = query.replace("hd", "").trim();
-      for (let i = 0; i < sky3dStarBase.length; i++) {
-        const s = sky3dStarBase[i];
-        if (s.hd && String(s.hd) === hd) {
-          best = { star: s, idx: i };
-          break;
-        }
+      const hip = query.replace("hd", "").trim();
+      if (s.hd && String(s.hd) === hd) {
+        best = { star: s, idx: i };
+        break;
       }
     }
 
