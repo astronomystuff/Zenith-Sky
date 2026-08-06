@@ -1988,6 +1988,19 @@ const phraseGenitiveToAbbrev = {
       return shouldKeep(t, prev, next);
     });
 
+  // --- HD direct match ---
+  const hdMatch = raw.match(/\bhd\s*(\d+)\b/i);
+  if (hdMatch) {
+      const hdNum = hdMatch[1];
+    
+      for (const star of sky3dStarBase) {
+          if (star.hd && String(star.hd) === hdNum) {
+              searchSky3D("hd " + hdNum);
+              return;
+          }
+      }
+  }
+
 
     // --- FAST LEVENSHTEIN (single-row DP) ---
     function lev(a, b) {
