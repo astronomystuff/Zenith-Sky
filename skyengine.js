@@ -930,12 +930,32 @@ function getCivilFieldsFromUI() {
   const timeStr = document.getElementById("sky3d-time").value || "00:00";
   const era  = document.getElementById("sky3d-era").value;
 
+  // Time Zone + DST
+  const tzOffset = parseFloat(document.getElementById("sky3d-tz").value);
+  const dst = document.getElementById("sky3d-dst").checked ? 1 : 0;
+
   let [hh, mm] = timeStr.split(":").map(Number);
+
+  // BCE Handling
   let y = year;
   if (era === "BCE") y = 1 - year;
 
-  return { year: y, month, day, hour: hh, minute: mm, second: 0 };
+  // --- LOCAL → UTC conversion ---
+  let utcHour = hh - (tzOffset + dst);
+
+  while (utcHour < 0) utcHour += 24;
+  while (utcHour >= 24) utcHour -= 24;
+
+  return {
+    year: y,
+    month,
+    day,
+    hour: utcHour,
+    minute: mm,
+    second: 0
+  };
 }
+
 
 function getLocationFromUI() {
   let lat = parseFloat(document.getElementById("sky3d-lat").value) || 0;
