@@ -2364,7 +2364,7 @@ function searchSky3D(query) {
 
     // --- HD search ---
     if (query.startsWith("hd")) {
-      const hip = query.replace("hd", "").trim();
+      const hd = query.replace("hd", "").trim();
       if (s.hd && String(s.hd) === hd) {
         best = { star: s, idx: i };
         break;
