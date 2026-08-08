@@ -1616,8 +1616,6 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     const s = sky3dStarBase[i];
     const pm = applyProperMotionFromXYZ(s, years);
     const prec = applyPrecession(pm.raDeg, pm.decDeg, rbp);
-    s.raDeg = prec.raDeg;
-    s.decDeg = prec.decDeg;
     const raRad  = prec.raDeg * Math.PI / 180;
     const decRad = prec.decDeg * Math.PI / 180;
 
