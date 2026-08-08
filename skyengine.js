@@ -1616,8 +1616,6 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     const s = sky3dStarBase[i];
     const pm = applyProperMotionFromXYZ(s, years);
     const prec = applyPrecession(pm.raDeg, pm.decDeg, rbp);
-    s.raDeg = prec.raDeg;
-    s.decDeg = prec.decDeg;
     const raRad  = prec.raDeg * Math.PI / 180;
     const decRad = prec.decDeg * Math.PI / 180;
 
@@ -1800,14 +1798,17 @@ export function drawConstellationLines(linesJson, sky3dStarBase, sky3dRootGroup)
 
   const group = new THREE.Group();
   group.name = "sky3dConstellationLines";
-
+  
   const civil = getCivilFieldsFromUI();
   const { latDeg, lonDeg } = getLocationFromUI();
   const latRad = latDeg * Math.PI/180;
   const lstRad = getLSTRadians(civil, lonDeg);
+  const jd = toJulianDate(civil);
+  const years = (jd - 2451545.0) / 365.25;
   let fov = sky3dCamera ? sky3dCamera.fov : 60;
   let dynamicMagLimit = 6 + 1.8 * Math.log2(60 / fov);
   dynamicMagLimit = Math.max(2, Math.min(15, dynamicMagLimit));
+  const rbp = precessionMatrixIAU2006(jd);
   
   for (const [constName, segments] of Object.entries(linesJson)) {
     const positions = [];
@@ -1836,8 +1837,11 @@ export function drawConstellationLines(linesJson, sky3dStarBase, sky3dRootGroup)
       if (!A || !B) continue;
 
       // --- A ---
-      const raA  = A.raDeg  * Math.PI/180;
-      const decA = A.decDeg * Math.PI/180;
+      const pmA = applyProperMotionFromXYZ(A, years);
+      const precA = applyPrecession(pmA.raDeg, pmA.decDeg, rbp);
+      const raA  = precA.raDeg  * Math.PI/180;
+      const decA = precA.decDeg * Math.PI/180;
+      
       const haA = lstRad - raA;
 
       const sinAltA = Math.sin(decA)*Math.sin(latRad) +
@@ -1856,8 +1860,10 @@ export function drawConstellationLines(linesJson, sky3dStarBase, sky3dRootGroup)
       };
 
       // --- B ---
-      const raB  = B.raDeg  * Math.PI/180;
-      const decB = B.decDeg * Math.PI/180;
+      const pmB = applyProperMotionFromXYZ(B, years);
+      const precB = applyPrecession(pmB.raDeg, pmB.decDeg, rbp);
+      const raB  = precB.raDeg  * Math.PI/180;
+      const decB = precB.decDeg * Math.PI/180;
       const haB = lstRad - raB;
 
       const sinAltB = Math.sin(decB)*Math.sin(latRad) +
@@ -2584,7 +2590,7 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   document.getElementById("sky3d-object-name").textContent =
     getStarNameFromRecord(star);
   document.getElementById("sky3d-object-type").textContent = "Star";
-  const raHoursDisplay = pm.raDeg / 15;
+  const raHoursDisplay = prec.raDeg / 15;
   document.getElementById("sky3d-object-ra-dec").textContent =
     `RA: ${raHoursDisplay.toFixed(2)}h, Dec: ${pm.decDeg.toFixed(2)}°`;
   document.getElementById("sky3d-object-alt-az").textContent =
