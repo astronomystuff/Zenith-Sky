@@ -464,13 +464,13 @@ button:active,
     90deg,
     #8F00FF,
     #92B3FD,
-    #FFDA03,
+    #FF6F61,
     #FF6E00,
-    #FFBF00,
-    #FF6F61
+    #FFDA03,
+    #FF6E00
   ) 1;
   padding: 6px;
-  border-radius: 6px 4px 5px 7px;
+  border-radius: 8px 3px 5px 6px;
   box-sizing: border-box;
 }
 
