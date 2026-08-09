@@ -466,12 +466,19 @@ button:active,
     #92B3FD,
     #FF6F61,
     #FF6E00,
-    #FFDA03,
-    #FF6E00
+    #FFBF00,
+    #FFDA03
   ) 1;
   padding: 6px;
   border-radius: 30px 3px 5px 6px;
   box-sizing: border-box;
+  box-shadow:
+    0 0 8px rgba(143,0,255,0.25), 
+    0 0 12px rgba(146,179,253,0.22),
+    0 0 16px rgba(255,111,97,0.20),
+    0 0 20px rgba(255,110,0,0.18),
+    0 0 24px rgba(255,191,0,0.16),
+    0 0 28px rgba(255,218,3,0.14);
 }
 
 .sky3d-select {
