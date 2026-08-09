@@ -461,7 +461,7 @@ button:active,
   background: #181818;
   color: #eee;
   padding: 6px;
-  border-radius: 30px 3px 5px 6px;
+  border-radius: 8px 3px 5px 6px;
   box-sizing: border-box;
   border: none;
 }
@@ -470,7 +470,6 @@ button:active,
   content: "";
   position: absolute;
   inset: 0;
-  padding: 2px;
   border-radius: 8px 3px 5px 6px;
   background: linear-gradient(
     90deg,
@@ -481,6 +480,8 @@ button:active,
     #FFDA03,
     #FF6E00
   );
+  padding: 2px;
+  background-clip: content-box;
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
@@ -488,6 +489,7 @@ button:active,
   mask-composite: exclude;
   pointer-events: none;
 }
+
 
 
 .sky3d-select {
