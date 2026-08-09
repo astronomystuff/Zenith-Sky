@@ -445,6 +445,16 @@ button:active,
 #sky3d-info h4 { margin: 0 0 0px 0; }
 #sky3d-info h5 { margin: 0 0 12px 0; }
 
+.sky3d-input {
+  width: 100%;
+  background: #151515;
+  color: #eee;
+  border: 1px solid #333;
+  padding: 6px;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
 /* SMALL SCREENS */
 
 @page { size: 8.5in 11in; margin: 0; }
