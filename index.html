@@ -275,7 +275,7 @@
       display:flex;
       justify-content:space-between;
       align-items:center;
-      flex-shrink:0;
+      flex-shrink:0;  
       gap:10px;
       background:#111;
     ">
@@ -342,13 +342,13 @@
 
         <h3>Date & Time</h3>
         <label>Year</label>
-        <input type="number" id="sky3d-year" value="2025" style="width:100%;">
+        <input type="number" id="sky3d-year" class="sky3d-input" value="2025" style="width:100%;">
         <label>Month</label>
-        <input type="number" id="sky3d-month" value="1" min="1" max="12" style="width:100%;">
+        <input type="number" id="sky3d-month" class="sky3d-input" value="1" min="1" max="12" style="width:100%;">
         <label>Day</label>
-        <input type="number" id="sky3d-day" value="1" min="1" max="31" style="width:100%;">
+        <input type="number" id="sky3d-day" class="sky3d-input" value="1" min="1" max="31" style="width:100%;">
         <label>Time (UTC)</label>
-        <input type="time" id="sky3d-time" value="00:00" style="width:100%;">
+        <input type="time" id="sky3d-time" class="sky3d-input" value="00:00" style="width:100%;">
         <label>Time Zone</label>
         <select id="sky3d-tz" style="width:100%;">
           <option value="0">Greenwich Mean Time (UTC+0)</option>
@@ -387,7 +387,7 @@
           <input type="checkbox" id="sky3d-dst">
           Daylight Savings
         </label>
-        <hr style="margin: 12px 0;">
+        <div style="height: 12px;"></div>
         <label>Era</label>
         <select id="sky3d-era" style="width:100%;">
           <option value="CE" selected>CE</option>
@@ -397,9 +397,9 @@
 
         <h3 style="margin-top:20px;">Location</h3>
         <label>Latitude</label>
-        <input type="number" id="sky3d-lat" step="0.0001" value="0" style="width:100%;">
+        <input type="number" id="sky3d-lat" class="sky3d-input" step="0.0001" value="0" style="width:100%;">
         <label>Longitude</label>
-        <input type="number" id="sky3d-lon" step="0.0001" value="0" style="width:100%;">
+        <input type="number" id="sky3d-lon" class="sky3d-input" step="0.0001" value="0" style="width:100%;">
         <button id="sky3d-apply-location" style="margin-top:10px; width:100%;">Apply</button>
 
         <h3 style="margin-top:20px;">Layers</h3>
@@ -410,7 +410,7 @@
         <h3 style="margin-top:20px;">Search</h3>
 
         <div style="position:relative;">
-          <input type="text" id="sky3d-search" placeholder="Ask Proxima..." style="width:100%;">
+          <input type="text" id="sky3d-search" class="sky3d-input" placeholder="Ask Proxima..." style="width:100%;">
           <div id="sky3d-search-suggestions" class="sky3d-suggestions"></div>
         </div>
 
