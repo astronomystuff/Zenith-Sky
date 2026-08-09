@@ -447,12 +447,27 @@ button:active,
 
 .sky3d-input {
   width: 100%;
-  background: #151515;
+  background: #181818;
   color: #eee;
   border: 1px solid #333;
   padding: 6px;
   border-radius: 4px;
   box-sizing: border-box;
+}
+
+.sky3d-select {
+  width: 100%;
+  background: #181818;
+  color: #eee;
+  border: 1px solid #333;
+  padding: 6px;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.sky3d-checkbox {
+  accent-color: #eee;
+  width: auto;
 }
 
 /* SMALL SCREENS */
