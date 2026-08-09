@@ -455,6 +455,25 @@ button:active,
   box-sizing: border-box;
 }
 
+.sky3d-proxima-button {
+  width: 100%;
+  background: #181818;
+  color: #eee;
+  border: 2px solid transparent;
+  border-image: linear-gradient(
+    90deg,
+    #92B3FD,
+    #FFDA03,
+    #FF6F61,
+    #FFBF00,
+    #8F00FF,
+    #FF6E00
+  ) 1;
+  padding: 6px;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
 .sky3d-select {
   width: 100%;
   background: #181818;
