@@ -697,7 +697,6 @@ if (!finite(vx) || !finite(vy) || !finite(vz)) {
 }
 
 
-
 if (!finite(dist) || dist <= 0) dist = 1000;
 
     stars.push({
