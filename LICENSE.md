@@ -19,7 +19,6 @@ This includes, but is not limited to, use in:<br>
 - donation‑funded or patron‑funded projects, including platforms such as Patreon, <br>
 Ko‑fi, BuyMeACoffee, or similar<br>
 - commercial research or internal corporate tools<br>
-- monetized videos, tutorials, or educational content<br>
 - for internal productivity tools, administrative tasks, or workflow automation in a <br>
 for-profit environment<br>
 - If the Software is used to provide a service over a network, the entity providing the service must<br>
