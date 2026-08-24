@@ -6,6 +6,8 @@ body {
   margin-left: 12px;
   background-image: url("./background.png");
   background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   color: #f2f2f7;
   font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
