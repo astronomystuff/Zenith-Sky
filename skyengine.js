@@ -1757,7 +1757,7 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
 
     // Color
     const hex = colorForSpectralType(star.spect)
-    star.texture = makeColoredStarTexture(hex);
+    star.texture = makeStarTexture(hex);
     colors[i*3]   = ((hex >> 16) & 255) / 255;
     colors[i*3+1] = ((hex >> 8)  & 255) / 255;
     colors[i*3+2] = ( hex        & 255) / 255;
