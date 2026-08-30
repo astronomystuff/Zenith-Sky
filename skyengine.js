@@ -357,26 +357,22 @@ function colorForSpectralType(raw) {
 }
 
 
-function makeStarTexture(hex) {
+function makeStarTexture() {
   const size = 64;
   const canvas = document.createElement("canvas");
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext("2d");
 
-  const r = (hex >> 16) & 255;
-  const g = (hex >> 8) & 255;
-  const b = hex & 255;
-
   const grad = ctx.createRadialGradient(
     size/2, size/2, 0,
     size/2, size/2, size/2
   );
 
-  grad.addColorStop(0.0, `rgba(${r},${g},${b},1.0)`);
-  grad.addColorStop(0.15, `rgba(${r},${g},${b},0.85)`);
-  grad.addColorStop(0.4, `rgba(${r},${g},${b},0.25)`);
-  grad.addColorStop(1.0, `rgba(${r},${g},${b},0)`);
+  grad.addColorStop(0.0, "rgba(180,180,180,1.0)");
+  grad.addColorStop(0.15, "rgba(180,180,180,0.85)");
+  grad.addColorStop(0.4, "rgba(180,180,180,0.25)");
+  grad.addColorStop(1.0, "rgba(180,180,180,0)");
 
   ctx.fillStyle = grad;
   ctx.beginPath();
@@ -390,7 +386,6 @@ function makeStarTexture(hex) {
 
   return texture;
 }
-
 
 /* ============================================================
    minimalCameraControls
@@ -1756,8 +1751,7 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     sizes[i] = 0.001 + 0.0375 * Math.pow(1.5, -0.9 * mag);
 
     // Color
-    const hex = colorForSpectralType(star.spect)
-    star.texture = makeStarTexture(hex);
+    const hex = colorForSpectralType(star.spect);
     colors[i*3]   = ((hex >> 16) & 255) / 255;
     colors[i*3+1] = ((hex >> 8)  & 255) / 255;
     colors[i*3+2] = ( hex        & 255) / 255;
@@ -1772,12 +1766,24 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
   const material = new THREE.PointsMaterial({
     size: 1.5,
     sizeAttenuation: true,
+    map: window.sky3dStarTexture,
     transparent: true,
     depthTest: true,
     depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    map: star.texture
+    vertexColors: true,
+    blending: THREE.AdditiveBlending
   });
+
+  material.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader.replace(
+      "void main() {",
+      "attribute float sizeAttr;\nvoid main() {"
+    );
+    shader.vertexShader = shader.vertexShader.replace(
+      "gl_PointSize = size;",
+      "gl_PointSize = size * sizeAttr;"
+    );
+  };
 
   const points = new THREE.Points(geometry, material);
   const group = new THREE.Group();
