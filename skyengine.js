@@ -369,10 +369,10 @@ function makeStarTexture() {
     size/2, size/2, size/2
   );
 
-  grad.addColorStop(0.0, "rgba(255,255,255,1.0)");
-  grad.addColorStop(0.15, "rgba(255,255,255,0.9)");
-  grad.addColorStop(0.4, "rgba(255,255,255,0.35)");
-  grad.addColorStop(1.0, "rgba(255,255,255,0)");
+  grad.addColorStop(0.0, "rgba(180,180,180,1.0)");
+  grad.addColorStop(0.15, "rgba(180,180,180,0.85)");
+  grad.addColorStop(0.4, "rgba(180,180,180,0.25)");
+  grad.addColorStop(1.0, "rgba(180,180,180,0)");
 
   ctx.fillStyle = grad;
   ctx.beginPath();
