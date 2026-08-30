@@ -1783,6 +1783,10 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
       "gl_PointSize = size;",
       "gl_PointSize = size * sizeAttr;"
     );
+    shader.fragmentShader = shader.fragmentShader.replace(
+      'outgoingLight = diffuseColor.rgb * texColor.rgb;',
+      'outgoingLight = diffuseColor.rgb * 1.8;' // ★ boost spectral color
+    );
   };
 
   const points = new THREE.Points(geometry, material);
