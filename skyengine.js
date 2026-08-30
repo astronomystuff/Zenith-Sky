@@ -1763,7 +1763,7 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
   geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
   geometry.userData.starIndices = starIndices;
 
-  texture.premultiplyAlpha = true;
+  window.sky3dStarTexture.premultiplyAlpha = true;
   
   const material = new THREE.PointsMaterial({
     size: 1.5,
