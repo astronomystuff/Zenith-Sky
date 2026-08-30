@@ -357,7 +357,7 @@ function colorForSpectralType(raw) {
 }
 
 
-function makeColoredStarTexture(hex) {
+function makeStarTexture(hex) {
   const size = 64;
   const canvas = document.createElement("canvas");
   canvas.width = size;
