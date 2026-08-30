@@ -225,57 +225,137 @@ function estimateStarAgeAndLifetime(star) {
 function colorForSpectralType(raw) {
   if (!raw) return 0xffffff;
 
-  const s = normalizeSpectral(raw);
-  const first = s[0].toUpperCase();
+  const s = normalizeSpectral(raw).toUpperCase();
+  const letter = s[0];
 
-  // OBAFGKM
-  const canonical = {
-    O: 0x9bb0ff,
-    B: 0xaabfff,
-    A: 0xcad7ff,
-    F: 0xfbf8ff,
-    G: 0xfff4e8,
-    K: 0xffddb4,
-    M: 0xffbd6f
-  };
-  if (canonical[first]) return canonical[first];
+  // Clamp subtype 0–9
+  const subtypeMatch = s.match(/([0-9])/);
+  const subtype = subtypeMatch
+    ? Math.min(9, Math.max(0, parseInt(subtypeMatch[1], 10)))
+    : 5;
 
-  // Carbon stars (R)
-  if (first === "R") return 0x8b0000;
+  // Luminosity class parser
+  function getLumClass(str) {
+    if (str.includes("IA")) return "Ia";
+    if (str.includes("IB")) return "Ib";
+    if (str.includes("II")) return "II";
+    if (str.includes("III")) return "III";
+    if (str.includes("IV")) return "IV";
+    return "V"; // default dwarf
+  }
+  const lum = getLumClass(s);
 
-  // S-type stars
-  if (first === "S") return 0xff8c4a;
-
-  // Wolf-Rayet
-  if (first === "W") return 0x6A00FF;
-
-  // White dwarfs
-  if (first === "D") return 0xd0e0ff;
-
-  // N-type
-  if (first === "N") {
-    if (s.includes("C")) return 0x8b0000; // carbon-N
-    if (s.includes("NEB")) return 0xffffff; // nebular central star
-    if (s.includes("NOV") || s.includes("0v") || s.includes("var"))
-      return 0xd0e0ff; // nova / variable
+  // Special spectral types
+  if (letter === "R") return 0x8b0000;      // carbon stars
+  if (letter === "S") return 0xff8c4a;      // S-type
+  if (letter === "W") return 0x6A00FF;      // Wolf-Rayet
+  if (letter === "D") return 0xd0e0ff;      // white dwarfs
+  if (letter === "N") {
+    if (s.includes("C")) return 0x8b0000;
+    if (s.includes("NEB")) return 0xffffff;
+    if (s.includes("NOV") || s.includes("VAR")) return 0xd0e0ff;
     return 0xffffff;
   }
-
-  // P-type inspection
-  if (first === "P") {
+  if (letter === "P") {
     if (s.includes("PLANETARY")) return 0xd0e0ff;
     return 0xffffff;
   }
+  if (letter === "E") return 0xffffff;
 
-  // E-type
-  if (first === "E") return 0xffffff;
+  // Dialed-in subtype temperature tables
+  const subtypeTemps = {
+    V: {
+      O: [40000,38000,36000,34000,32000,30000,28000,26000,24000,22000],
+      B: [20000,18000,16000,15000,14000,13000,12000,11000,10000,9500],
+      A: [9600,9300,9000,8700,8400,8200,8000,7800,7600,7400],
+      F: [7300,7100,6900,6800,6700,6600,6500,6400,6200,6000],
+      G: [5940,5830,5660,5600,5520,5480,5450,5420,5400,5380],
+      K: [5150,5000,4850,4700,4550,4400,4250,4100,3950,3800],
+      M: [3850,3700,3550,3400,3250,3100,2950,2800,2600,2400]
+    },
+    IV: {
+      O: [38000,36000,34000,32000,30000,28000,26000,24000,22000,20000],
+      B: [18000,16000,15000,14000,13000,12000,11000,10000,9500,9000],
+      A: [9000,8800,8600,8400,8200,8000,7800,7600,7400,7200],
+      F: [7000,6800,6600,6500,6400,6300,6200,6100,6000,5900],
+      G: [5600,5500,5400,5300,5200,5100,5000,4900,4800,4700],
+      K: [4300,4200,4100,4000,3900,3800,3700,3600,3500,3400],
+      M: [3600,3500,3400,3300,3200,3100,3000,2900,2800,2700]
+    },
+    III: {
+      O: [35000,33000,31000,29000,27000,25000,23000,21000,19000,17000],
+      B: [15000,14000,13000,12000,11000,10000,9500,9000,8500,8000],
+      A: [8000,7800,7600,7400,7200,7000,6800,6600,6400,6200],
+      F: [6500,6300,6100,6000,5900,5800,5700,5600,5500,5400],
+      G: [5200,5100,5000,4900,4800,4700,4600,4500,4400,4300],
+      K: [4100,4000,3900,3800,3700,3600,3500,3400,3300,3200],
+      M: [3500,3400,3300,3200,3100,3000,2900,2800,2700,2600]
+    },
+    II: {
+      O: [33000,31000,29000,27000,25000,23000,21000,19000,17000,15000],
+      B: [14000,13000,12000,11000,10000,9500,9000,8500,8000,7500],
+      A: [7800,7600,7400,7200,7000,6800,6600,6400,6200,6000],
+      F: [6200,6000,5800,5700,5600,5500,5400,5300,5200,5100],
+      G: [5000,4900,4800,4700,4600,4500,4400,4300,4200,4100],
+      K: [3900,3800,3700,3600,3500,3400,3300,3200,3100,3000],
+      M: [3400,3300,3200,3100,3000,2900,2800,2700,2600,2500]
+    },
+    Ib: {
+      O: [30000,28000,26000,24000,22000,20000,18000,16000,14000,12000],
+      B: [12000,11000,10000,9500,9000,8500,8000,7500,7000,6500],
+      A: [7500,7300,7100,6900,6700,6500,6300,6100,5900,5700],
+      F: [6000,5800,5600,5500,5400,5300,5200,5100,5000,4900],
+      G: [4800,4700,4600,4500,4400,4300,4200,4100,4000,3900],
+      K: [3800,3700,3600,3500,3400,3300,3200,3100,3000,2900],
+      M: [3300,3200,3100,3000,2900,2800,2700,2600,2500,2400]
+    },
+    Ia: {
+      O: [28500,26500,24500,22500,20500,18500,16500,15000,13500,12000],
+      B: [11500,10800,10000,9400,8800,8300,7800,7300,6900,6500],
+      A: [7300,7100,6900,6700,6500,6300,6100,5900,5700,5500],
+      F: [5800,5600,5400,5300,5200,5100,5000,4900,4800,4700],
+      G: [5100,5000,4900,4800,4700,4600,4500,4400,4300,4200],
+      K: [4000,3900,3800,3700,3600,3500,3400,3300,3200,3100],
+      M: [3300,3200,3100,3000,2900,2800,2700,2600,2500,2400]
+    }
+  };
 
-  // k-type already normalized
-  if (first === "M") return canonical.M;
-  if (first === "K") return canonical.K;
+  if (!subtypeTemps[lum] || !subtypeTemps[lum][letter]) return 0xffffff;
 
-  return 0xffffff;
+  const T = subtypeTemps[lum][letter][subtype];
+
+  // Blackbody → RGB
+  function tempToRGB(temp) {
+    const t = temp / 100;
+    let r, g, b;
+
+    if (t <= 66) r = 255;
+    else r = Math.min(255, Math.max(0,
+      329.698727446 * Math.pow(t - 60, -0.1332047592)
+    ));
+
+    if (t <= 66)
+      g = Math.min(255, Math.max(0,
+        99.4708025861 * Math.log(t) - 161.1195681661
+      ));
+    else
+      g = Math.min(255, Math.max(0,
+        288.1221695283 * Math.pow(t - 60, -0.0755148492)
+      ));
+
+    if (t >= 66) b = 255;
+    else if (t <= 19) b = 0;
+    else
+      b = Math.min(255, Math.max(0,
+        138.5177312231 * Math.log(t - 10) - 305.0447927307
+      ));
+
+    return (r << 16) | (g << 8) | b;
+  }
+
+  return tempToRGB(T);
 }
+
 
 function makeStarTexture() {
   const size = 64;
