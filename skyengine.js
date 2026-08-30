@@ -1763,6 +1763,8 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
   geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
   geometry.userData.starIndices = starIndices;
 
+  texture.premultiplyAlpha = true;
+  
   const material = new THREE.PointsMaterial({
     size: 1.5,
     sizeAttenuation: true,
@@ -1771,19 +1773,43 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     depthTest: true,
     depthWrite: false,
     vertexColors: true,
-    blending: THREE.AdditiveBlending
+    blending: THREE.AdditiveBlending,
+    premultipliedAlpha: true
   });
 
-  material.onBeforeCompile = (shader) => {
-    shader.vertexShader = shader.vertexShader.replace(
-      "void main() {",
-      "attribute float sizeAttr;\nvoid main() {"
+material.onBeforeCompile = (shader) => {
+  shader.vertexShader = shader.vertexShader.replace(
+    "void main() {",
+    "attribute float sizeAttr;\nvoid main() {"
+  );
+
+  shader.vertexShader = shader.vertexShader.replace(
+    "gl_PointSize = size;",
+    "gl_PointSize = size * sizeAttr;"
+  );
+
+  shader.fragmentShader = shader.fragmentShader
+    .replace(
+      'vec4 diffuseColor = vec4( diffuse, opacity );',
+      'vec4 diffuseColor = vec4( diffuse, opacity );'
+    )
+    .replace(
+      'vec4 texColor = texture2D( map, vUv );',
+      'vec4 texColor = texture2D( map, gl_PointCoord );'
+    )
+    .replace(
+      'outgoingLight = diffuseColor.rgb * texColor.rgb;',
+      'outgoingLight = diffuseColor.rgb;'
+    )
+    .replace(
+      'gl_FragColor = vec4( outgoingLight, diffuseColor.a );',
+      `
+        float alpha = texColor.a * diffuseColor.a;
+        gl_FragColor = vec4( outgoingLight, alpha );
+      `
     );
-    shader.vertexShader = shader.vertexShader.replace(
-      "gl_PointSize = size;",
-      "gl_PointSize = size * sizeAttr;"
-    );
-  };
+};
+
 
   const points = new THREE.Points(geometry, material);
   const group = new THREE.Group();
