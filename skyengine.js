@@ -357,22 +357,26 @@ function colorForSpectralType(raw) {
 }
 
 
-function makeStarTexture() {
+function makeColoredStarTexture(hex) {
   const size = 64;
   const canvas = document.createElement("canvas");
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext("2d");
 
+  const r = (hex >> 16) & 255;
+  const g = (hex >> 8) & 255;
+  const b = hex & 255;
+
   const grad = ctx.createRadialGradient(
     size/2, size/2, 0,
     size/2, size/2, size/2
   );
 
-  grad.addColorStop(0.0, "rgba(180,180,180,1.0)");
-  grad.addColorStop(0.15, "rgba(180,180,180,0.85)");
-  grad.addColorStop(0.4, "rgba(180,180,180,0.25)");
-  grad.addColorStop(1.0, "rgba(180,180,180,0)");
+  grad.addColorStop(0.0, `rgba(${r},${g},${b},1.0)`);
+  grad.addColorStop(0.15, `rgba(${r},${g},${b},0.85)`);
+  grad.addColorStop(0.4, `rgba(${r},${g},${b},0.25)`);
+  grad.addColorStop(1.0, `rgba(${r},${g},${b},0)`);
 
   ctx.fillStyle = grad;
   ctx.beginPath();
@@ -386,6 +390,7 @@ function makeStarTexture() {
 
   return texture;
 }
+
 
 /* ============================================================
    minimalCameraControls
@@ -1763,53 +1768,14 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
   geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
   geometry.userData.starIndices = starIndices;
 
-  window.sky3dStarTexture.premultiplyAlpha = true;
-  
   const material = new THREE.PointsMaterial({
     size: 1.5,
     sizeAttenuation: true,
-    map: window.sky3dStarTexture,
     transparent: true,
     depthTest: true,
     depthWrite: false,
-    vertexColors: true,
-    blending: THREE.AdditiveBlending,
-    premultipliedAlpha: true
+    blending: THREE.AdditiveBlending
   });
-
-material.onBeforeCompile = (shader) => {
-  shader.vertexShader = shader.vertexShader.replace(
-    "void main() {",
-    "attribute float sizeAttr;\nvoid main() {"
-  );
-
-  shader.vertexShader = shader.vertexShader.replace(
-    "gl_PointSize = size;",
-    "gl_PointSize = size * sizeAttr;"
-  );
-
-  shader.fragmentShader = shader.fragmentShader
-    .replace(
-      'vec4 diffuseColor = vec4( diffuse, opacity );',
-      'vec4 diffuseColor = vec4( diffuse, opacity );'
-    )
-    .replace(
-      'vec4 texColor = texture2D( map, vUv );',
-      'vec4 texColor = texture2D( map, gl_PointCoord );'
-    )
-    .replace(
-      'outgoingLight = diffuseColor.rgb * texColor.rgb;',
-      'outgoingLight = diffuseColor.rgb;'
-    )
-    .replace(
-      'gl_FragColor = vec4( outgoingLight, diffuseColor.a );',
-      `
-        float alpha = texColor.a * diffuseColor.a;
-        gl_FragColor = vec4( outgoingLight, alpha );
-      `
-    );
-};
-
 
   const points = new THREE.Points(geometry, material);
   const group = new THREE.Group();
