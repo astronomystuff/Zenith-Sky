@@ -1756,7 +1756,8 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     sizes[i] = 0.001 + 0.0375 * Math.pow(1.5, -0.9 * mag);
 
     // Color
-    const hex = colorForSpectralType(star.spect);
+    const hex = colorForSpectralType(star.spect)
+    star.texture = makeColoredStarTexture(hex);
     colors[i*3]   = ((hex >> 16) & 255) / 255;
     colors[i*3+1] = ((hex >> 8)  & 255) / 255;
     colors[i*3+2] = ( hex        & 255) / 255;
@@ -1774,7 +1775,8 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     transparent: true,
     depthTest: true,
     depthWrite: false,
-    blending: THREE.AdditiveBlending
+    blending: THREE.AdditiveBlending,
+    map: star.texture
   });
 
   const points = new THREE.Points(geometry, material);
