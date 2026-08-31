@@ -228,41 +228,73 @@ function colorForSpectralType(raw) {
   const s = normalizeSpectral(raw).toUpperCase();
   const letter = s[0];
 
-  // Clamp subtype 0–9
+  // Subtype 0–9
   const subtypeMatch = s.match(/([0-9])/);
-  const subtype = subtypeMatch
-    ? Math.min(9, Math.max(0, parseInt(subtypeMatch[1], 10)))
-    : 5;
+  const subtype = subtypeMatch ? Math.min(9, Math.max(0, parseInt(subtypeMatch[1], 10))) : 5;
 
-  // Luminosity class parser
-  function getLumClass(str) {
-    if (str.includes("IA")) return "Ia";
-    if (str.includes("IB")) return "Ib";
-    if (str.includes("II")) return "II";
+  // Luminosity
+  function getLumClass(str, letter, absMag) {
+    if (str.includes("IAB")) return "Iab";
+    if (str.includes("IA"))  return "Ia";
+    if (str.includes("IB"))  return "Ib";
     if (str.includes("III")) return "III";
-    if (str.includes("IV")) return "IV";
-    return "V"; // default dwarf
+    if (str.includes("II"))  return "II";
+    if (str.includes("IV"))  return "IV";
+
+    if (absMag !== undefined && Number.isFinite(absMag)) {
+        const absMagRanges = {
+            O: { Ia:-8, Iab:-7, Ib:-6, II:-5, III:-4, IV:-3, V:-2 },
+            B: { Ia:-7, Iab:-6, Ib:-5, II:-3, III:-1, IV: 0, V: 1 },
+            A: { Ia:-6, Iab:-5, Ib:-4, II:-1, III: 1, IV: 2, V: 3 },
+            F: { Ia:-5, Iab:-4, Ib:-3, II: 0, III: 2, IV: 3, V: 4 },
+            G: { Ia:-4, Iab:-3, Ib:-2, II: 1, III: 2, IV: 3, V: 5 },
+            K: { Ia:-3, Iab:-2, Ib:-1, II: 1, III: 3, IV: 4, V: 6 },
+            M: { Ia:-2, Iab:-1, Ib: 0, II: 2, III: 4, IV: 6, V: 9 }
+        };
+
+        const ranges = absMagRanges[letter];
+        if (ranges) {
+            let best = "V";
+            let bestDiff = Infinity;
+
+            for (const lc in ranges) {
+                const diff = Math.abs(absMag - ranges[lc]);
+                if (diff < bestDiff) {
+                    bestDiff = diff;
+                    best = lc;
+                }
+            }
+
+            return best;
+        }
+    }
+
+    return "V";
   }
+
   const lum = getLumClass(s);
 
-  // Special spectral types
+  // Special types
   if (letter === "R") return 0x8b0000;      // carbon stars
   if (letter === "S") return 0xff8c4a;      // S-type
   if (letter === "W") return 0x6A00FF;      // Wolf-Rayet
-  if (letter === "D") return 0xd0e0ff;      // white dwarfs
+  if (letter === "D") return 0xd0e0ff;      // white dwarfs (visual default)
+
   if (letter === "N") {
     if (s.includes("C")) return 0x8b0000;
     if (s.includes("NEB")) return 0xffffff;
     if (s.includes("NOV") || s.includes("VAR")) return 0xd0e0ff;
     return 0xffffff;
   }
+
   if (letter === "P") {
     if (s.includes("PLANETARY")) return 0xd0e0ff;
     return 0xffffff;
   }
+
   if (letter === "E") return 0xffffff;
 
-  // Dialed-in subtype temperature tables
+  // Temperature tables
   const subtypeTemps = {
     V: {
       O: [40000,38000,36000,34000,32000,30000,28000,26000,24000,22000],
@@ -309,6 +341,15 @@ function colorForSpectralType(raw) {
       K: [3800,3700,3600,3500,3400,3300,3200,3100,3000,2900],
       M: [3300,3200,3100,3000,2900,2800,2700,2600,2500,2400]
     },
+    Iab: {
+      O: [29250,27250,25250,23250,21250,19250,17250,15500,13750,12000],
+      B: [11750,10900,10000,9450,8900,8400,7900,7400,6950,6500],
+      A: [7400,7200,7000,6800,6600,6400,6200,6000,5800,5600],
+      F: [5900,5700,5500,5400,5300,5200,5100,5000,4900,4800],
+      G: [4950,4850,4750,4650,4550,4450,4350,4250,4150,4050],
+      K: [3900,3800,3700,3600,3500,3400,3300,3200,3100,3000],
+      M: [3300,3200,3100,3000,2900,2800,2700,2600,2500,2400]
+    },
     Ia: {
       O: [28500,26500,24500,22500,20500,18500,16500,15000,13500,12000],
       B: [11500,10800,10000,9400,8800,8300,7800,7300,6900,6500],
@@ -322,39 +363,72 @@ function colorForSpectralType(raw) {
 
   if (!subtypeTemps[lum] || !subtypeTemps[lum][letter]) return 0xffffff;
 
-  const T = subtypeTemps[lum][letter][subtype];
+  const tempK = subtypeTemps[lum][letter][subtype];
 
-  // Blackbody → RGB
-  function tempToRGB(temp) {
-    const t = temp / 100;
-    let r, g, b;
+  function starTempToHex(T) {
+    let x, y;
 
-    if (t <= 66) r = 255;
-    else r = Math.min(255, Math.max(0,
-      329.698727446 * Math.pow(t - 60, -0.1332047592)
-    ));
+    if (T < 4000) {
+      x = -0.2661239 * (1e9 / (T*T*T))
+        - 0.2343580 * (1e6 / (T*T))
+        + 0.8776956 * (1e3 / T)
+        + 0.179910;
+    } else {
+      x = -3.0258469 * (1e9 / (T*T*T))
+        + 2.1070379 * (1e6 / (T*T))
+        + 0.2226347 * (1e3 / T)
+        + 0.240390;
+    }
 
-    if (t <= 66)
-      g = Math.min(255, Math.max(0,
-        99.4708025861 * Math.log(t) - 161.1195681661
-      ));
-    else
-      g = Math.min(255, Math.max(0,
-        288.1221695283 * Math.pow(t - 60, -0.0755148492)
-      ));
+    y = -1.1063814 * (x*x*x)
+      - 1.34811020 * (x*x)
+      + 2.18555832 * x
+      - 0.20219683;
 
-    if (t >= 66) b = 255;
-    else if (t <= 19) b = 0;
-    else
-      b = Math.min(255, Math.max(0,
-        138.5177312231 * Math.log(t - 10) - 305.0447927307
-      ));
+    const Y = 1;
+    const X = (Y / y) * x;
+    const Z = (Y / y) * (1 - x - y);
 
-    return (r << 16) | (g << 8) | b;
+    let r =  3.2406*X - 1.5372*Y - 0.4986*Z;
+    let g = -0.9689*X + 1.8758*Y + 0.0415*Z;
+    let b =  0.0557*X - 0.2040*Y + 1.0570*Z;
+
+    r = Math.max(0, r);
+    g = Math.max(0, g);
+    b = Math.max(0, b);
+
+    const maxVal = Math.max(r, g, b);
+    if (maxVal <= 0 || !Number.isFinite(maxVal)) {
+      return 0xffffff;
+    }
+
+    r /= maxVal;
+    g /= maxVal;
+    b /= maxVal;
+
+    // Cool-star correction (M / late K)
+    if (T < 3800) {
+      const t = Math.min(1, Math.max(0, (3800 - T) / 1300));
+      g *= (1 - 0.30 * t);
+      b *= (1 - 0.60 * t);
+    }
+
+    const gamma = v => v <= 0.0031308 ? 12.92*v : 1.055*Math.pow(v, 1/2.4) - 0.055;
+
+    r = gamma(r);
+    g = gamma(g);
+    b = gamma(b);
+
+    r = Math.min(255, Math.max(0, Math.round(r * 255)));
+    g = Math.min(255, Math.max(0, Math.round(g * 255)));
+    b = Math.min(255, Math.max(0, Math.round(b * 255)));
+
+    return ((r & 255) << 16) | ((g & 255) << 8) | (b & 255);
   }
 
-  return tempToRGB(T);
+  return starTempToHex(tempK);
 }
+
 
 
 function makeStarTexture() {
