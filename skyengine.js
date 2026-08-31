@@ -24,6 +24,7 @@ let sky3dLocked = false;
 const LY_TO_PC = 1 / 3.26156;
 window.sky3dRaycaster = new THREE.Raycaster();
 window.sky3dMouse = new THREE.Vector2();
+const isMobile = window.innerWidth < 900;
 const VSOP = {
     Mercury: null,
     Venus: null,
@@ -1822,7 +1823,10 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
 
     // Size
     const mag = star.mag;
-    sizes[i] = 0.001 + 0.0375 * Math.pow(1.5, -0.9 * mag);
+    const rawSize = 0.001 + 0.0375 * Math.pow(1.5, -0.9 * mag);
+    let size = rawSize;
+    if (isMobile) size *= 15;
+    sizes[i] = size
 
     // Color
     const hex = colorForSpectralType(star.spect);
@@ -1896,7 +1900,9 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     const y = Math.sin(alt);
     const z = Math.cos(alt) * Math.cos(az);
 
-    const size = 0.001 + 0.0375 * Math.pow(1.5, -0.9 * body.mag);
+    const planetRawSize = 0.001 + 0.0375 * Math.pow(1.5, -0.9 * body.mag);
+    let planetSize = planetRawSize;
+    if (isMobile) planetSize *= 15;
 
     const color = {
       Mercury: 0xffffff,
@@ -1910,7 +1916,7 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
 
 const geo = new THREE.BufferGeometry();
 geo.setAttribute("position", new THREE.Float32BufferAttribute([0, 0, 0], 3));
-geo.setAttribute("sizeAttr", new THREE.Float32BufferAttribute([size], 1));
+geo.setAttribute("sizeAttr", new THREE.Float32BufferAttribute([planetSize], 1));
 geo.setAttribute("color", new THREE.Float32BufferAttribute([
   ((color >> 16) & 255) / 255,
   ((color >> 8)  & 255) / 255,
