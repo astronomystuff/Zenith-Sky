@@ -537,7 +537,8 @@ class minimalCameraControls {
   onWheel(e) {
     e.preventDefault();
     if (!this.camera) return;
-    const delta = (e.deltaY > 0 ? 1 : -1) * (this.camera.fov * this.zoomSpeed);
+    const delta = (e.deltaY > 0 ? 1 : -1) *
+     (-(Math.pow(1.05, -this.camera.fov)) - 0.05 * this.camera.fov);
     this.onZoom(delta);
   }
 
