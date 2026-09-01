@@ -1823,7 +1823,7 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
 
     // Size
     const mag = star.mag;
-    const rawSize = 0.001 + 0.0375 * Math.pow(1.5, -0.9 * mag);
+    const rawSize = 0.002 + 0.0375 * Math.pow(1.5, -0.9 * mag);
     let size = rawSize;
     if (isMobile) size *= 15;
     sizes[i] = size
@@ -1900,7 +1900,7 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     const y = Math.sin(alt);
     const z = Math.cos(alt) * Math.cos(az);
 
-    const planetRawSize = 0.001 + 0.0375 * Math.pow(1.5, -0.9 * body.mag);
+    const planetRawSize = 0.002 + 0.0375 * Math.pow(1.5, -0.9 * body.mag);
     let planetSize = planetRawSize;
     if (isMobile) planetSize *= 15;
 
