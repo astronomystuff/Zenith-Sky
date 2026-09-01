@@ -585,10 +585,12 @@ class minimalCameraControls {
       this.lastY = y;
     }
 
-      if (this.touchMode === "pinch" && e.touches.length === 2) {
+    if (this.touchMode === "pinch" && e.touches.length === 2) {
         const newDist = this.getTouchDistance(e);
-        const delta = this.lastTouchDist - newDist;
-        this.onZoom(delta * 0.15);
+        const scale = newDist / this.lastTouchDist;
+        const pinchIntent = Math.log(scale);
+        const delta = pinchIntent * (-(Math.pow(1.05, -this.camera.fov)) - 0.05 * this.camera.fov);
+        this.onZoom(delta);
         this.lastTouchDist = newDist;
     }
   }
