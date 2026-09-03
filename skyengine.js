@@ -2351,10 +2351,17 @@ function onSky3DClick(event) {
 
   let bestPlanet = null;
   let bestPlanetHit = null;
+  const MAX_PLANET_DISTANCE = 0.005;
 
   if (planetHits.length > 0) {
-    bestPlanetHit = planetHits[0]; // planets are single meshes
-    bestPlanet = bestPlanetHit.object.userData;
+    for (const hit of planetHits) {
+        if (hit.distanceToRay > MAX_PLANET_DISTANCE) continue;
+        if (!hit.object.visible) continue;
+
+        bestPlanetHit = hit;
+        bestPlanet = hit.object.userData;
+        break;
+    }
   }
 
   let picked = null;
