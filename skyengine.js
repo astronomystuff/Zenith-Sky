@@ -16,6 +16,7 @@ window.sky3dCelestialSphere = null;
 window.sky3dGround = null;
 window.sky3dTooltip = null;
 window.sky3dRootGroup = null;
+window.isRebuilding = false;
 window.sky3dStarBase = [];
 window.sky3dPlanetMeshes = [];
 window.sky3dPlanetMap = {};
@@ -614,19 +615,23 @@ class minimalCameraControls {
     const now = performance.now();
     if (now - this.lastRebuild > 50) {
       this.lastRebuild = now;
+      window.isRebuilding = true;
       rebuildCelestialSphere(
         window.linesJson,
         window.sky3dStarBase,
         window.sky3dRootGroup
+      window.isRebuilding = false;
       );
     }
 
     clearTimeout(this.finalRebuildTimer);
     this.finalRebuildTimer = setTimeout(() => {
+      window.isRebuilding = true;
       rebuildCelestialSphere(
         window.linesJson,
         window.sky3dStarBase,
         window.sky3dRootGroup
+      window.isRebuilding = false;
       );
     }, 120);
   }
@@ -2314,6 +2319,7 @@ const phraseGenitiveToAbbrev = {
    onSky3DClick
    ============================================================ */
 function onSky3DClick(event) {
+  if (window.isRebuilding) return;
   const rect = sky3dRenderer.domElement.getBoundingClientRect();
 
   sky3dMouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -2872,7 +2878,9 @@ async function startSky3D() {
   }
 
   sky3dUpdateLoading("Building Sky…");
+  window.isRebuilding = true;
   await rebuildCelestialSphere(linesJson, sky3dStarBase, sky3dRootGroup);
+  window.isRebuilding = false;
   animateSky3D();
   sky3dHideLoading();
 }
@@ -2975,11 +2983,13 @@ openBtn.onclick = () => {
       startSky3D();
     } else {
       sky3dUpdateLoading("Updating sky…");
+      window.isRebuilding = true;
       rebuildCelestialSphere(
         window.linesJson,
         window.sky3dStarBase,
         window.sky3dRootGroup
       );
+      window.isRebuilding = false;
       animateSky3D();
       sky3dHideLoading();
     }
@@ -3003,12 +3013,14 @@ if (applyDT) {
       alert("Please input a real value:\n\n" + errors.join("\n"));
       return;
     }
-    
+
+      window.isRebuilding = true;
       rebuildCelestialSphere(
         window.linesJson,
         window.sky3dStarBase,
         window.sky3dRootGroup
       );
+      window.isRebuilding = true;
   };
 }
 
@@ -3025,11 +3037,13 @@ if (applyLoc) {
       return;
     }
 
+      window.isRebuilding = true;
       rebuildCelestialSphere(
         window.linesJson,
         window.sky3dStarBase,
         window.sky3dRootGroup
       );
+      window.isRebuilding = true;
   };
 }
 
