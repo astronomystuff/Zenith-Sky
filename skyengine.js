@@ -1596,7 +1596,6 @@ function computePlanetMagnitude(name, r, delta, phaseDeg, B = null, Bp = null) {
     const logTerm = 5 * Math.log10(r * delta);
 
     switch (name) {
-
         case "Mercury":
             return logTerm
                  - 0.613
@@ -1747,6 +1746,104 @@ async function computeBodyMagnitude(name, JD) {
     const mag = computePlanetMagnitude(name, r, delta, phaseDeg, B, Bp);
     return { mag, dist: delta, phaseDeg};
 }
+
+// ===========================
+// computeAsteroid 
+// ===========================
+function computeAsteroid(name, JD, latDeg, lonDeg) {
+
+    const el = sky3dAsteroidElements[name];
+    if (!el) return null;
+
+    const deg2rad = Math.PI / 180;
+
+    // --- Unpack orbital elements ---
+    const a = el.a;                 // AU
+    const e = el.e;
+    const i = el.i * deg2rad;
+    const Omega = el.Omega * deg2rad;
+    const omega = el.omega * deg2rad;
+
+    const M0 = el.M0 * deg2rad;     // mean anomaly at epoch
+    const n = el.n * deg2rad;       // mean motion (deg/day → rad/day)
+    const epoch = el.epoch;         // JD epoch
+
+    const H = el.H;                 // absolute magnitude
+    const G = el.G;                 // slope parameter
+
+    // --- Mean anomaly ---
+    const dt = JD - epoch;
+    const M = M0 + n * dt;
+
+    // --- Solve Kepler's equation --
+    let E = M;
+    for (let k = 0; k < 12; k++) {
+        E = E - (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+    }
+
+    // --- Orbital plane coordinates ---
+    const xPrime = a * (Math.cos(E) - e);
+    const yPrime = a * Math.sqrt(1 - e*e) * Math.sin(E);
+
+    // --- Rotate to ecliptic XYZ ---
+    const cosO = Math.cos(Omega), sinO = Math.sin(Omega);
+    const cosi = Math.cos(i), sini = Math.sin(i);
+    const cosw = Math.cos(omega), sinw = Math.sin(omega);
+
+    const x =
+        xPrime*(cosO*cosw - sinO*sinw*cosi)
+      - yPrime*(cosO*sinw + sinO*cosw*cosi);
+
+    const y =
+        xPrime*(sinO*cosw + cosO*sinw*cosi)
+      - yPrime*(sinO*sinw - cosO*cosw*cosi);
+
+    const z =
+        xPrime*(sinw*sini)
+      + yPrime*(cosw*sini);
+
+    // --- Position ---
+    const r = Math.sqrt(x*x + y*y + z*z);
+    const earth = VSOP87_Earth(JD);
+    const obs = observerPosition(earth, JD, latDeg, lonDeg);
+
+    // --- Geocentric vector ---
+    const gx = x - obs.x;
+    const gy = y - obs.y;
+    const gz = z - obs.z;
+
+    const delta = Math.sqrt(gx*gx + gy*gy + gz*gz);
+
+    // --- Phase angle ---
+    const dot = (x*earth.x + y*earth.y + z*earth.z) / (r * earth.r);
+    const phaseDeg = Math.acos(dot) * 180 / Math.PI;
+
+    // --- Magnitude ---
+    const phase = phaseDeg * deg2rad;
+    const phi1 = Math.exp(-3.33 * Math.pow(Math.tan(phase/2), 0.63));
+    const phi2 = Math.exp(-1.87 * Math.pow(Math.tan(phase/2), 1.22));
+
+    const mag = H + 5*Math.log10(r * delta)
+                  - 2.5*Math.log10((1-G)*phi1 + G*phi2);
+
+    // --- Convert to RA/Dec ---
+    const { ra, dec } = eclipticToEquatorial(gx, gy, gz);
+
+    return {
+        type: "asteroid",
+        name,
+        ra,
+        dec,
+        mag,
+        x,
+        y,
+        z,
+        r,
+        delta,
+        phaseDeg
+    };
+}
+
 
 // ===========================
 // computeBody
@@ -3152,3 +3249,4 @@ window.formatBayer = formatBayer;
 window.rebuildCelestialSphere = rebuildCelestialSphere;
 window.colorForSpectralType = colorForSpectralType;
 window.precessionMatrixIAU2006 = precessionMatrixIAU2006;
+window.computeAsteroid = computeAsteroid;
