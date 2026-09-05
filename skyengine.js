@@ -620,8 +620,9 @@ class minimalCameraControls {
         window.linesJson,
         window.sky3dStarBase,
         window.sky3dRootGroup
-      window.isRebuilding = false;
       );
+      window.isRebuilding = false;
+
     }
 
     clearTimeout(this.finalRebuildTimer);
@@ -631,8 +632,8 @@ class minimalCameraControls {
         window.linesJson,
         window.sky3dStarBase,
         window.sky3dRootGroup
-      window.isRebuilding = false;
       );
+      window.isRebuilding = false;
     }, 120);
   }
 }
