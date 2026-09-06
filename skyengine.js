@@ -37,6 +37,33 @@ const VSOP = {
     Neptune: null
 };
 
+async function loadAsteroidData() {
+  try {
+    const res = await fetch("/vsop/asteroidData.json");
+    window.asteroidData = await res.json();
+
+    for (const name in window.asteroidData) {
+      const A = window.asteroidData[name];
+
+      window.asteroidOrbits[name] = {
+        a: A.a,
+        e: A.e,
+        i: A.i,
+        Omega: A.Omega,
+        omega: A.omega,
+        M0: A.M0,
+        epoch: A.epoch,
+        n: A.n
+      };
+    }
+
+    console.log("Loaded asteroid data:", window.asteroidOrbits);
+
+  } catch (err) {
+    console.error("Failed to load asteroid data:", err);
+  }
+}
+
 async function loadAllCoefficients() {
     VSOP.Mercury = await loadVSOP87File("vsop/VSOP87A.mer.txt");
     VSOP.Venus   = await loadVSOP87File("vsop/VSOP87A.ven.txt");
@@ -2940,6 +2967,8 @@ async function startSky3D() {
   sky3dUpdateLoading("Loading Constellations…");
   const linesJson = await fetch("lines.json").then(r => r.json());
   window.linesJson = linesJson;
+  sky3dUpdateLoading("Loading Asteroid Data…");
+  await loadAsteroidData();
   
   sky3dRenderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   sky3dRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
