@@ -1779,7 +1779,7 @@ async function computeBodyMagnitude(name, JD) {
 // ===========================
 function computeAsteroid(name, JD, latDeg, lonDeg) {
 
-    const el = sky3dAsteroidElements[name];
+    const el = window.asteroidOrbits[name];
     if (!el) return null;
 
     const deg2rad = Math.PI / 180;
