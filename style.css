@@ -495,8 +495,8 @@ button:active,
 
 .sky3d-checkbox {
   appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   background: #eee;
   border-radius: 4px;
   vertical-align: middle;
@@ -509,7 +509,7 @@ button:active,
 }
 
 .sky3d-checkbox:checked::after {
-  content: "✓";
+  content: "✔";
   display: block;
   color: #111;
   font-size: 16px;
