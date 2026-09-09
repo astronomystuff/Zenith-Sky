@@ -493,9 +493,35 @@ button:active,
   box-sizing: border-box;
 }
 
+/* Hide native checkbox */
 .sky3d-checkbox {
-  accent-color: #D9A45A;
-  width: auto;
+  position: absolute;
+  opacity: 0;
+}
+
+/* Unchecked box */
+.sky3d-checkbox-box {
+  width: 18px;
+  height: 18px;
+  background: #eee;
+  border-radius: 4px;
+  display: inline-block;
+  position: relative;
+}
+
+/* Checked box */
+.sky3d-checkbox:checked + .sky3d-checkbox-box {
+  background: #D9A45A;
+}
+
+/* Checkmark */
+.sky3d-checkbox:checked + .sky3d-checkbox-box::after {
+  content: "✓";
+  color: #111
+  font-size: 18px;
+  position: absolute;
+  left: 2px;
+  top: -2px;
 }
 
 /* SMALL SCREENS */
