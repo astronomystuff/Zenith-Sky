@@ -494,33 +494,27 @@ button:active,
 }
 
 .sky3d-checkbox {
-  position: absolute;
-  opacity: 0;
-}
-
-.sky3d-checkbox + span {
-  display: inline-block;
+  appearance: none;
   width: 18px;
   height: 18px;
   background: #eee;
   border-radius: 4px;
-  margin-right: 6px;
   vertical-align: middle;
-  position: relative;
-  top: -1px;
+  margin: 0 6px 0 0;
+  cursor: pointer;
 }
 
-.sky3d-checkbox:checked + span {
+.sky3d-checkbox:checked {
   background: #D9A45A;
 }
 
-.sky3d-checkbox:checked + span::after {
+.sky3d-checkbox:checked::after {
   content: "✓";
+  display: block;
   color: #111;
-  font-size: 18px;
-  position: absolute;
-  left: 2px;
-  top: -2px;
+  font-size: 16px;
+  line-height: 18px;
+  text-align: center;
 }
 
 
