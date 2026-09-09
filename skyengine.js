@@ -2974,7 +2974,7 @@ async function startSky3D() {
   sky3dRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
   sky3dRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   sky3dScene = new THREE.Scene();
-  sky3dScene.background = new THREE.Color(0x000000);
+  sky3dScene.background = new THREE.Color(0x140900);
   sky3dTooltip = document.getElementById("sky3d-tooltip");
   sky3dGround = makeGround();
   sky3dRootGroup = new THREE.Group();
