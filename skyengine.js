@@ -20,7 +20,6 @@ window.isRebuilding = false;
 window.sky3dStarBase = [];
 window.sky3dPlanetMeshes = [];
 window.sky3dPlanetMap = {};
-window.asteroidOrbits = {};
 window.sky3dStarTexture = makeStarTexture();
 let sky3dLocked = false;
 const LY_TO_PC = 1 / 3.26156;
@@ -42,6 +41,7 @@ async function loadAsteroidData() {
   try {
     const res = await fetch("https://raw.githubusercontent.com/astronomystuff/Zenith-Sky/index.html/vsop/asteroidData.json");
     window.asteroidData = await res.json();
+    window.asteroidOrbits = {};
 
     for (const name in window.asteroidData) {
       const A = window.asteroidData[name];
