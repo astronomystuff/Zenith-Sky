@@ -3279,3 +3279,4 @@ window.rebuildCelestialSphere = rebuildCelestialSphere;
 window.colorForSpectralType = colorForSpectralType;
 window.precessionMatrixIAU2006 = precessionMatrixIAU2006;
 window.computeAsteroid = computeAsteroid;
+window.loadAsteroidData = loadAsteroidData;
