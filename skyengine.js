@@ -974,8 +974,8 @@ function applyAnnualAberration(raDeg, decDeg, earthVel) {
     const dec2 = Math.asin(zn);
 
     return {
-        ra:  ra2 * 180/Math.PI,
-        dec: dec2 * 180/Math.PI
+        raDeg:  ra2 * 180/Math.PI,
+        decDeg: dec2 * 180/Math.PI
     };
 }
 
