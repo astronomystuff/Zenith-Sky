@@ -20,6 +20,7 @@ window.isRebuilding = false;
 window.sky3dStarBase = [];
 window.sky3dPlanetMeshes = [];
 window.sky3dPlanetMap = {};
+window.asteroidOrbits = {};
 window.sky3dStarTexture = makeStarTexture();
 let sky3dLocked = false;
 const LY_TO_PC = 1 / 3.26156;
@@ -1778,7 +1779,6 @@ async function computeBodyMagnitude(name, JD) {
 // computeAsteroid 
 // ===========================
 function computeAsteroid(name, JD, latDeg, lonDeg) {
-
     const el = window.asteroidOrbits[name];
     if (!el) return null;
 
