@@ -1444,6 +1444,17 @@ function eclipticToEquatorial(x, y, z) {
     };
 }
 
+function equatorialToEcliptic(x, y, z) {
+    const eps = 23.439291 * Math.PI/180;
+    const cosE = Math.cos(eps), sinE = Math.sin(eps);
+
+    const xe = x;
+    const ye = y*cosE + z*sinE; 
+    const ze = -y*sinE + z*cosE;
+
+    return { x: xe, y: ye, z: ze };
+}
+
 function VSOP87_Planet(name, JD) {
     switch(name) {
         case "Mercury": return VSOP87_Mercury(JD);
@@ -1831,13 +1842,14 @@ function computeAsteroid(name, JD, latDeg, lonDeg) {
 
     // --- Position ---
     const r = Math.sqrt(x*x + y*y + z*z);
-    const earth = VSOP87_Earth(JD);
-    const obs = observerPosition(earth, JD, latDeg, lonDeg);
+    const earthEq = VSOP87_Earth(JD);
+    const earthEc = equatorialToEcliptic(earthEq.x, earthEq.y, earthEq.z);
+    const obs = observerPosition(earthEc, JD, latDeg, lonDeg);
 
-    // --- Geocentric vector ---
     const gx = x - obs.x;
     const gy = y - obs.y;
     const gz = z - obs.z;
+
 
     const delta = Math.sqrt(gx*gx + gy*gy + gz*gz);
 
