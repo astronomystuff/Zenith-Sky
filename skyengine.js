@@ -935,7 +935,7 @@ function xyzToRaDec(x, y, z) {
 }
 
 /* ============================================================
-   Proper Motion & Precession
+   Position Corrections
    ============================================================ */
 const KM_S_TO_PC_YR = 1 / 977792.221;
 
@@ -944,6 +944,39 @@ function applyProperMotionFromXYZ (star, years) {
     let y = star.y0 + star.vy * KM_S_TO_PC_YR * years;
     let z = star.z0 + star.vz * KM_S_TO_PC_YR * years;
     return xyzToRaDec(x, y, z);
+}
+
+function applyAnnualAberration(raDeg, decDeg, earthVel) {
+    const C_AU_PER_DAY = 173.144632674240; // speed of light in AU/day
+
+    const ra  = raDeg  * Math.PI/180;
+    const dec = decDeg * Math.PI/180;
+    const cx = Math.cos(dec) * Math.cos(ra);
+    const cy = Math.cos(dec) * Math.sin(ra);
+    const cz = Math.sin(dec);
+
+    const bx = earthVel.vx / C_AU_PER_DAY;
+    const by = earthVel.vy / C_AU_PER_DAY;
+    const bz = earthVel.vz / C_AU_PER_DAY;
+
+    const x = cx + bx;
+    const y = cy + by;
+    const z = cz + bz;
+
+    const r = Math.sqrt(x*x + y*y + z*z);
+    const xn = x / r;
+    const yn = y / r;
+    const zn = z / r;
+
+    let ra2 = Math.atan2(yn, xn);
+    if (ra2 < 0) ra2 += 2*Math.PI;
+
+    const dec2 = Math.asin(zn);
+
+    return {
+        ra:  ra2 * 180/Math.PI,
+        dec: dec2 * 180/Math.PI
+    };
 }
 
 function precessionMatrixIAU2006(jd) {
@@ -1040,7 +1073,7 @@ function precessionMatrixIAU2006(jd) {
   return fw2m(gamb, phib, psib, epsa);
 }
 
-function applyPrecession(raDeg, decDeg, rbp) {
+function applyPrecession(raDeg, decDeg, rbp, velOfEarth) {
   const PI = Math.PI;
   const deg2rad = PI / 180;
   const rad2deg = 180 / PI;
@@ -1061,10 +1094,12 @@ function applyPrecession(raDeg, decDeg, rbp) {
   let raNew = Math.atan2(y, x);
   if (raNew < 0) raNew += 2*PI;
 
-  return {
-    raDeg: raNew * rad2deg,
-    decDeg: decNew * rad2deg
-  };
+  const raDegPrec = raNew * rad2deg;
+  const decDegPrec = decNew * rad2deg;
+
+  const earthVel = velOfEarth;
+  
+  return applyAnnualAberration(raDegPrec, decDegPrec, earthVel);
 }
 
 
@@ -1335,8 +1370,14 @@ function isStarAboveHorizon(star) {
   const jd = toJulianDate(civil);
   const years = (jd - 2451545.0) / 365.25;
   const rbp = precessionMatrixIAU2006(jd);
+  const earthPos = VSOP87_Earth(jd);
+  const earthVel = {
+      vx: earthPos.vx,
+      vy: earthPos.vy,
+      vz: earthPos.vz
+  };
   const pm = applyProperMotionFromXYZ(star, years);
-  const prec = applyPrecession(pm.raDeg, pm.decDeg, rbp);
+  const prec = applyPrecession(pm.raDeg, pm.decDeg, rbp, earthVel);
   const raRad  = prec.raDeg * Math.PI / 180;
   const decRad = prec.decDeg * Math.PI / 180;
   const latRad = latDeg * Math.PI / 180;
@@ -1897,13 +1938,19 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
   let dynamicMagLimit = 6 + 1.8 * Math.log2(60 / fov);
   dynamicMagLimit = Math.max(2, Math.min(15, dynamicMagLimit));
   const rbp = precessionMatrixIAU2006(jd);
-
+  const earthPos = VSOP87_Earth(jd);
+  const earthVel = {
+      vx: earthPos.vx,
+      vy: earthPos.vy,
+      vz: earthPos.vz
+  };
+  
   const chosen = [];
-
+  
   for (let i = 0; i < sky3dStarBase.length; i++) {
     const s = sky3dStarBase[i];
     const pm = applyProperMotionFromXYZ(s, years);
-    const prec = applyPrecession(pm.raDeg, pm.decDeg, rbp);
+    const prec = applyPrecession(pm.raDeg, pm.decDeg, rbp, earthVel);
     const raRad  = prec.raDeg * Math.PI / 180;
     const decRad = prec.decDeg * Math.PI / 180;
 
@@ -2106,6 +2153,12 @@ export function drawConstellationLines(linesJson, sky3dStarBase, sky3dRootGroup)
   let dynamicMagLimit = 6 + 1.8 * Math.log2(60 / fov);
   dynamicMagLimit = Math.max(2, Math.min(15, dynamicMagLimit));
   const rbp = precessionMatrixIAU2006(jd);
+  const earthPos = VSOP87_Earth(jd);
+  const earthVel = {
+      vx: earthPos.vx,
+      vy: earthPos.vy,
+      vz: earthPos.vz
+  };
   
   for (const [constName, segments] of Object.entries(linesJson)) {
     const positions = [];
@@ -2135,7 +2188,7 @@ export function drawConstellationLines(linesJson, sky3dStarBase, sky3dRootGroup)
 
       // --- A ---
       const pmA = applyProperMotionFromXYZ(A, years);
-      const precA = applyPrecession(pmA.raDeg, pmA.decDeg, rbp);
+      const precA = applyPrecession(pmA.raDeg, pmA.decDeg, rbp, earthVel);
       const raA  = precA.raDeg  * Math.PI/180;
       const decA = precA.decDeg * Math.PI/180;
       
@@ -2158,7 +2211,7 @@ export function drawConstellationLines(linesJson, sky3dStarBase, sky3dRootGroup)
 
       // --- B ---
       const pmB = applyProperMotionFromXYZ(B, years);
-      const precB = applyPrecession(pmB.raDeg, pmB.decDeg, rbp);
+      const precB = applyPrecession(pmB.raDeg, pmB.decDeg, rbp, earthVel);
       const raB  = precB.raDeg  * Math.PI/180;
       const decB = precB.decDeg * Math.PI/180;
       const haB = lstRad - raB;
@@ -2853,12 +2906,18 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   const jd = toJulianDate(civil);
   const years = (jd - 2451545.0) / 365.25;
   const rbp = precessionMatrixIAU2006(jd);
+  const earthPos = VSOP87_Earth(jd);
+  const earthVel = {
+      vx: earthPos.vx,
+      vy: earthPos.vy,
+      vz: earthPos.vz
+  };
   const pm = applyProperMotionFromXYZ(star, years);
   const pmRaMas  = star.pmRa;   // mas/yr
   const pmDecMas = star.pmDec;  // mas/yr
   const pmTotalMas = Math.sqrt(pmRaMas * pmRaMas + pmDecMas * pmDecMas);
   const pmTotal = pmTotalMas / 1000;
-  const prec = applyPrecession(pm.raDeg, pm.decDeg, rbp);
+  const prec = applyPrecession(pm.raDeg, pm.decDeg, rbp, earthVel);
   const desigs = [];
     if (star.proper) desigs.push(star.proper);
     if (star.bayer) {
