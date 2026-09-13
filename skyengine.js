@@ -1773,8 +1773,20 @@ async function computeBodyPosition(name, JD, latDeg, lonDeg) {
     if (planets.includes(name)) {
         const { x, y, z } = await computeLightTime(name, JD);
         let { ra, dec } = toObserverRADEC(x, y, z, JD, latDeg, lonDeg);
+      
+        const earthPos = VSOP87_Earth(jd);
+        const earthVel = {
+            vx: earthPos.vx,
+            vy: earthPos.vy,
+            vz: earthPos.vz
+        };
+        const aberr = applyAnnualAberration(ra, dec, earthVel);
+        ra = aberr.ra;
+        dec = aberr.dec;
+
         return { ra, dec };
     }
+
 
 
     // 2. Pluto
@@ -1785,7 +1797,7 @@ async function computeBodyPosition(name, JD, latDeg, lonDeg) {
 
     // 3. Horizons API
     const {x, y, z} = await horizonsStateVector(name, JD);
-    return toObserverRADEC(x, y, z, JD, latDeg, lonDeg);
+    const raDec = toObserverRADEC(x, y, z, JD, latDeg, lonDeg);
 }
 
 // ===========================
