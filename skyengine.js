@@ -40,7 +40,7 @@ const VSOP = {
 
 async function loadAsteroidData() {
   try {
-    const res = await fetch("/vsop/asteroidData.json");
+    const res = await fetch("https://raw.githubusercontent.com/astronomystuff/Zenith-Sky/index.html/vsop/asteroidData.json");
     window.asteroidData = await res.json();
 
     for (const name in window.asteroidData) {
