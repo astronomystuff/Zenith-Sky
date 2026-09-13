@@ -1854,7 +1854,8 @@ function computeAsteroid(name, JD, latDeg, lonDeg) {
     const delta = Math.sqrt(gx*gx + gy*gy + gz*gz);
 
     // --- Phase angle ---
-    const dot = (x*earth.x + y*earth.y + z*earth.z) / (r * earth.r);
+    earthEc.r = Math.sqrt(earthEc.x*earthEc.x + earthEc.y*earthEc.y + earthEc.z*earthEc.z);
+    const dot = (x*earthEc.x + y*earthEc.y + z*earthEc.z) / (r * earthEc.r);
     const phaseDeg = Math.acos(dot) * 180 / Math.PI;
 
     // --- Magnitude ---
