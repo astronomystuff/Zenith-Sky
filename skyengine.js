@@ -2525,7 +2525,7 @@ function onSky3DClick(event) {
   let bestStar = null;
   let bestStarHit = null;
   let bestStarMag = Infinity;
-  const MAX_HIT_DISTANCE = 0.01;
+  const MAX_HIT_DISTANCE = 0.03;
 
   if (starHits.length > 0) {
     for (const hit of starHits) {
@@ -2547,7 +2547,7 @@ function onSky3DClick(event) {
 
   let bestPlanet = null;
   let bestPlanetHit = null;
-  const MAX_PLANET_DISTANCE = 0.01;
+  const MAX_PLANET_DISTANCE = 0.05;
 
   if (planetHits.length > 0) {
     for (const hit of planetHits) {
