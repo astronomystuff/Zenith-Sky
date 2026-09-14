@@ -1200,7 +1200,7 @@ function applyPrecession(raDeg, decDeg, rbp, velOfEarth, eps, dpsi, deps, earthP
   decDegPos = decNutation;
   
   if (distance > 0) {
-    const par = applyParallax(raDegPos, decDegPos, earthPos, distanceParsec);
+    const par = applyParallax(raDegPos, decDegPos, earthPos, distance);
     raDegPos = par.raDeg;
     decDegPos = par.decDeg;
   }
