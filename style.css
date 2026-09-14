@@ -494,9 +494,9 @@ button:active,
 }
 
 @keyframes sky3d-warm-pulse {
-  0%   { filter: brightness(100%); }
-  50%  { filter: brightness(202%); }
-  100% { filter: brightness(100%); }
+  0%   { box-shadow: 0 0 0px #D9A45A; }
+  50%  { box-shadow: 0 0 6px #D9A45A; }
+  100% { box-shadow: 0 0 0px #D9A45A; }
 }
 
 .sky3d-checkbox {
