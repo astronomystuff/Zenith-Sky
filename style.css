@@ -495,7 +495,7 @@ button:active,
 
 @keyframes sky3d-warm-pulse {
   0%   { filter: brightness(100%); }
-  50%  { filter: brightness(102%); }
+  50%  { filter: brightness(202%); }
   100% { filter: brightness(100%); }
 }
 
