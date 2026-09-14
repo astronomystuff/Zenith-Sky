@@ -970,6 +970,39 @@ function applyNutation(raDeg, decDeg, eps, dpsi, deps) {
   };
 }
 
+function applyParallax(raDeg, decDeg, earthPos, distanceParsec) {
+  const PI = Math.PI;
+  const deg2rad = PI / 180;
+  const rad2deg = 180 / PI;
+
+  const ra  = raDeg  * deg2rad;
+  const dec = decDeg * deg2rad;
+
+  const x = Math.cos(dec) * Math.cos(ra);
+  const y = Math.cos(dec) * Math.sin(ra);
+  const z = Math.sin(dec);
+
+  const distanceAU = distanceParsec * 206264.8;
+
+  const px = x - earthPos.x / distanceAU;
+  const py = y - earthPos.y / distanceAU;
+  const pz = z - earthPos.z / distanceAU;
+
+  const r = Math.sqrt(px*px + py*py + pz*pz);
+  const xn = px / r;
+  const yn = py / r;
+  const zn = pz / r;
+
+  const decNew = Math.asin(zn);
+  let raNew = Math.atan2(yn, xn);
+  if (raNew < 0) raNew += 2*PI;
+
+  return {
+    raDeg: raNew * rad2deg,
+    decDeg: decNew * rad2deg
+  };
+}
+
 function applyAnnualAberration(raDeg, decDeg, earthVel) {
     const C_AU_PER_DAY = 173.144632674240; // speed of light in AU/day
 
@@ -1139,18 +1172,17 @@ function precessionMatrixIAU2006(jd) {
   return fw2m(gamb, phib, psib, epsa);
 }
 
-function applyPrecession(raDeg, decDeg, rbp, velOfEarth, eps, dpsi, deps) {
+function applyPrecession(raDeg, decDeg, rbp, velOfEarth, eps, dpsi, deps, earthPos, distance) {
   const PI = Math.PI;
   const deg2rad = PI / 180;
   const rad2deg = 180 / PI;
-
+  
   const ra = raDeg * deg2rad;
   const dec = decDeg * deg2rad;
 
   const x0 = Math.cos(dec) * Math.cos(ra);
   const y0 = Math.cos(dec) * Math.sin(ra);
   const z0 = Math.sin(dec);
-
   const x = rbp[0][0]*x0 + rbp[0][1]*y0 + rbp[0][2]*z0;
   const y = rbp[1][0]*x0 + rbp[1][1]*y0 + rbp[1][2]*z0;
   const z = rbp[2][0]*x0 + rbp[2][1]*y0 + rbp[2][2]*z0;
@@ -1164,9 +1196,14 @@ function applyPrecession(raDeg, decDeg, rbp, velOfEarth, eps, dpsi, deps) {
   let decDegPos = decNew * rad2deg;
 
   const { raNutation, decNutation } = applyNutation(raDegPos, decDegPos, eps, dpsi, deps);
-
   raDegPos = raNutation;
   decDegPos = decNutation;
+  
+  if (distance > 0) {
+    const par = applyParallax(raDegPos, decDegPos, earthPos, distanceParsec);
+    raDegPos = par.raDeg;
+    decDegPos = par.decDeg;
+  }
   
   const earthVel = velOfEarth;
   
@@ -1839,14 +1876,13 @@ async function computeBodyPosition(name, JD, latDeg, lonDeg) {
         "Mercury","Venus","Earth","Mars",
         "Jupiter","Saturn","Uranus","Neptune"
     ];
-
   
     // 1. VSOP
     if (planets.includes(name)) {
         const { x, y, z } = await computeLightTime(name, JD);
         let { ra, dec } = toObserverRADEC(x, y, z, JD, latDeg, lonDeg);
       
-        const earthPos = VSOP87_Earth(jd);
+        const earthPos = VSOP87_Earth(JD);
         const earthVel = {
             vx: earthPos.vx,
             vy: earthPos.vy,
@@ -1858,7 +1894,6 @@ async function computeBodyPosition(name, JD, latDeg, lonDeg) {
 
         return { ra, dec };
     }
-
 
 
     // 2. Pluto
