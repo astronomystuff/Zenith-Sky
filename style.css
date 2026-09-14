@@ -493,6 +493,12 @@ button:active,
   box-sizing: border-box;
 }
 
+@keyframes sky3d-warm-pulse {
+  0%   { filter: brightness(100%); }
+  50%  { filter: brightness(102%); }
+  100% { filter: brightness(100%); }
+}
+
 .sky3d-checkbox {
   appearance: none;
   width: 16px;
@@ -506,6 +512,7 @@ button:active,
 
 .sky3d-checkbox:checked {
   background: #D9A45A;
+  animation: sky3d-warm-pulse 4s ease-in-out infinite;
 }
 
 .sky3d-checkbox:checked::after {
