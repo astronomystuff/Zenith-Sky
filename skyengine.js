@@ -1485,8 +1485,9 @@ function isStarAboveHorizon(star) {
       vy: earthPos.vy,
       vz: earthPos.vz
   };
+  const dist = star.dist
   const pm = applyProperMotionFromXYZ(star, years);
-  const prec = applyPrecession(pm.raDeg, pm.decDeg, rbp, earthVel, eps, dpsi, deps);
+  const prec = applyPrecession(pm.raDeg, pm.decDeg, rbp, earthVel, eps, dpsi, deps, earthPos, dist);
   const raRad  = prec.raDeg * Math.PI / 180;
   const decRad = prec.decDeg * Math.PI / 180;
   const latRad = latDeg * Math.PI / 180;
@@ -2070,7 +2071,7 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
   for (let i = 0; i < sky3dStarBase.length; i++) {
     const s = sky3dStarBase[i];
     const pm = applyProperMotionFromXYZ(s, years);
-    const prec = applyPrecession(pm.raDeg, pm.decDeg, rbp, earthVel, eps, dpsi, deps);
+    const prec = applyPrecession(pm.raDeg, pm.decDeg, rbp, earthVel, eps, dpsi, deps, earthPos, s.dist);
     const raRad  = prec.raDeg * Math.PI / 180;
     const decRad = prec.decDeg * Math.PI / 180;
 
@@ -2309,7 +2310,7 @@ export function drawConstellationLines(linesJson, sky3dStarBase, sky3dRootGroup)
 
       // --- A ---
       const pmA = applyProperMotionFromXYZ(A, years);
-      const precA = applyPrecession(pmA.raDeg, pmA.decDeg, rbp, earthVel, eps, dpsi, deps);
+      const precA = applyPrecession(pmA.raDeg, pmA.decDeg, rbp, earthVel, eps, dpsi, deps, earthPos, A.dist);
       const raA  = precA.raDeg  * Math.PI/180;
       const decA = precA.decDeg * Math.PI/180;
       
@@ -2332,7 +2333,7 @@ export function drawConstellationLines(linesJson, sky3dStarBase, sky3dRootGroup)
 
       // --- B ---
       const pmB = applyProperMotionFromXYZ(B, years);
-      const precB = applyPrecession(pmB.raDeg, pmB.decDeg, rbp, earthVel, eps, dpsi, deps);
+      const precB = applyPrecession(pmB.raDeg, pmB.decDeg, rbp, earthVel, eps, dpsi, deps, earthPos, B.dist);
       const raB  = precB.raDeg  * Math.PI/180;
       const decB = precB.decDeg * Math.PI/180;
       const haB = lstRad - raB;
@@ -3039,7 +3040,7 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   const pmDecMas = star.pmDec;  // mas/yr
   const pmTotalMas = Math.sqrt(pmRaMas * pmRaMas + pmDecMas * pmDecMas);
   const pmTotal = pmTotalMas / 1000;
-  const prec = applyPrecession(pm.raDeg, pm.decDeg, rbp, earthVel, eps, dpsi, deps);
+  const prec = applyPrecession(pm.raDeg, pm.decDeg, rbp, earthVel, eps, dpsi, deps, earthPos, star.dist);
   const desigs = [];
     if (star.proper) desigs.push(star.proper);
     if (star.bayer) {
