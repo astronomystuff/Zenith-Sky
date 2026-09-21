@@ -2629,6 +2629,18 @@ function proximaCore() {
       return score;
     }
 
+    const sky3dPlanetBase = [
+      "mercury",
+      "venus",
+      "mars",
+      "jupiter",
+      "saturn",
+      "uranus",
+      "neptune",
+      "pluto"
+    ];
+
+    // --- FIND BEST PLANET ---
     for (const planet of sky3dPlanetBase) {
       const s = scorePlanet(planet.name.toLowerCase());
       if (s > bestScore) {
