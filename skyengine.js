@@ -2406,30 +2406,43 @@ function proximaCore() {
 
     raw = raw.replace(/[^a-z0-9\s]/g, " ");
   
-const phraseGenitiveToAbbrev = {
-  "andromedae":"and","antliae":"ant","apus":"aps","aquarii":"aqr","aquilae":"aql",
-  "arae":"ara","arietis":"ari","aurigae":"aur","boötis":"boo","caeli":"cae",
-  "camelopardalis":"cam","capricorni":"cap","carinae":"car","cassiopeiae":"cas","centauri":"cen",
-  "cephei":"cep","ceti":"cet","chamaeleontis":"cha","circini":"cir","canis majoris":"cma",
-  "canis minoris":"cmi","comae berenices":"com","coronae australis":"cra","coronae borealis":"crb","piscis austrini":"psa",
-  "ursae majoris":"uma","ursae minoris":"umi","trianguli australis":"tra","corvi":"crv","crateris":"crt",
-  "crucis":"cru","cygni":"cyg","delphini":"del","doradus":"dor","draconis":"dra",
-  "equulei":"equ","eridani":"eri","fornacis":"for","geminorum":"gem","gruis":"gru",
-  "herculis":"her","horologii":"hor","hydrae":"hya","hydri":"hyi","indis":"ind",
-  "lacertae":"lac","leonis":"leo","leporis":"lep","librae":"lib","lupi":"lup",
-  "lyncis":"lyn","lyrae":"lyr","mensae":"men","microscopii":"mic","monocerotis":"mon",
-  "muscae":"mus","normae":"nor","octantis":"oct","ophiuchi":"oph","orionis":"ori",
-  "pavonis":"pav","pegasi":"peg","persei":"per","phoenicis":"phe","pictoris":"pic",
-  "piscium":"psc","puppi":"pup","pyxidis":"pyx","reticuli":"ret","sculptoris":"scl",
-  "scorpii":"sco","scuti":"sct","serpentis":"ser","sextantis":"sex","sagittae":"sge",
-  "sagittarii":"sgr","tauri":"tau","telescopii":"tel","trianguli":"tri","tucanae":"tuc",
-  "velorum":"vel","virginis":"vir","volantis":"vol","vulpeculae":"vul"
-};
+    const phraseGenitiveToAbbrev = {
+      "andromedae":"and","antliae":"ant","apus":"aps","aquarii":"aqr","aquilae":"aql",
+      "arae":"ara","arietis":"ari","aurigae":"aur","boötis":"boo","caeli":"cae",
+      "camelopardalis":"cam","capricorni":"cap","carinae":"car","cassiopeiae":"cas","centauri":"cen",
+      "cephei":"cep","ceti":"cet","chamaeleontis":"cha","circini":"cir","canis majoris":"cma",
+      "canis minoris":"cmi","comae berenices":"com","coronae australis":"cra","coronae borealis":"crb","piscis austrini":"psa",
+      "ursae majoris":"uma","ursae minoris":"umi","trianguli australis":"tra","corvi":"crv","crateris":"crt",
+      "crucis":"cru","cygni":"cyg","delphini":"del","doradus":"dor","draconis":"dra",
+      "equulei":"equ","eridani":"eri","fornacis":"for","geminorum":"gem","gruis":"gru",
+      "herculis":"her","horologii":"hor","hydrae":"hya","hydri":"hyi","indis":"ind",
+      "lacertae":"lac","leonis":"leo","leporis":"lep","librae":"lib","lupi":"lup",
+      "lyncis":"lyn","lyrae":"lyr","mensae":"men","microscopii":"mic","monocerotis":"mon",
+      "muscae":"mus","normae":"nor","octantis":"oct","ophiuchi":"oph","orionis":"ori",
+      "pavonis":"pav","pegasi":"peg","persei":"per","phoenicis":"phe","pictoris":"pic",
+      "piscium":"psc","puppi":"pup","pyxidis":"pyx","reticuli":"ret","sculptoris":"scl",
+      "scorpii":"sco","scuti":"sct","serpentis":"ser","sextantis":"sex","sagittae":"sge",
+      "sagittarii":"sgr","tauri":"tau","telescopii":"tel","trianguli":"tri","tucanae":"tuc",
+      "velorum":"vel","virginis":"vir","volantis":"vol","vulpeculae":"vul"
+    };
 
+    const planetAliases = {
+      "mercury": "mercury",
+      "venus":   "venus",
+      "moon":    "moon",
+      "mars":    "mars",
+      "jupiter": "jupiter",
+      "saturn":  "saturn",
+      "uranus":  "uranus",
+      "neptune": "neptune",
+      "pluto":   "pluto",
+    };
+  
     for (const [phrase, abbr] of Object.entries(phraseGenitiveToAbbrev)) {
         raw = raw.replace(new RegExp("\\b" + phrase + "\\b", "g"), abbr);
     }
     let tokens = raw.split(/\s+/).filter(Boolean);
+
     const greek = new Set([
       "alpha","beta","gamma","delta","epsilon","zeta","eta","theta",
       "iota","kappa","lambda","mu","nu","xi","omicron","pi","rho",
@@ -2485,7 +2498,7 @@ const phraseGenitiveToAbbrev = {
       const next = tokens[i + 1] || "";
       return shouldKeep(t, prev, next);
     });
-
+  
   // --- HD direct match ---
   const hdMatch = raw.match(/\bhd\s*(\d+)\b/i);
   if (hdMatch) {
@@ -2596,10 +2609,35 @@ const phraseGenitiveToAbbrev = {
         return score;
     }
 
-    // --- FIND BEST STAR ---
     let bestStar = null;
     let bestScore = 0;
+    let bestObj = null;
+  
+    function scorePlanet(name) {
+      let score = 0;
+      for (const t of tokens) {
+          if (name === t) score += 200;
 
+          const d = lev(t, name);
+          if (d === 1) score += 75;
+          else if (d === 2) score += 35;
+          else if (d === 3) score += 7;
+
+          if (name.includes(t)) score += 50;
+      }
+
+      return score;
+    }
+
+    for (const planet of sky3dPlanetBase) {
+      const s = scorePlanet(planet.name.toLowerCase());
+      if (s > bestScore) {
+          bestScore = s;
+          bestObj = planet;
+      }
+    }
+
+    // --- FIND BEST STAR ---
     for (const star of sky3dStarBase) {
         const s = scoreStar(star);
         if (s > bestScore) {
@@ -2609,9 +2647,15 @@ const phraseGenitiveToAbbrev = {
     }
 
     // --- THRESHOLD ---
+    if (bestObj && bestScore >= 60) {
+      searchSky3D(bestObj.name.toLowerCase());
+      return;
+    }
+  
     if (bestStar && bestScore >= 60) {
         let bestName = bestStar.proper || bestStar.bayer || bestStar.con || bestStar.hip || bestStar.hd;
         searchSky3D(bestName.toLowerCase());
+        return;
     }
 }
 
