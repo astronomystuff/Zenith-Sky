@@ -2513,7 +2513,7 @@ function proximaCore() {
 
     const filler = new Set([
       "select","show","me","center","star","please","find","look","at",
-      "go","to","goto","object","bright","called"
+      "go","to","goto","object","bright","called", "planet"
     ]);
 
     tokens = tokens.filter(t => !filler.has(t));
