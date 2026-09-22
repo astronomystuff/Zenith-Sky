@@ -1890,8 +1890,8 @@ async function computeBodyPosition(name, JD, latDeg, lonDeg) {
             vz: earthPos.vz
         };
         const aberr = applyAnnualAberration(ra, dec, earthVel);
-        ra = aberr.ra;
-        dec = aberr.dec;
+        ra = aberr.raDeg;
+        dec = aberr.decDeg;
 
         return { ra, dec };
     }
