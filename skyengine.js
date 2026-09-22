@@ -2642,10 +2642,10 @@ function proximaCore() {
 
     // --- FIND BEST PLANET ---
     for (const planet of sky3dPlanetBase) {
-      const s = scorePlanet(planet.name.toLowerCase());
+      const s = scorePlanet(planet.toLowerCase());
       if (s > bestScore) {
           bestScore = s;
-          bestObj = planet;
+          bestObj = { name: planet };
       }
     }
 
