@@ -1505,8 +1505,8 @@ function nearestStarConstellation(raDeg, decDeg, stars) {
     const decRad = decDeg * Math.PI/180;
 
     for (const s of stars) {
-        const sRa = s.raDeg * Math.PI/180;
-        const sDec = s.decDeg * Math.PI/180;
+        const sRa = s.raDeg0 * Math.PI/180;
+        const sDec = s.decDeg0 * Math.PI/180;
 
         const cosD = Math.sin(decRad)*Math.sin(sDec) +
                      Math.cos(decRad)*Math.cos(sDec)*Math.cos(raRad - sRa);
