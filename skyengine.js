@@ -1382,7 +1382,7 @@ function getStarNameFromRecord(s) {
     Pav:"Pavo", Peg:"Pegasus", Per:"Perseus", Phe:"Phoenix", Pic:"Pictor",
     PsA:"Piscis Austrinus", Psc:"Pisces", Pup:"Puppis", Pyx:"Pyxis",
     Ret:"Reticulum", Sge:"Sagitta", Sgr:"Sagittarius", Sco:"Scorpius",
-    Scl:"Sculptor", Sct:"Scutum", Ser:"Serpens", Sxt:"Sextans", Tau:"Taurus",
+    Scl:"Sculptor", Sct:"Scutum", Ser:"Serpens", Sex:"Sextans", Tau:"Taurus",
     Tel:"Telescopium", TrA:"Triangulum Australe", Tri:"Triangulum",
     Tuc:"Tucana", UMa:"Ursa Major", UMi:"Ursa Minor", Vel:"Vela",
     Vir:"Virgo", Vol:"Volans", Vul:"Vulpecula"
@@ -1519,8 +1519,32 @@ function nearestStarConstellation(raDeg, decDeg, stars) {
         }
     }
 
-    return best ? best.con : "Unknown";
+    if (!best) return "Unknown";
+
+    const fullNames = {
+        And:"Andromeda", Ant:"Antlia", Aps:"Apus", Aqr:"Aquarius", Aql:"Aquila",
+        Ara:"Ara", Ari:"Aries", Aur:"Auriga", Boo:"Boötes", Cae:"Caelum",
+        Cam:"Camelopardalis", Cap:"Capricornus", Car:"Carina", Cas:"Cassiopeia", Cen:"Centaurus",
+        Cep:"Cepheus", Cet:"Cetus", Cha:"Chamaeleon", Cir:"Circinus", CMa:"Canis Major",
+        CMi:"Canis Minor", Cnc:"Cancer", Col:"Columba", Com:"Coma Berenices", CrA:"Corona Australis",
+        CrB:"Corona Borealis", Crv:"Corvus", Crt:"Crater", Cru:"Crux", Cyg:"Cygnus",
+        Del:"Delphinus", Dor:"Dorado", Dra:"Draco", Equ:"Equuleus", Eri:"Eridanus",
+        For:"Fornax", Gem:"Gemini", Gru:"Grus", Her:"Hercules", Hor:"Horologium",
+        Hya:"Hydra", Hyi:"Hydrus", Ind:"Indus", Lac:"Lacerta", Leo:"Leo",
+        Lep:"Lepus", Lib:"Libra", Lup:"Lupus", Lyn:"Lynx", Lyr:"Lyra",
+        Men:"Mensa", Mic:"Microscopium", Mon:"Monoceros", Mus:"Musca", Nor:"Norma",
+        Oct:"Octans", Oph:"Ophiuchus", Ori:"Orion", Pav:"Pavo", Peg:"Pegasus",
+        Per:"Perseus", Phe:"Phoenix", Pic:"Pictor", PsA:"Piscis Austrinus", Psc:"Pisces",
+        Pup:"Puppis", Pyx:"Pyxis", Ret:"Reticulum", Scl:"Sculptor", Sco:"Scorpius",
+        Sct:"Scutum", Ser:"Serpens", Sex:"Sextans", Sge:"Sagitta", Sgr:"Sagittarius",
+        Tau:"Taurus", Tel:"Telescopium", Tri:"Triangulum", TrA:"Triangulum Australe", Tuc:"Tucana",
+        UMa:"Ursa Major", UMi:"Ursa Minor", Vel:"Vela", Vir:"Virgo", Vol:"Volans",
+        Vul:"Vulpecula"
+    };
+
+    return fullNames[best.con] || "Unknown";
 }
+
 
 async function horizonsStateVector(name, JD) {
     const jdString = JD.toFixed(6);
