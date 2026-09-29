@@ -2428,6 +2428,32 @@ function proximaCore() {
     let raw = document.getElementById("sky3d-search").value.trim().toLowerCase();
     if (!raw) return;
 
+    raw = raw
+      .replace(/α/g, " alpha ")
+      .replace(/β/g, " beta ")    
+      .replace(/γ/g, " gamma ")
+      .replace(/δ/g, " delta ")
+      .replace(/ε/g, " epsilon ")
+      .replace(/ζ/g, " zeta ")
+      .replace(/η/g, " eta ")
+      .replace(/θ/g, " theta ")
+      .replace(/ι/g, " iota ")
+      .replace(/κ/g, " kappa ")
+      .replace(/λ/g, " lambda ")
+      .replace(/μ/g, " mu ")
+      .replace(/ν/g, " nu ")
+      .replace(/ξ/g, " xi ")
+      .replace(/ο/g, " omicron ")
+      .replace(/π/g, " pi ")
+      .replace(/ρ/g, " rho ")
+      .replace(/σ/g, " sigma ")
+      .replace(/τ/g, " tau ")
+      .replace(/υ/g, " upsilon ")
+      .replace(/φ/g, " phi ")
+      .replace(/χ/g, " chi ")
+      .replace(/ψ/g, " psi ")
+      .replace(/ω/g, " omega ");
+
     raw = raw.replace(/[^a-z0-9\s]/g, " ");
   
     const phraseGenitiveToAbbrev = {
