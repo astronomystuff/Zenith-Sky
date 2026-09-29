@@ -2453,7 +2453,6 @@ function proximaCore() {
     const planetAliases = {
       "mercury": "mercury",
       "venus":   "venus",
-      "moon":    "moon",
       "mars":    "mars",
       "jupiter": "jupiter",
       "saturn":  "saturn",
@@ -2513,7 +2512,8 @@ function proximaCore() {
 
     const filler = new Set([
       "select","show","me","center","star","please","find","look","at",
-      "go","to","goto","object","bright","called", "planet"
+      "go","to","goto","object","bright","called","planet","as","known",
+      "by","name","named","I","want","of"
     ]);
 
     tokens = tokens.filter(t => !filler.has(t));
@@ -2610,6 +2610,14 @@ function proximaCore() {
             }
         }
     }
+
+      const num = tokens.find(t => /^\d+$/.test(t));
+      const con = tokens.find(t => con3.has(t) || conFull.has(t));
+      if (num && con) {
+          const flamKey = `${num} ${con}`;
+          searchSky3D(flamKey);
+          return;
+      }
 
         // Score each token against each name
         for (const t of tokens) {
