@@ -2719,12 +2719,14 @@ function proximaCore() {
 
     // --- THRESHOLD ---
     if (bestObj && bestScore >= 60) {
+      console.log(bestScore)
       searchSky3D(bestObj.name.toLowerCase());
       return;
     }
   
     if (bestStar && bestScore >= 60) {
         let bestName = bestStar.proper || bestStar.bayer || bestStar.con || bestStar.hip || bestStar.hd;
+        console.log(bestScore)
         searchSky3D(bestName.toLowerCase());
         return;
     }
@@ -2961,7 +2963,7 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
 function searchSky3D(query) {
   query = query
     .toLowerCase()
-    .replace(/[^a-z0-9 ]+/g, "")   // remove punctuation, greek chars, etc.
+    .replace(/[^a-z0-9 ]+/g, "")
     .replace(/\s+/g, " ")
     .trim();
 
@@ -3578,3 +3580,4 @@ window.precessionMatrixIAU2006 = precessionMatrixIAU2006;
 window.computeAsteroid = computeAsteroid;
 window.loadAsteroidData = loadAsteroidData;
 window.computeNutationAngles = computeNutationAngles;
+window.searchSky3d = searchSky3d;
