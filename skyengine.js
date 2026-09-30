@@ -1016,67 +1016,6 @@ function applyNutation(raDeg, decDeg, eps, dpsi, deps) {
     raNutation:  (ra + dra) * rad2deg,
     decNutation: (dec + ddec) * rad2deg
   };
-} instead of our current function computeNutationAngles(jd) {
-  const PI = Math.PI;
-  const deg2rad = PI / 180;
-  const DAS2R = (PI / 180) / 3600;
-
-  const DJ00 = 2451545.0;
-  const DJC  = 36525.0;
-
-  const T = (jd - DJ00) / DJC;
-
-  const L  = (280.4665 + 36000.7698*T) * deg2rad;   // mean longitude Sun
-  const Lp = (218.3165 + 481267.8813*T) * deg2rad;  // mean longitude Moon
-  const Om = (125.04452 - 1934.136261*T) * deg2rad; // ascending node
-
-  const dpsi = (
-    -17.20 * Math.sin(Om) -
-      1.32 * Math.sin(2*L) -
-      0.23 * Math.sin(2*Lp) +
-      0.21 * Math.sin(2*Om)
-  ) * DAS2R;
-
-  const deps = (
-     9.20 * Math.cos(Om) +
-     0.57 * Math.cos(2*L) +
-     0.10 * Math.cos(2*Lp) -
-     0.09 * Math.cos(2*Om)
-  ) * DAS2R;
-
-  const epsArcsec =
-    84381.406 +
-    (-46.836769 +
-    (-0.0001831 +
-    (0.00200340 +
-    (-0.000000576 +
-    (-0.0000000434)*T)*T)*T)*T)*T;
-
-  const eps = epsArcsec * DAS2R;
-
-  return { eps, dpsi, deps };
-} and function applyNutation(raDeg, decDeg, eps, dpsi, deps) {
-  const PI = Math.PI;
-  const deg2rad = PI / 180;
-  const rad2deg = 180 / PI;
-
-  const ra  = raDeg  * deg2rad;
-  const dec = decDeg * deg2rad;
-
-  const raNut =
-      ra +
-      (Math.cos(eps) + Math.sin(eps) * Math.sin(ra) * Math.tan(dec)) * dpsi
-      - Math.cos(ra) * Math.tan(dec) * deps;
-
-  const decNut =
-      dec +
-      Math.sin(eps) * Math.cos(ra) * dpsi
-      + Math.sin(ra) * deps;
-
-  return {
-    raNutation: raNut * rad2deg,
-    decNutation: decNut * rad2deg
-  };
 }
 
 function applyParallax(raDeg, decDeg, earthPos, distanceParsec) {
