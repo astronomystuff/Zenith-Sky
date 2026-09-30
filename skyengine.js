@@ -2966,6 +2966,7 @@ function searchSky3D(query) {
     .replace(/[^a-z0-9 ]+/g, "")
     .replace(/\s+/g, " ")
     .trim();
+  console.log("searchSky3D normalized query:", query);
 
   if (!query) return;
 
