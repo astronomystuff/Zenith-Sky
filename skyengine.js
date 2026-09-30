@@ -3580,4 +3580,4 @@ window.precessionMatrixIAU2006 = precessionMatrixIAU2006;
 window.computeAsteroid = computeAsteroid;
 window.loadAsteroidData = loadAsteroidData;
 window.computeNutationAngles = computeNutationAngles;
-window.searchSky3d = searchSky3d;
+window.searchSky3D = searchSky3D;
