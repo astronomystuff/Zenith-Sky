@@ -2545,7 +2545,7 @@ function proximaCore() {
     const filler = new Set([
       "select","show","me","center","star","please","find","look","at",
       "go","to","goto","object","bright","called","planet","as","known",
-      "by","name","named","I","want","of"
+      "by","name","named","I","want","of", "with", "associated", "object"
     ]);
 
     tokens = tokens.filter(t => !filler.has(t));
@@ -2572,7 +2572,7 @@ function proximaCore() {
     const con = tokens.find(t => con3.has(t) || conFull.has(t));
     if (num && con) {
         const flamKey = `${num} ${con}`;
-        console.log("Error in searchSky3d", flamKey);
+        searchSky3D(flamKey);
         return;
     }
 
@@ -2972,7 +2972,6 @@ function searchSky3D(query) {
     .replace(/[^a-z0-9 ]+/g, "")
     .replace(/\s+/g, " ")
     .trim();
-  console.log("searchSky3D normalized query:", query);
 
   if (!query) return;
 
