@@ -2591,6 +2591,14 @@ function proximaCore() {
 
         return prev[n];
     }
+    
+    const num = tokens.find(t => /^\d+$/.test(t));
+    const con = tokens.find(t => con3.has(t) || conFull.has(t));
+    if (num && con) {
+        const flamKey = `${num} ${con}`;
+        searchSky3D(flamKey);
+        return;
+    }
 
     // --- SCORING ENGINE ---
     function scoreStar(star) {
@@ -2637,13 +2645,6 @@ function proximaCore() {
         }
     }
 
-      const num = tokens.find(t => /^\d+$/.test(t));
-      const con = tokens.find(t => con3.has(t) || conFull.has(t));
-      if (num && con) {
-          const flamKey = `${num} ${con}`;
-          searchSky3D(flamKey);
-          return;
-      }
 
         // Score each token against each name
         for (const t of tokens) {
