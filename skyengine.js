@@ -946,27 +946,78 @@ function applyProperMotionFromXYZ (star, years) {
     return xyzToRaDec(x, y, z);
 }
 
+function computeNutationAngles(jd) {
+  const deg2rad = Math.PI / 180;
+  const arcsec2rad = (Math.PI / 180) / 3600;
+
+  // Julian Centuries from J2000.0
+  const t = (jd - 2451545.0) / 36525.0;
+
+  // Delaunay Arguments (in radians)
+  const m  = (357.5291092 + 35999.0502909 * t) * deg2rad;  // Sun mean anomaly
+  const mp = (134.9634114 + 477198.8675055 * t) * deg2rad; // Moon mean anomaly
+  const f  = (93.2720950  + 483202.0175273 * t) * deg2rad; // Moon latitude argument
+  const d  = (297.8501921 + 445267.1114034 * t) * deg2rad; // Moon mean elongation
+  const om = (125.0445550 - 1934.1361849 * t)  * deg2rad; // Moon ascending node
+
+  // IAU 1980 / Meeus 10-term series [dpsi, deps, m, mp, f, d, om]
+  const terms = [
+    [ -17.1996,  9.2025,  0,   0,  0,  0,   1 ], // Principal node term (18.6 yr)
+    [  -1.3187,  0.5736,  0,   0,  2, -2,   2 ], // Solar semi-annual (182.6 d)
+    [  -0.2274,  0.0977,  0,   0,  2,  0,   2 ], // Lunar semi-monthly (13.7 d)
+    [   0.2062, -0.0895,  0,   0,  0,  0,   2 ], // Node 2nd harmonic (9.3 yr)
+    [   0.1426,  0.0054,  0,   1,  0,  0,   0 ], // Lunar anomaly / perigee (27.6 d)
+    [   0.0712, -0.0007,  1,   0,  0,  0,   0 ], // Solar anomaly / eccentricity (1 yr)
+    [  -0.0517,  0.0224,  0,   1,  2,  0,   2 ], // Lunar fortnightly (13.6 d)
+    [  -0.0386,  0.0200,  0,   0,  2,  0,   1 ], // Solar / node term (177.3 d)
+    [  -0.0301,  0.0129,  1,   0,  2, -2,   2 ], // Solar semi-annual variation (121.7 d)
+    [   0.0217, -0.0095, -1,   0,  2, -2,   2 ]  // Solar semi-annual variation (365.2 d)
+  ];
+
+  let dpsiArcsec = 0;
+  let depsArcsec = 0;
+
+  for (let i = 0; i < terms.length; i++) {
+    const [cPsi, cEps, coeffM, coeffMp, coeffF, coeffD, coeffOm] = terms[i];
+    const arg = coeffM * m + coeffMp * mp + coeffF * f + coeffD * d + coeffOm * om;
+
+    dpsiArcsec += cPsi * Math.sin(arg);
+    depsArcsec += cEps * Math.cos(arg);
+  }
+
+  const dpsi = dpsiArcsec * arcsec2rad;
+  const deps = depsArcsec * arcsec2rad;
+
+  // Mean obliquity of ecliptic (IAU 2006)
+  const epsArcsec =
+    84381.406 +
+    t * (-46.836769 +
+    t * (-0.0001831 +
+    t * (0.00200340 +
+    t * (-0.000000576 +
+    t * (-0.0000000434)))));
+
+  const eps = epsArcsec * arcsec2rad;
+
+  return { eps, dpsi, deps };
+}
+
 function applyNutation(raDeg, decDeg, eps, dpsi, deps) {
-  const PI = Math.PI;
-  const deg2rad = PI / 180;
-  const rad2deg = 180 / PI;
+  const deg2rad = Math.PI / 180;
+  const rad2deg = 180 / Math.PI;
 
   const ra  = raDeg  * deg2rad;
   const dec = decDeg * deg2rad;
 
-  const raNut =
-      ra +
-      (Math.cos(eps) + Math.sin(eps) * Math.sin(ra) * Math.tan(dec)) * dpsi
-      - Math.cos(ra) * Math.tan(dec) * deps;
+  const dra = (Math.cos(eps) + Math.sin(eps) * Math.sin(ra) * Math.tan(dec)) * dpsi 
+            - Math.cos(ra) * Math.tan(dec) * deps;
 
-  const decNut =
-      dec +
-      Math.sin(eps) * Math.cos(ra) * dpsi
-      + Math.sin(ra) * deps;
+  const ddec = Math.sin(eps) * Math.cos(ra) * dpsi 
+             + Math.sin(ra) * deps;
 
   return {
-    raNutation: raNut * rad2deg,
-    decNutation: decNut * rad2deg
+    raNutation:  (ra + dra) * rad2deg,
+    decNutation: (dec + ddec) * rad2deg
   };
 }
 
@@ -1035,48 +1086,6 @@ function applyAnnualAberration(raDeg, decDeg, earthVel) {
         decDeg: dec2 * 180/Math.PI
     };
 }
-
-function computeNutationAngles(jd) {
-  const PI = Math.PI;
-  const deg2rad = PI / 180;
-  const DAS2R = (PI / 180) / 3600;
-
-  const DJ00 = 2451545.0;
-  const DJC  = 36525.0;
-
-  const T = (jd - DJ00) / DJC;
-
-  const L  = (280.4665 + 36000.7698*T) * deg2rad;   // mean longitude Sun
-  const Lp = (218.3165 + 481267.8813*T) * deg2rad;  // mean longitude Moon
-  const Om = (125.04452 - 1934.136261*T) * deg2rad; // ascending node
-
-  const dpsi = (
-    -17.20 * Math.sin(Om) -
-      1.32 * Math.sin(2*L) -
-      0.23 * Math.sin(2*Lp) +
-      0.21 * Math.sin(2*Om)
-  ) * DAS2R;
-
-  const deps = (
-     9.20 * Math.cos(Om) +
-     0.57 * Math.cos(2*L) +
-     0.10 * Math.cos(2*Lp) -
-     0.09 * Math.cos(2*Om)
-  ) * DAS2R;
-
-  const epsArcsec =
-    84381.406 +
-    (-46.836769 +
-    (-0.0001831 +
-    (0.00200340 +
-    (-0.000000576 +
-    (-0.0000000434)*T)*T)*T)*T)*T;
-
-  const eps = epsArcsec * DAS2R;
-
-  return { eps, dpsi, deps };
-}
-
 
 function precessionMatrixIAU2006(jd) {
   const PI = Math.PI;
@@ -2549,26 +2558,19 @@ function proximaCore() {
       return shouldKeep(t, prev, next);
     });
   
-    // --- HD direct match ---
-    const hdMatch = raw.match(/\bhd\s*(\d+)\b/i);
-    if (hdMatch) {
-        const hdNum = hdMatch[1];
+  // --- HD direct match ---
+  const hdMatch = raw.match(/\bhd\s*(\d+)\b/i);
+  if (hdMatch) {
+      const hdNum = hdMatch[1];
     
-        for (const star of sky3dStarBase) {
-            if (star.hd && String(star.hd) === hdNum) {
-                searchSky3D("hd " + hdNum);
-                return;
-            }
-        }
-    }
+      for (const star of sky3dStarBase) {
+          if (star.hd && String(star.hd) === hdNum) {
+              searchSky3D("hd " + hdNum);
+              return;
+          }
+      }
+  }
 
-    const num = tokens.find(t => /^\d+$/.test(t));
-    const con = tokens.find(t => con3.has(t) || conFull.has(t));
-    if (num && con) {
-        const flamKey = `${num} ${con}`;
-        console.log("Error in searchSky3d", flamKey);
-        return;
-    }
 
     // --- FAST LEVENSHTEIN (single-row DP) ---
     function lev(a, b) {
@@ -2599,6 +2601,13 @@ function proximaCore() {
         return prev[n];
     }
     
+    const num = tokens.find(t => /^\d+$/.test(t));
+    const con = tokens.find(t => con3.has(t) || conFull.has(t));
+    if (num && con) {
+        const flamKey = `${num} ${con}`;
+        searchSky3D(flamKey);
+        return;
+    }
 
     // --- SCORING ENGINE ---
     function scoreStar(star) {
@@ -2719,14 +2728,12 @@ function proximaCore() {
 
     // --- THRESHOLD ---
     if (bestObj && bestScore >= 60) {
-      console.log(bestScore)
       searchSky3D(bestObj.name.toLowerCase());
       return;
     }
   
     if (bestStar && bestScore >= 60) {
         let bestName = bestStar.proper || bestStar.bayer || bestStar.con || bestStar.hip || bestStar.hd;
-        console.log(bestScore)
         searchSky3D(bestName.toLowerCase());
         return;
     }
@@ -2963,10 +2970,9 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
 function searchSky3D(query) {
   query = query
     .toLowerCase()
-    .replace(/[^a-z0-9 ]+/g, "")
+    .replace(/[^a-z0-9 ]+/g, "")   // remove punctuation, greek chars, etc.
     .replace(/\s+/g, " ")
     .trim();
-  console.log("searchSky3D normalized query:", query);
 
   if (!query) return;
 
@@ -3581,4 +3587,3 @@ window.precessionMatrixIAU2006 = precessionMatrixIAU2006;
 window.computeAsteroid = computeAsteroid;
 window.loadAsteroidData = loadAsteroidData;
 window.computeNutationAngles = computeNutationAngles;
-window.searchSky3D = searchSky3D;
