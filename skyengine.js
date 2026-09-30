@@ -2549,19 +2549,26 @@ function proximaCore() {
       return shouldKeep(t, prev, next);
     });
   
-  // --- HD direct match ---
-  const hdMatch = raw.match(/\bhd\s*(\d+)\b/i);
-  if (hdMatch) {
-      const hdNum = hdMatch[1];
+    // --- HD direct match ---
+    const hdMatch = raw.match(/\bhd\s*(\d+)\b/i);
+    if (hdMatch) {
+        const hdNum = hdMatch[1];
     
-      for (const star of sky3dStarBase) {
-          if (star.hd && String(star.hd) === hdNum) {
-              searchSky3D("hd " + hdNum);
-              return;
-          }
-      }
-  }
+        for (const star of sky3dStarBase) {
+            if (star.hd && String(star.hd) === hdNum) {
+                searchSky3D("hd " + hdNum);
+                return;
+            }
+        }
+    }
 
+    const num = tokens.find(t => /^\d+$/.test(t));
+    const con = tokens.find(t => con3.has(t) || conFull.has(t));
+    if (num && con) {
+        const flamKey = `${num} ${con}`;
+        console.log("Error in searchSky3d", flamKey);
+        return;
+    }
 
     // --- FAST LEVENSHTEIN (single-row DP) ---
     function lev(a, b) {
@@ -2592,13 +2599,6 @@ function proximaCore() {
         return prev[n];
     }
     
-    const num = tokens.find(t => /^\d+$/.test(t));
-    const con = tokens.find(t => con3.has(t) || conFull.has(t));
-    if (num && con) {
-        const flamKey = `${num} ${con}`;
-        searchSky3D(flamKey);
-        return;
-    }
 
     // --- SCORING ENGINE ---
     function scoreStar(star) {
