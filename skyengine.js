@@ -2961,6 +2961,28 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   document.getElementById("sky3d-object-constellation").textContent =
   `Constellation: ${constellation}`;
 
+  // Proxima Planet Overview
+  const planetTemplates = [
+    "{Planet} is a planet currently in the constellation {con}. It is shining at a magnitude of {mag}. It is {dist} AU away from Earth moving at a speed of {vel} km/s. It is {phase}% illuminated with an angular size of {size} arcseconds. It is located at RA: {ra} Dec: {dec} and {alt} degrees above the horizon.",
+    "The planet {Planet} is currently in the constellation of {con}. It is currently shining with a magnitude of {mag}. It is {dist} AU away from Earth moving at a speed of {vel} km/s. It has a {phase}% illumination with an angular size of {size} arcseconds. It is located at RA: {ra} Dec: {dec}. It is {alt} degrees above the horizon."
+  ];
+
+  let text = planetTemplates[Math.floor(Math.random() * planetTemplates.length)];
+
+  text = text
+    .replace("{Planet}", body.name)
+    .replace("{con}", constellation)
+    .replace("{mag}", body.mag.toFixed(2))
+    .replace("{dist}", body.dist.toFixed(2))
+    .replace("{vel}", velocity.toFixed(2))
+    .replace("{phase}", (phase * 100).toFixed(1))
+    .replace("{size}", arcsec.toFixed(2))
+    .replace("{ra}", (body.ra / 15).toFixed(2) + "h")
+    .replace("{dec}", body.dec.toFixed(2) + "°")
+    .replace("{alt}", body.alt.toFixed(2));
+
+  document.getElementById("sky3d-proxima-overview").textContent = text;
+  
   const lockBtn = document.getElementById("sky3d-lock");
   if (lockBtn) lockBtn.disabled = false;
 }
