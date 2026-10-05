@@ -2964,7 +2964,8 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   // Proxima Planet Overview
   const planetTemplates = [
     "{Planet} is a planet currently in the constellation {con}. It is shining at a magnitude of {mag}. It is {dist} AU away from Earth moving at a speed of {vel} km/s. It is {phase}% illuminated with an angular size of {size} arcseconds. It is located at RA: {ra} Dec: {dec} and {alt} degrees above the horizon.",
-    "The planet {Planet} is currently in the constellation of {con}. It is currently shining with a magnitude of {mag}. It is {dist} AU away from Earth moving at a speed of {vel} km/s. It has a {phase}% illumination with an angular size of {size} arcseconds. It is located at RA: {ra} Dec: {dec}. It is {alt} degrees above the horizon."
+    "The planet {Planet} is currently in the constellation of {con}. It is currently shining with a magnitude of {mag}. It is {dist} AU away from Earth moving at a speed of {vel} km/s. It has a {phase}% illumination with an angular size of {size} arcseconds. It is located at RA: {ra} Dec: {dec}. It is {alt} degrees above the horizon.",
+    "The planet {Planet} can be observed in {con} at the coordinates RA: {ra} Dec: {dec}. It is glowing at magnitude {mag}. It is {dist} AU away from earth, with a current orbital speed of {vel} km/s. Its disk illumination stands at {phase}% spanning {size} arcseconds, positioned {alt} degrees above the horizon."
   ];
 
   let text = planetTemplates[Math.floor(Math.random() * planetTemplates.length)];
