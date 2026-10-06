@@ -2965,7 +2965,8 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   const planetTemplates = [
     "{Planet} is a planet currently in the constellation {con}. It is shining at a magnitude of {mag}. It is {dist} AU away from Earth moving at a speed of {vel} km/s. It is {phase}% illuminated with an angular size of {size} arcseconds. It is located at RA: {ra} Dec: {dec} and {alt} degrees above the horizon.",
     "The planet {Planet} is currently in the constellation of {con}. It is currently shining with a magnitude of {mag}. It is {dist} AU away from Earth moving at a speed of {vel} km/s. It has a {phase}% illumination with an angular size of {size} arcseconds. It is located at RA: {ra} Dec: {dec}. It is {alt} degrees above the horizon.",
-    "The planet {Planet} can be observed in {con} at the coordinates RA: {ra} Dec: {dec}. It is glowing at magnitude {mag}. It is {dist} AU away from earth, with a current orbital speed of {vel} km/s. Its disk illumination stands at {phase}% spanning {size} arcseconds, positioned {alt} degrees above the horizon."
+    "The planet {Planet} can be observed in {con} at the coordinates RA: {ra} Dec: {dec}. It is glowing at magnitude {mag}. It is {dist} AU away from earth, with a current orbital speed of {vel} km/s. Its disk illumination stands at {phase}% spanning {size} arcseconds, positioned {alt} degrees above the horizon.",
+    "Positioned in {con}, {Planet} presents a {size} arcsecond disk with {phase}% solar illumination. It lies {dist} AU from Earth, moving along its orbit at {vel} km/s while shining at magnitude {mag}. It appears in the sky at RA: {ra} Dec: {dec}, sitting {alt}° above the horizon."
   ];
 
   let text = planetTemplates[Math.floor(Math.random() * planetTemplates.length)];
