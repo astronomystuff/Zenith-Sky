@@ -2492,10 +2492,31 @@ function proximaCore() {
       "neptune": "neptune",
       "pluto":   "pluto",
     };
+    
+    const planetMap = {
+        "mercury": "mercury",
+        "murcury": "mercury",
+        "mercery": "mercury",
+        "murcery": "mercury",
+        "venus":   "venus",
+        "venis":   "venus",
+        "mars":    "mars",
+        "jupiter": "jupiter",
+        "jupter":  "jupiter",
+        "jupitur": "jupiter",
+        "saturn":  "saturn",
+        "satrun":  "saturn",
+        "uranus":  "uranus",
+        "urunus":  "uranus",
+        "urinus":  "uranus",
+        "neptune": "neptune",
+        "neptun":  "neptune",
+    };
   
     for (const [phrase, abbr] of Object.entries(phraseGenitiveToAbbrev)) {
         raw = raw.replace(new RegExp("\\b" + phrase + "\\b", "g"), abbr);
     }
+    
     let tokens = raw.split(/\s+/).filter(Boolean);
 
     const greek = new Set([
@@ -2554,6 +2575,14 @@ function proximaCore() {
       const next = tokens[i + 1] || "";
       return shouldKeep(t, prev, next);
     });
+    
+    // --- Planet match ---
+    for (const t of tokens) {
+        if (planetMap[t]) {
+            searchSky3D(planetMap[t]);
+            return;
+        }
+    }
   
     // --- HD direct match ---
     const hdMatch = raw.match(/\bhd\s*(\d+)\b/i);
@@ -2567,7 +2596,8 @@ function proximaCore() {
             }
         }
     }
-
+    
+    // --- Flamsteed match ---
     const num = tokens.find(t => /^\d+$/.test(t));
     const con = tokens.find(t => con3.has(t) || conFull.has(t));
     if (num && con) {
@@ -2651,7 +2681,6 @@ function proximaCore() {
         }
     }
 
-
         // Score each token against each name
         for (const t of tokens) {
             for (const name of names) {
@@ -2676,44 +2705,7 @@ function proximaCore() {
 
     let bestStar = null;
     let bestScore = 0;
-    let bestObj = null;
   
-    function scorePlanet(name) {
-      let score = 0;
-      for (const t of tokens) {
-          if (name === t) score += 200;
-
-          const d = lev(t, name);
-          if (d === 1) score += 75;
-          else if (d === 2) score += 35;
-          else if (d === 3) score += 7;
-
-          if (name.includes(t)) score += 50;
-      }
-
-      return score;
-    }
-
-    const sky3dPlanetBase = [
-      "mercury",
-      "venus",
-      "mars",
-      "jupiter",
-      "saturn",
-      "uranus",
-      "neptune",
-      "pluto"
-    ];
-
-    // --- FIND BEST PLANET ---
-    for (const planet of sky3dPlanetBase) {
-      const s = scorePlanet(planet.toLowerCase());
-      if (s > bestScore) {
-          bestScore = s;
-          bestObj = { name: planet };
-      }
-    }
-
     // --- FIND BEST STAR ---
     for (const star of sky3dStarBase) {
         const s = scoreStar(star);
@@ -2724,12 +2716,6 @@ function proximaCore() {
     }
 
     // --- THRESHOLD ---
-    if (bestObj && bestScore >= 60) {
-      console.log(bestScore)
-      searchSky3D(bestObj.name.toLowerCase());
-      return;
-    }
-  
     if (bestStar && bestScore >= 60) {
         let bestName = bestStar.proper || bestStar.bayer || bestStar.con || bestStar.hip || bestStar.hd;
         console.log(bestScore)
