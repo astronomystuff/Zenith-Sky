@@ -252,7 +252,7 @@ function estimateStarAgeAndLifetime(star) {
 }
 
 
-function colorForSpectralType(raw) {
+function colorForSpectralType(raw, absMag) {
   if (!raw) return 0xffffff;
 
   const s = normalizeSpectral(raw).toUpperCase();
@@ -302,7 +302,7 @@ function colorForSpectralType(raw) {
     return "V";
   }
 
-  const lum = getLumClass(s);
+  const lum = getLumClass(s, letter, absMag);
 
   // Special types
   if (letter === "R") return 0x8b0000;      // carbon stars
@@ -396,17 +396,18 @@ function colorForSpectralType(raw) {
   const tempK = subtypeTemps[lum][letter][subtype];
 
   function starTempToHex(T) {
+    const clampedT = Math.max(1680, Math.min(25000, T));
     let x, y;
 
-    if (T < 4000) {
-      x = -0.2661239 * (1e9 / (T*T*T))
-        - 0.2343580 * (1e6 / (T*T))
-        + 0.8776956 * (1e3 / T)
+    if (clampedT < 4000) {
+      x = -0.2661239 * (1e9 / (clampedT*clampedT*clampedT))
+        - 0.2343580 * (1e6 / (clampedT*clampedT))
+        + 0.8776956 * (1e3 / clampedT)
         + 0.179910;
     } else {
-      x = -3.0258469 * (1e9 / (T*T*T))
-        + 2.1070379 * (1e6 / (T*T))
-        + 0.2226347 * (1e3 / T)
+      x = -3.0258469 * (1e9 / (clampedT*clampedT*clampedT))
+        + 2.1070379 * (1e6 / (clampedT*clampedT))
+        + 0.2226347 * (1e3 / clampedT)
         + 0.240390;
     }
 
@@ -414,6 +415,8 @@ function colorForSpectralType(raw) {
       - 1.34811020 * (x*x)
       + 2.18555832 * x
       - 0.20219683;
+
+    if (y <= 0) return 0xffffff;
 
     const Y = 1;
     const X = (Y / y) * x;
@@ -437,8 +440,8 @@ function colorForSpectralType(raw) {
     b /= maxVal;
 
     // Cool-star correction (M / late K)
-    if (T < 3800) {
-      const t = Math.min(1, Math.max(0, (3800 - T) / 1300));
+    if (clampedT < 3800) {
+      const t = Math.min(1, Math.max(0, (3800 - clampedT) / 1300));
       g *= (1 - 0.30 * t);
       b *= (1 - 0.60 * t);
     }
@@ -2161,7 +2164,7 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     sizes[i] = size
 
     // Color
-    const hex = colorForSpectralType(star.spect);
+    const hex = colorForSpectralType(star.spect, star.absmag);
     colors[i*3]   = ((hex >> 16) & 255) / 255;
     colors[i*3+1] = ((hex >> 8)  & 255) / 255;
     colors[i*3+2] = ( hex        & 255) / 255;
