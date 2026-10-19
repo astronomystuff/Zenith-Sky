@@ -305,10 +305,10 @@ function colorForSpectralType(raw, absMag) {
   const lum = getLumClass(s, letter, absMag);
 
   // Special types
-  if (letter === "R") return 0xff1c00;      // carbon stars
+  if (letter === "R") return 0xff1c00;      // Carbon Stars
   if (letter === "S") return 0xff7d24;      // S-type
   if (letter === "W") return 0x7eb0ff;      // Wolf-Rayet
-  if (letter === "D") return 0xd0e0ff;      // white dwarfs (visual default)
+  if (letter === "D") return 0xeeeeff;      // White Dwarfs
 
   if (letter === "N") {
     if (s.includes("C")) return 0xff1c00;
