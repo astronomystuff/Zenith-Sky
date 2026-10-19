@@ -306,7 +306,7 @@ function colorForSpectralType(raw, absMag) {
 
   // Special types
   if (letter === "R") return 0xff1c00;      // carbon stars
-  if (letter === "S") return 0xff8c4a;      // S-type
+  if (letter === "S") return 0xff7d24;      // S-type
   if (letter === "W") return 0x6A00FF;      // Wolf-Rayet
   if (letter === "D") return 0xd0e0ff;      // white dwarfs (visual default)
 
