@@ -2169,7 +2169,7 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     );
     shader.fragmentShader = shader.fragmentShader.replace(
       'outgoingLight = diffuseColor.rgb * texColor.rgb;',
-      'outgoingLight = diffuseColor.rgb * 1.8;' // ★ boost spectral color
+    //  'outgoingLight = diffuseColor.rgb * 1.8;' // ★ boost spectral color
     );
   };
 
