@@ -313,7 +313,7 @@ function colorForSpectralType(raw, absMag) {
   if (letter === "N") {
     if (s.includes("C")) return 0xff1c00;
     if (s.includes("NEB")) return 0xffffff;
-    if (s.includes("NOV") || s.includes("VAR")) return 0xd0e0ff;
+    if (s.includes("NOV") || s.includes("VAR")) return 0x7daffe;
     return 0xffffff;
   }
 
