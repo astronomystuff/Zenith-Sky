@@ -2532,7 +2532,7 @@ function proximaCore() {
       "by","name","named","I","want","of", "with", "associated", "object",
       "can","could","would","you","will","mind","kindly","just","now",
       "here","there","is","are","be","display","view","render","point","at",
-      "give",
+      "give"
     ]);
 
     tokens = tokens.filter(t => !filler.has(t));
