@@ -2437,15 +2437,15 @@ function proximaCore() {
     raw = raw.replace(/[^a-z0-9\s]/g, " ");
   
     const phraseGenitiveToAbbrev = {
-      "andromedae":"and","antliae":"ant","apus":"aps","aquarii":"aqr","aquilae":"aql",
-      "arae":"ara","arietis":"ari","aurigae":"aur","boötis":"boo","caeli":"cae",
+      "andromedae":"and","antliae":"ant","apodis":"aps","aquarii":"aqr","aquilae":"aql",
+      "arae":"ara","arietis":"ari","aurigae":"aur","bootis":"boo","caeli":"cae",
       "camelopardalis":"cam","capricorni":"cap","carinae":"car","cassiopeiae":"cas","centauri":"cen",
       "cephei":"cep","ceti":"cet","chamaeleontis":"cha","circini":"cir","canis majoris":"cma",
       "canis minoris":"cmi","comae berenices":"com","coronae australis":"cra","coronae borealis":"crb","piscis austrini":"psa",
       "ursae majoris":"uma","ursae minoris":"umi","trianguli australis":"tra","corvi":"crv","crateris":"crt",
       "crucis":"cru","cygni":"cyg","delphini":"del","doradus":"dor","draconis":"dra",
       "equulei":"equ","eridani":"eri","fornacis":"for","geminorum":"gem","gruis":"gru",
-      "herculis":"her","horologii":"hor","hydrae":"hya","hydri":"hyi","indis":"ind",
+      "herculis":"her","horologii":"hor","hydrae":"hya","hydri":"hyi","indi":"ind",
       "lacertae":"lac","leonis":"leo","leporis":"lep","librae":"lib","lupi":"lup",
       "lyncis":"lyn","lyrae":"lyr","mensae":"men","microscopii":"mic","monocerotis":"mon",
       "muscae":"mus","normae":"nor","octantis":"oct","ophiuchi":"oph","orionis":"ori",
@@ -2456,17 +2456,6 @@ function proximaCore() {
       "velorum":"vel","virginis":"vir","volantis":"vol","vulpeculae":"vul"
     };
 
-    const planetAliases = {
-      "mercury": "mercury",
-      "venus":   "venus",
-      "mars":    "mars",
-      "jupiter": "jupiter",
-      "saturn":  "saturn",
-      "uranus":  "uranus",
-      "neptune": "neptune",
-      "pluto":   "pluto",
-    };
-    
     const planetMap = {
         "mercury": "mercury",
         "murcury": "mercury",
@@ -2502,7 +2491,7 @@ function proximaCore() {
     const con3 = new Set([
       "and","ant","aps","aqr","aql","ara","ari","aur","boo","cae","cam","cap",
       "car","cas","cen","cep","cet","cha","cir","cma","cmi","cnc","col","com",
-      "cra","crb","crv","crt","cru","crx","cyg","del","dor","dra","equ","eri",
+      "cra","crb","crv","crt","cru","cyg","del","dor","dra","equ","eri",
       "for","gem","gru","her","hor","hya","hyi","ind","lac","leo","lep","lib",
       "lup","lyn","lyr","men","mic","mon","mus","nor","oct","oph","ori","pav",
       "peg","per","phe","pic","psa","psc","pup","pyx","ret","scl","sco","sct",
@@ -2511,13 +2500,13 @@ function proximaCore() {
     ]);
 
     const conFull = new Set([
-      "andromedae","antliae","apus","aquarii","aquilae","arae","arietis","aurigae",
-      "boötis","caeli","camelopardalis","capricorni","carinae","cassiopeiae",
+      "andromedae","antliae","apodis","aquarii","aquilae","arae","arietis","aurigae",
+      "bootis","caeli","camelopardalis","capricorni","carinae","cassiopeiae",
       "centauri","cephei","ceti","chamaeleontis","circini","canis majoris",
       "canis minoris","cancri","columbae","comae berenices","coronae australis",
       "coronae borealis","corvi","crateris","crucis","cygni","delphini","doradus",
       "draconis","equulei","eridani","fornacis","geminorum","gruis","herculis",
-      "horologii","hydrae","hydri","indis","lacertae","leonis","leporis","librae",
+      "horologii","hydrae","hydri","indi","lacertae","leonis","leporis","librae",
       "lupi","lyncis","lyrae","mensae","microscopii","monocerotis","muscae",
       "normae","octantis","ophiuchi","orionis","pavonis","pegasi","persei",
       "phoenicis","pictoris","piscis austrini","piscium","puppi","pyxidis",
@@ -2540,7 +2529,10 @@ function proximaCore() {
     const filler = new Set([
       "select","show","me","center","star","please","find","look","at",
       "go","to","goto","object","bright","called","planet","as","known",
-      "by","name","named","I","want","of", "with", "associated", "object"
+      "by","name","named","I","want","of", "with", "associated", "object",
+      "can","could","would","you","will","mind","kindly","just","now",
+      "here","there","is","are","be","display","view","render","point","at",
+      "give",
     ]);
 
     tokens = tokens.filter(t => !filler.has(t));
@@ -2566,6 +2558,19 @@ function proximaCore() {
         for (const star of sky3dStarBase) {
             if (star.hd && String(star.hd) === hdNum) {
                 searchSky3D("hd " + hdNum);
+                return;
+            }
+        }
+    }
+    
+    // --- HIP direct match ---
+    const hipMatch = raw.match(/\bhip\s*(\d+)\b/i);
+    if (hipMatch) {
+        const hipNum = hipMatch[1];
+    
+        for (const star of sky3dStarBase) {
+            if (star.hip && String(star.hip) === hipNum) {
+                searchSky3D("hip " + hipNum);
                 return;
             }
         }
@@ -2697,6 +2702,7 @@ function proximaCore() {
         return;
     }
 }
+
 
 /* ============================================================
    onSky3DClick
