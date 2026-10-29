@@ -2186,6 +2186,9 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
   // Bodies
   sky3dPlanetMeshes.length = 0;
   sky3dPlanetMap = {};
+  const showPlanets =
+    document.getElementById("sky3d-planets").checked;
+  if (showPlanets) {
   const planetNames = ["Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"];
 
   for (const name of planetNames) {
@@ -2256,7 +2259,8 @@ sky3dPlanetMeshes.push(planetPoint);
 sky3dPlanetMap[name.toLowerCase()] = planetPoint;
 group.add(planetPoint);
 }
-  
+}
+
   return group;
 }
 
