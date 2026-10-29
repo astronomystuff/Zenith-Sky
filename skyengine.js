@@ -1191,7 +1191,7 @@ function applyPrecession(raDeg, decDeg, rbp, velOfEarth, eps, dpsi, deps, earthP
 }
 
 function applyAtmosphericRefraction(alt) {
-    const hPlusCorrection = alt + (10.3 / (trueAlt + 5.11));
+    const hPlusCorrection = alt + (10.3 / (alt + 5.11));
     const hPlusCorrectionRad = hPlusCorrection * (Math.PI / 180);
     
     const refractionArcminutes = 1.02 / Math.tan(hPlusCorrectionRad);
