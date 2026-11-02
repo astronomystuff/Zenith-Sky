@@ -1193,8 +1193,69 @@ function applyPrecession(raDeg, decDeg, rbp, velOfEarth, eps, dpsi, deps, earthP
 
 
 /* ============================================================
-   Civil Time → LMT → LST
+   Time
    ============================================================ */
+function getDeltaT(y) {
+  // Custom Delta T Polynomial Fit (Manual)
+  if (y <= 161.818) {
+    return 32 * Math.pow((y - 1820) / 100, 2) - 20;
+  }
+  else if (y > 161.818 && y <= 1033.07857) {
+    return 35 * Math.pow((y - 1880) / 100, 2) + 0.1 * y - 1199.997764 - 1420000 * Math.pow(1 / (y - 100), 2) + Math.pow(1 / (y - 161), 2);
+  }
+  else if (y > 1033.07857 && y <= 1600.0) {
+    return 35.4 * Math.pow((y - 1640) / 100, 2) + 0.96 * ((y - 1640) / 100) + 114 - 200 * Math.pow(1 / (y - 1613), 2) - Math.pow(1 / (y - 1601.74179), 2);
+  }
+  else if (y > 1600.0 && y <= 1720.0) {
+    return 70 * Math.pow((y - 1700) / 100, 2) + 8 + ((-90 * (Math.log(y - 1350) / Math.log(1.7)) + 1016) / 2) + 250 * Math.pow(1 / (y - 1728), 2) - 1.11 * Math.pow(1 / (y - 1722), 2);
+  }
+  else if (y > 1720.0 && y <= 1760.0) {
+    return -0.00049 * Math.pow((y - 1740), 3) + 0.01003325 * Math.pow((y-1740), 2) + 13.5 - 0.5 * Math.pow(1/(y-1719), 2);
+  }
+  else if (y > 1760.0 && y <= 1810.0) {
+    return -0.006 * Math.pow((y - 1780), 2) + 15.9933;
+  }
+  else if (y > 1810.0 && y <= 1860.0) {
+    return 0.006 * Math.pow((y - 1840), 2) + 5.1933 - 0.86907 * Math.pow(1 / (y - 1862), 2);
+  }
+  else if (y > 1860.0 && y <= 1880.0) {
+    return -0.011 * Math.pow((y - 1840), 2) + 11.901033 - 0.5 * Math.pow(1 / (y - 1858), 2);
+  }
+  else if (y > 1880.0 && y <= 1900.0) {
+    return 0.016 * Math.pow((y - 1885), 2) - 6.6 + 0.5 * Math.pow(1 / (y - 1879), 2);
+  }
+  else if (y > 1900.0 && y <= 1914.17) {
+    return 1.4 * (y - 1900) - 3;
+  }
+  else if (y > 1914.17 && y <= 1935.0) {
+    return 0.00046 * Math.pow((y - 1940), 3) + 25 - 0.02 * (y - 1902.5);
+  }
+  else if (y > 1935.0 && y <= 1967.0) {
+    return 0.00005 * Math.pow((y - 1900), 3) + 22.14875;
+  }
+  else if (y > 1967.0 && y <= 2000.0) {
+    return 0.00006 * Math.pow((y - 2050), 3) + 71.4941;
+  }
+  else if (y > 2000.0 && y <= 2010.0) {
+    return 0.02 * Math.pow((y - 2000), 2) + 63.994;
+  }
+  else if (y > 2010.0 && y <= 2016.0) {
+    return 0.02 * Math.pow((y - 2005), 2) + 65.494;
+  }
+  else if (y > 2016.0 && y <= 2022.0) {
+    return -0.075358 * Math.pow((y - 2020.5), 2) + 69.44;
+  }
+  else if (y > 2022.0 && y <= 2030.0) {
+    return 0.0100278 * Math.pow(y - 2026, 2) + 69.11;
+  }
+  else if (y > 2030.0 && y <= 2138.849334) {
+    return 0.02 * Math.pow(y - 2030, 2) + 69.2704448 - 1.2 * (1 / Math.pow(y - 2140, 2));
+  } 
+  else {
+    return 32 * Math.pow((y - 1820) / 100, 2) - 20;
+  }
+}
+
 function toJulianDate(civil) {
   let { year, month, day, hour, minute, second } = civil;
 
