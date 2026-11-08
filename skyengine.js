@@ -1190,7 +1190,15 @@ function applyPrecession(raDeg, decDeg, rbp, velOfEarth, eps, dpsi, deps, earthP
   return applyAnnualAberration(raDegPos, decDegPos, earthVel);
 }
 
+function applyAtmosphericRefraction(alt) {
+    const hPlusCorrection = alt + (10.3 / (alt + 5.11));
+    const hPlusCorrectionRad = hPlusCorrection * (Math.PI / 180);
+    
+    const refractionArcminutes = 1.02 / Math.tan(hPlusCorrectionRad);
+    const refractDeg = refractionArcminutes / 60.0;
 
+    return alt + refractDeg;
+}
 
 /* ============================================================
    Time
@@ -1536,9 +1544,9 @@ function isStarAboveHorizon(star) {
   const H = lst - raRad;
   const sinAlt = Math.sin(latRad) * Math.sin(decRad) +
                  Math.cos(latRad) * Math.cos(decRad) * Math.cos(H);
-  // const above = applyAtmosphericRefraction(Math.asin(sinAlt) * (180 / Math.PI));
-  // return above > 0;
-  return sinAlt > 0;
+  const above = applyAtmosphericRefraction(Math.asin(sinAlt) * (180 / Math.PI));
+  return above > 0;
+  // return sinAlt > 0;
 }
 
 function nearestStarConstellation(raDeg, decDeg, stars) {
@@ -2149,10 +2157,10 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     // Altitude
     const sinAlt = Math.sin(latRad) * Math.sin(decRad) +
                    Math.cos(latRad) * Math.cos(decRad) * Math.cos(H);
-    /* const altTrue = Math.asin(sinAlt);
+    const altTrue = Math.asin(sinAlt);
     const altRefrac = applyAtmosphericRefraction(altTrue * (180 / Math.PI));
-    const alt = altRefrac * (Math.PI / 180); */
-    const alt = Math.asin(sinAlt);
+    const alt = altRefrac * (Math.PI / 180);
+    // const alt = Math.asin(sinAlt);
     s._aboveHorizon = (alt > 0);
     if (alt <= 0) continue;
     if (s.mag > dynamicMagLimit) continue;
