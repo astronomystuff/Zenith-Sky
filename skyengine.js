@@ -2895,6 +2895,7 @@ function sky3dClearInfo() {
   document.getElementById("sky3d-object-velocity").textContent = "";
   document.getElementById("sky3d-object-phase").textContent = "";
   document.getElementById("sky3d-proxima-overview").textContent = "";
+  document.getElementById("sky3d-object-refract").textContent = "";
 }
 
 function searchSkyPlanet(planetPoint) {
@@ -3173,7 +3174,7 @@ if (zenithDot < 0) {
 
   // Flip sky 180 degrees around world-up
   const flipQuat = new THREE.Quaternion()
-    .setFromAxisAngle(worldUp, Math.PI);
+    .setFromAxisAngle(worldUp, Math.PI); 
 
   sky3dRootGroup.quaternion.premultiply(flipQuat);
 
@@ -3274,6 +3275,8 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
     `RA: ${raHoursDisplay.toFixed(2)}h, Dec: ${pm.decDeg.toFixed(2)}°`;
   document.getElementById("sky3d-object-alt-az").textContent =
     `Alt: ${(altR).toFixed(2)}°, Az: ${(az * 180/Math.PI).toFixed(2)}°`;
+  document.getElementById("sky3d-object-refract").textContent =
+    `Atmospheric Refraction: ${refract.toFixed(2)}°`;
   document.getElementById("sky3d-object-pm-speed").textContent =
     `PM: ${pmTotal.toFixed(3)}″/yr`;
   document.getElementById("sky3d-object-mag").textContent = `Mag: ${star.mag}`;
