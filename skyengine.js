@@ -1546,7 +1546,6 @@ function isStarAboveHorizon(star) {
                  Math.cos(latRad) * Math.cos(decRad) * Math.cos(H);
   const above = applyAtmosphericRefraction(Math.asin(sinAlt) * (180 / Math.PI));
   return above > 0;
-  // return sinAlt > 0;
 }
 
 function nearestStarConstellation(raDeg, decDeg, stars) {
@@ -2160,7 +2159,6 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     const altTrue = Math.asin(sinAlt);
     const altRefrac = applyAtmosphericRefraction(altTrue * (180 / Math.PI));
     const alt = altRefrac * (Math.PI / 180);
-    // const alt = Math.asin(sinAlt);
     s._aboveHorizon = (alt > 0);
     if (alt <= 0) continue;
     if (s.mag > dynamicMagLimit) continue;
@@ -2244,7 +2242,6 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     );
     shader.fragmentShader = shader.fragmentShader.replace(
       'outgoingLight = diffuseColor.rgb * texColor.rgb;',
-    //  'outgoingLight = diffuseColor.rgb * 1.8;' // ★ boost spectral color
     );
   };
 
@@ -3260,6 +3257,8 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   const sinAlt = Math.sin(latRad) * Math.sin(decRad) +
                  Math.cos(latRad) * Math.cos(decRad) * Math.cos(H);
   const alt = Math.asin(sinAlt);
+  const altR = applyAtmosphericRefraction(alt * 180 / Math.PI);
+  const refract = altR - (alt * 180 / Math.PI);
 
   const sinAz = -Math.cos(decRad) * Math.sin(H) / Math.cos(alt);
   const cosAz = (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
@@ -3274,7 +3273,7 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   document.getElementById("sky3d-object-ra-dec").textContent =
     `RA: ${raHoursDisplay.toFixed(2)}h, Dec: ${pm.decDeg.toFixed(2)}°`;
   document.getElementById("sky3d-object-alt-az").textContent =
-    `Alt: ${(alt * 180/Math.PI).toFixed(2)}°, Az: ${(az * 180/Math.PI).toFixed(2)}°`;
+    `Alt: ${(altR).toFixed(2)}°, Az: ${(az * 180/Math.PI).toFixed(2)}°`;
   document.getElementById("sky3d-object-pm-speed").textContent =
     `PM: ${pmTotal.toFixed(3)}″/yr`;
   document.getElementById("sky3d-object-mag").textContent = `Mag: ${star.mag}`;
