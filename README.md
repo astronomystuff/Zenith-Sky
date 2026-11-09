@@ -7,7 +7,8 @@ Video Stacking <br>
 Observation Planner <br>
 What Object Is This? <br>
 Moon Map <br>
-Sky Engine <br>
+SkyEngine <br>
+Black Hole Visualizer <br>
 <br>
 ## Licensing<br>
 Zenith Sky uses a hybrid licensing model designed to allow open access while<br>
