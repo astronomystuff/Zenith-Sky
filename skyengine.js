@@ -2982,7 +2982,7 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   const constellation = nearestStarConstellation(body.ra, body.dec, sky3dStarBase);
   const helioDist = computePlanetHeliocentricDistance(body.name, jd);
   const velocity = computePlanetOrbitalVelocity(body.name, jd);
-  const bodyForAlt = await computeBody(name, jd, latDeg, lonDeg);
+  const bodyForAlt = await computeBody(body.name, jd, latDeg, lonDeg);
   const raRad  = bodyForAlt.ra * Math.PI/180;
   const decRad = bodyForAlt.dec * Math.PI/180;
   const H = lst - raRad;
