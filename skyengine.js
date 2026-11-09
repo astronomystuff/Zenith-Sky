@@ -2900,7 +2900,7 @@ function sky3dClearInfo() {
   document.getElementById("sky3d-object-refract").textContent = "";
 }
 
-function searchSkyPlanet(planetPoint) {
+async function searchSkyPlanet(planetPoint) {
   const body = planetPoint.userData;
   
 // --- 1. Get planet position ---
@@ -2967,7 +2967,6 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   const PLANET_RADII_KM = {
     Mercury: 2439.7,
     Venus:   6051.8,
-    Earth:   6378.1,
     Mars:    3389.5,
     Jupiter: 69911,
     Saturn:  58232,
