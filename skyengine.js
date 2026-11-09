@@ -2267,14 +2267,16 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
 
     const H = lst - raRad;
 
-    const sinAlt = Math.sin(latRad)*Math.sin(decRad) +
-                   Math.cos(latRad)*Math.cos(decRad)*Math.cos(H);
-    const alt = Math.asin(sinAlt);
+    const sinAlt = Math.sin(latRad) * Math.sin(decRad) +
+                   Math.cos(latRad) * Math.cos(decRad) * Math.cos(H);
+    const altTrue = Math.asin(sinAlt);
+    const altRefrac = applyAtmosphericRefraction(altTrue * (180 / Math.PI));
+    const alt = altRefrac * (Math.PI / 180);
     if (alt <= 0) continue;
 
-    const cosAz = (Math.sin(decRad) - Math.sin(alt)*Math.sin(latRad)) /
-                  (Math.cos(alt)*Math.cos(latRad));
-    const sinAz = -Math.cos(decRad)*Math.sin(H) / Math.cos(alt);
+    const cosAz = (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
+                  (Math.cos(alt) * Math.cos(latRad));
+    const sinAz = -Math.cos(decRad) * Math.sin(H) / Math.cos(alt);
     const az = Math.atan2(sinAz, cosAz);
 
     const x = -Math.cos(alt) * Math.sin(az);
@@ -3276,7 +3278,7 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   document.getElementById("sky3d-object-alt-az").textContent =
     `Alt: ${(altR).toFixed(2)}°, Az: ${(az * 180/Math.PI).toFixed(2)}°`;
   document.getElementById("sky3d-object-refract").textContent =
-    `Atmospheric Refraction: ${refract.toFixed(2)}°`;
+    `Atmospheric Refraction: ${(refract * 60).toFixed(2)}'`;
   document.getElementById("sky3d-object-pm-speed").textContent =
     `PM: ${pmTotal.toFixed(3)}″/yr`;
   document.getElementById("sky3d-object-mag").textContent = `Mag: ${star.mag}`;
