@@ -2958,6 +2958,7 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   // --- 6. Update UI ---
   const civil = getCivilFieldsFromUI();
   const { latDeg, lonDeg } = getLocationFromUI();
+  const latRad = latDeg * Math.PI / 180;
   const lst = getLSTRadians(civil, lonDeg);
   const jd = toJulianDate(civil);
   const years = (jd - 2451545.0) / 365.25;
@@ -2982,8 +2983,8 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   const helioDist = computePlanetHeliocentricDistance(body.name, jd);
   const velocity = computePlanetOrbitalVelocity(body.name, jd);
   const bodyForAlt = await computeBody(body.name, jd, latDeg, lonDeg);
-  const raRad  = bodyForAlt.ra * Math.PI/180;
-  const decRad = bodyForAlt.dec * Math.PI/180;
+  const raRad  = bodyForAlt.ra * Math.PI / 180;
+  const decRad = bodyForAlt.dec * Math.PI / 180;
   const H = lst - raRad;
   const sinAlt = Math.sin(latRad) * Math.sin(decRad) +
                  Math.cos(latRad) * Math.cos(decRad) * Math.cos(H);
