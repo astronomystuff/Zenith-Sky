@@ -2982,7 +2982,16 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   const constellation = nearestStarConstellation(body.ra, body.dec, sky3dStarBase);
   const helioDist = computePlanetHeliocentricDistance(body.name, jd);
   const velocity = computePlanetOrbitalVelocity(body.name, jd);
-
+  const bodyForAlt = await computeBody(name, jd, latDeg, lonDeg);
+  const raRad  = bodyForAlt.ra * Math.PI/180;
+  const decRad = bodyForAlt.dec * Math.PI/180;
+  const H = lst - raRad;
+  const sinAlt = Math.sin(latRad) * Math.sin(decRad) +
+                 Math.cos(latRad) * Math.cos(decRad) * Math.cos(H);
+  const altTrue = Math.asin(sinAlt);
+  const alt = altTrue * 180 / Math.PI
+  const refract = body.alt - alt
+  
   sky3dClearInfo();
   document.getElementById("sky3d-object-name").textContent = body.name;
   document.getElementById("sky3d-object-type").textContent = "Planet";
@@ -2990,6 +2999,8 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   `RA: ${(body.ra/15).toFixed(2)}h, Dec: ${body.dec.toFixed(2)}°`;
   document.getElementById("sky3d-object-alt-az").textContent =
   `Alt: ${body.alt.toFixed(2)}°, Az: ${body.az.toFixed(2)}°`;
+  document.getElementById("sky3d-object-refract").textContent =
+  `Atmospheric Refraction: ${(refract * 60).toFixed(2)}'`;
   document.getElementById("sky3d-object-elongation").textContent =
   `Elongation: ${elongDeg.toFixed(1)}°`;
   document.getElementById("sky3d-object-helio-dist").textContent =
