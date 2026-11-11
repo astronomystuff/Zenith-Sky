@@ -1192,19 +1192,21 @@ function applyPrecession(raDeg, decDeg, rbp, velOfEarth, eps, dpsi, deps, earthP
 
 
 function applyAtmosphericRefraction(alt) {
-  const showPlanets =
-    document.getElementById("sky3d-planets").checked;
-  if (showPlanets) {
+  const showAtmosphere =
+    document.getElementById("sky3d-atmosphere").checked;
+  if (showAtmosphere) {
+    const hPlusCorrection = alt + (10.3 / (alt + 5.11));
+    const hPlusCorrectionRad = hPlusCorrection * (Math.PI / 180);
+  
+    const refractionArcminutes = 1.02 / Math.tan(hPlusCorrectionRad);
+    const refractDeg = refractionArcminutes / 60.0;
+
+    return alt + refractDeg;
+    
+  } else {
+    
     return alt;
   }
-  
-  const hPlusCorrection = alt + (10.3 / (alt + 5.11));
-  const hPlusCorrectionRad = hPlusCorrection * (Math.PI / 180);
-  
-  const refractionArcminutes = 1.02 / Math.tan(hPlusCorrectionRad);
-  const refractDeg = refractionArcminutes / 60.0;
-
-  return alt + refractDeg;
 }
 
 /* ============================================================
@@ -2910,13 +2912,12 @@ function sky3dClearInfo() {
 async function searchSkyPlanet(planetPoint) {
   const body = planetPoint.userData;
   
-// --- 1. Get planet position ---
-const pos = new THREE.Vector3();
-planetPoint.getWorldPosition(pos);
+  // --- 1. Get planet position ---
+  const pos = new THREE.Vector3();
+  planetPoint.getWorldPosition(pos);
 
-// --- 2. Direction ---
-const dir = pos.clone().normalize();
-
+  // --- 2. Direction ---
+  const dir = pos.clone().normalize();
 
   // --- 3. Center Planet ---
   const camForward = new THREE.Vector3(0, 0, -1);
@@ -2927,39 +2928,39 @@ const dir = pos.clone().normalize();
   window.sky3dSelectedWorldPos = dir.clone();
 
   // --- 5. Remove Roll ---
-const camForwardWorld = new THREE.Vector3(0, 0, -1)
-  .applyQuaternion(sky3dCamera.quaternion)
-  .normalize();
+  const camForwardWorld = new THREE.Vector3(0, 0, -1)
+    .applyQuaternion(sky3dCamera.quaternion)
+    .normalize();
 
-// World up (fixed reference)
-const worldUp = new THREE.Vector3(0, 1, 0);
+  // World up (fixed reference)
+  const worldUp = new THREE.Vector3(0, 1, 0);
 
-// Sky up
-const skyUpWorld = new THREE.Vector3(0, 1, 0)
-  .applyQuaternion(sky3dRootGroup.quaternion)
-  .normalize();
+  // Sky up
+  const skyUpWorld = new THREE.Vector3(0, 1, 0)
+    .applyQuaternion(sky3dRootGroup.quaternion)
+    .normalize();
 
-const projectedSkyUp = skyUpWorld.clone().sub(
-  camForwardWorld.clone().multiplyScalar(skyUpWorld.dot(camForwardWorld))
-).normalize();
+  const projectedSkyUp = skyUpWorld.clone().sub(
+    camForwardWorld.clone().multiplyScalar(skyUpWorld.dot(camForwardWorld))
+  ).normalize();
 
-const projectedWorldUp = worldUp.clone().sub(
-  camForwardWorld.clone().multiplyScalar(worldUp.dot(camForwardWorld))
-).normalize();
+  const projectedWorldUp = worldUp.clone().sub(
+    camForwardWorld.clone().multiplyScalar(worldUp.dot(camForwardWorld))
+  ).normalize();
 
-let dot = projectedSkyUp.dot(projectedWorldUp);
-dot = THREE.MathUtils.clamp(dot, -1, 1);
+  let dot = projectedSkyUp.dot(projectedWorldUp);
+  dot = THREE.MathUtils.clamp(dot, -1, 1);
 
-const angle = Math.acos(dot);
+  const angle = Math.acos(dot);
 
-const cross = projectedSkyUp.clone().cross(projectedWorldUp);
-const sign = cross.dot(camForwardWorld) < 0 ? -1 : 1;
+  const cross = projectedSkyUp.clone().cross(projectedWorldUp);
+  const sign = cross.dot(camForwardWorld) < 0 ? -1 : 1;
 
-// Apply roll correction
-const rollQuat = new THREE.Quaternion()
-  .setFromAxisAngle(camForwardWorld, angle * sign);
+  // Apply roll correction
+  const rollQuat = new THREE.Quaternion()
+    .setFromAxisAngle(camForwardWorld, angle * sign);
 
-sky3dRootGroup.quaternion.premultiply(rollQuat);
+  sky3dRootGroup.quaternion.premultiply(rollQuat);
 
 
   // --- 6. Update UI ---
@@ -3006,8 +3007,12 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
   `RA: ${(body.ra/15).toFixed(2)}h, Dec: ${body.dec.toFixed(2)}°`;
   document.getElementById("sky3d-object-alt-az").textContent =
   `Alt: ${body.alt.toFixed(2)}°, Az: ${body.az.toFixed(2)}°`;
-  document.getElementById("sky3d-object-refract").textContent =
-  `Atmospheric Refraction: ${(refract * 60).toFixed(2)}'`;
+  const showAtmosphere =
+    document.getElementById("sky3d-atmosphere").checked;
+  if (showAtmosphere) {
+    document.getElementById("sky3d-object-refract").textContent =
+    `Atmospheric Refraction: ${(refract * 60).toFixed(2)}'`;
+  }
   document.getElementById("sky3d-object-elongation").textContent =
   `Elongation: ${elongDeg.toFixed(1)}°`;
   document.getElementById("sky3d-object-helio-dist").textContent =
@@ -3153,44 +3158,44 @@ function searchSky3D(query) {
     return;
   }
 
-// --- 3. Position ---
-const posAttr = geom.attributes.position;
+  // --- 3. Position ---
+  const posAttr = geom.attributes.position;
 
-// Get XYZ in local space
-const pos = new THREE.Vector3(
-  posAttr.getX(geoIndex),
-  posAttr.getY(geoIndex),
-  posAttr.getZ(geoIndex)
-);
+  // Get XYZ in local space
+  const pos = new THREE.Vector3(
+    posAttr.getX(geoIndex),
+    posAttr.getY(geoIndex),
+    posAttr.getZ(geoIndex)
+  );
 
-// Convert to world space
-points.localToWorld(pos);
+  // Convert to world space
+  points.localToWorld(pos);
 
-// --- 4. Direction ---
-const dir = pos.clone().normalize();
-const camForward = new THREE.Vector3(0, 0, -1);
+  // --- 4. Direction ---
+  const dir = pos.clone().normalize();
+  const camForward = new THREE.Vector3(0, 0, -1);
 
-// Prevent 180° singularity when dir is opposite camForward
-if (dir.dot(camForward) < -0.9999) {
-  dir.x += 0.001;
-  dir.normalize();
-}
+  // Prevent 180° singularity when dir is opposite camForward
+  if (dir.dot(camForward) < -0.9999) {
+    dir.x += 0.001;
+    dir.normalize();
+  }
 
-// --- 5. Center Star ---
-const q = new THREE.Quaternion().setFromUnitVectors(dir, camForward);
-sky3dRootGroup.quaternion.premultiply(q);
+  // --- 5. Center Star ---
+  const q = new THREE.Quaternion().setFromUnitVectors(dir, camForward);
+  sky3dRootGroup.quaternion.premultiply(q);
 
-// --- 6. Compute camera forward in world space ---
-let camForwardWorld = new THREE.Vector3(0, 0, -1)
-  .applyQuaternion(sky3dCamera.quaternion)
-  .normalize();
+  // --- 6. Compute camera forward in world space ---
+  let camForwardWorld = new THREE.Vector3(0, 0, -1)
+    .applyQuaternion(sky3dCamera.quaternion)
+    .normalize();
 
-const worldUp = new THREE.Vector3(0, 1, 0);
+  const worldUp = new THREE.Vector3(0, 1, 0);
 
-// --- 7. Detect zenith crossing (camera flipped) ---
-let zenithDot = camForwardWorld.dot(worldUp);
+  // --- 7. Detect zenith crossing (camera flipped) ---
+  let zenithDot = camForwardWorld.dot(worldUp);
 
-if (zenithDot < 0) {
+  if (zenithDot < 0) {
 
   // Flip sky 180 degrees around world-up
   const flipQuat = new THREE.Quaternion()
@@ -3202,35 +3207,34 @@ if (zenithDot < 0) {
   camForwardWorld = new THREE.Vector3(0, 0, -1)
     .applyQuaternion(sky3dCamera.quaternion)
     .normalize();
-}
+  }
 
-// --- 8. Remove Roll ---
-const skyUpWorld = new THREE.Vector3(0, 1, 0)
-  .applyQuaternion(sky3dRootGroup.quaternion)
-  .normalize();
+  // --- 8. Remove Roll ---
+  const skyUpWorld = new THREE.Vector3(0, 1, 0)
+    .applyQuaternion(sky3dRootGroup.quaternion)
+    .normalize();
 
-const projectedSkyUp = skyUpWorld.clone().sub(
-  camForwardWorld.clone().multiplyScalar(skyUpWorld.dot(camForwardWorld))
-).normalize();
+  const projectedSkyUp = skyUpWorld.clone().sub(
+    camForwardWorld.clone().multiplyScalar(skyUpWorld.dot(camForwardWorld))
+  ).normalize();
 
-const projectedWorldUp = worldUp.clone().sub(
-  camForwardWorld.clone().multiplyScalar(worldUp.dot(camForwardWorld))
-).normalize();
+  const projectedWorldUp = worldUp.clone().sub(
+    camForwardWorld.clone().multiplyScalar(worldUp.dot(camForwardWorld))
+  ).normalize();
 
-let dot = projectedSkyUp.dot(projectedWorldUp);
-dot = THREE.MathUtils.clamp(dot, -1, 1);
+  let dot = projectedSkyUp.dot(projectedWorldUp);
+  dot = THREE.MathUtils.clamp(dot, -1, 1);
 
-const angle = Math.acos(dot);
+  const angle = Math.acos(dot);
 
-const cross = projectedSkyUp.clone().cross(projectedWorldUp);
-const sign = cross.dot(camForwardWorld) < 0 ? -1 : 1;
+  const cross = projectedSkyUp.clone().cross(projectedWorldUp);
+  const sign = cross.dot(camForwardWorld) < 0 ? -1 : 1;
 
-const rollQuat = new THREE.Quaternion()
-  .setFromAxisAngle(camForwardWorld, angle * sign);
+  const rollQuat = new THREE.Quaternion()
+    .setFromAxisAngle(camForwardWorld, angle * sign);
 
-sky3dRootGroup.quaternion.premultiply(rollQuat);
-
-
+  sky3dRootGroup.quaternion.premultiply(rollQuat);
+  
 
   // 7. Update info panel
   const civil = getCivilFieldsFromUI();
@@ -3295,8 +3299,12 @@ sky3dRootGroup.quaternion.premultiply(rollQuat);
     `RA: ${raHoursDisplay.toFixed(2)}h, Dec: ${pm.decDeg.toFixed(2)}°`;
   document.getElementById("sky3d-object-alt-az").textContent =
     `Alt: ${(altR).toFixed(2)}°, Az: ${(az * 180/Math.PI).toFixed(2)}°`;
-  document.getElementById("sky3d-object-refract").textContent =
+  const showAtmosphere =
+    document.getElementById("sky3d-atmosphere").checked;
+  if (showAtmosphere) {
+    document.getElementById("sky3d-object-refract").textContent =
     `Atmospheric Refraction: ${(refract * 60).toFixed(2)}'`;
+  }
   document.getElementById("sky3d-object-pm-speed").textContent =
     `PM: ${pmTotal.toFixed(3)}″/yr`;
   document.getElementById("sky3d-object-mag").textContent = `Mag: ${star.mag}`;
