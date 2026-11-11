@@ -1545,7 +1545,7 @@ function isStarAboveHorizon(star) {
       vy: earthPos.vy,
       vz: earthPos.vz
   };
-  const dist = star.dist
+  const dist = star.dist;
   const pm = applyProperMotionFromXYZ(star, years);
   const prec = applyPrecession(pm.raDeg, pm.decDeg, rbp, earthVel, eps, dpsi, deps, earthPos, dist);
   const raRad  = prec.raDeg * Math.PI / 180;
@@ -2183,9 +2183,9 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     const az = Math.atan2(sinAz, cosAz);
 
     // Convert alt/az → XYZ
-    const x = -Math.cos(altTrue) * Math.sin(az);
+    const x = -Math.cos(alt) * Math.sin(az);
     const y = Math.sin(alt);
-    const z = Math.cos(altTrue) * Math.cos(az);
+    const z = Math.cos(alt) * Math.cos(az);
 
     chosen.push({ idx: i, x, y, z });
   }
@@ -2290,9 +2290,9 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     const sinAz = -Math.cos(decRad) * Math.sin(H) / Math.cos(altTrue);
     const az = Math.atan2(sinAz, cosAz);
 
-    const x = -Math.cos(altTrue) * Math.sin(az);
+    const x = -Math.cos(alt) * Math.sin(az);
     const y = Math.sin(alt);
-    const z = Math.cos(altTrue) * Math.cos(az);
+    const z = Math.cos(alt) * Math.cos(az);
 
     const planetRawSize = 0.002 + 0.0375 * Math.pow(1.5, -0.9 * body.mag);
     let planetSize = planetRawSize;
@@ -2421,9 +2421,9 @@ export function drawConstellationLines(linesJson, sky3dStarBase, sky3dRootGroup)
       const azA = Math.atan2(sinAzA,cosAzA);
 
       const pA = {
-        x: -Math.cos(altATrue) * Math.sin(azA),
+        x: -Math.cos(altA) * Math.sin(azA),
         y:  Math.sin(altA),
-        z:  Math.cos(altATrue) * Math.cos(azA)
+        z:  Math.cos(altA) * Math.cos(azA)
       };
 
       // --- B ---
@@ -2445,9 +2445,9 @@ export function drawConstellationLines(linesJson, sky3dStarBase, sky3dRootGroup)
       const azB = Math.atan2(sinAzB, cosAzB);
 
       const pB = {
-        x: -Math.cos(altBTrue) * Math.sin(azB),
+        x: -Math.cos(altB) * Math.sin(azB),
         y:  Math.sin(altB),
-        z:  Math.cos(altBTrue) * Math.cos(azB)
+        z:  Math.cos(altB) * Math.cos(azB)
       };
 
       const yA = pA.y;
