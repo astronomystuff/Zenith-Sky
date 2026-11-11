@@ -2183,9 +2183,9 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     const az = Math.atan2(sinAz, cosAz);
 
     // Convert alt/az → XYZ
-    const x = -Math.cos(alt) * Math.sin(az);
+    const x = -Math.cos(altTrue) * Math.sin(az);
     const y = Math.sin(alt);
-    const z = Math.cos(alt) * Math.cos(az);
+    const z = Math.cos(altTrue) * Math.cos(az);
 
     chosen.push({ idx: i, x, y, z });
   }
@@ -2290,9 +2290,9 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     const sinAz = -Math.cos(decRad) * Math.sin(H) / Math.cos(altTrue);
     const az = Math.atan2(sinAz, cosAz);
 
-    const x = -Math.cos(alt) * Math.sin(az);
+    const x = -Math.cos(altTrue) * Math.sin(az);
     const y = Math.sin(alt);
-    const z = Math.cos(alt) * Math.cos(az);
+    const z = Math.cos(altTrue) * Math.cos(az);
 
     const planetRawSize = 0.002 + 0.0375 * Math.pow(1.5, -0.9 * body.mag);
     let planetSize = planetRawSize;
@@ -2411,17 +2411,19 @@ export function drawConstellationLines(linesJson, sky3dStarBase, sky3dRootGroup)
 
       const sinAltA = Math.sin(decA)*Math.sin(latRad) +
                       Math.cos(decA)*Math.cos(latRad)*Math.cos(haA);
-      const altA = Math.asin(sinAltA);
+      const altATrue = Math.asin(sinAltA);
+      const altARefrac = applyAtmosphericRefraction(altATrue * (180 / Math.PI));
+      const altA = altARefrac * (Math.PI / 180);
 
-      const sinAzA = -Math.cos(decA) * Math.sin(haA) / Math.cos(altA);
-      const cosAzA = (Math.sin(decA) - Math.sin(altA)*Math.sin(latRad)) /
-                     (Math.cos(altA)*Math.cos(latRad));
-      const azA = Math.atan2(sinAzA, cosAzA);
+      const sinAzA = -Math.cos(decA) * Math.sin(haA) / Math.cos(altATrue);
+      const cosAzA = (Math.sin(decA) - Math.sin(altATrue) * Math.sin(latRad)) /
+                     (Math.cos(altATrue) * Math.cos(latRad));
+      const azA = Math.atan2(sinAzA,cosAzA);
 
       const pA = {
-        x: -Math.cos(altA) * Math.sin(azA),
+        x: -Math.cos(altATrue) * Math.sin(azA),
         y:  Math.sin(altA),
-        z:  Math.cos(altA) * Math.cos(azA)
+        z:  Math.cos(altATrue) * Math.cos(azA)
       };
 
       // --- B ---
@@ -2433,17 +2435,19 @@ export function drawConstellationLines(linesJson, sky3dStarBase, sky3dRootGroup)
 
       const sinAltB = Math.sin(decB)*Math.sin(latRad) +
                       Math.cos(decB)*Math.cos(latRad)*Math.cos(haB);
-      const altB = Math.asin(sinAltB);
+      const altBTrue = Math.asin(sinAltB);
+      const altBRefrac = applyAtmosphericRefraction(altBTrue * (180 / Math.PI));
+      const altB = altBRefrac * (Math.PI / 180);
 
-      const sinAzB = -Math.cos(decB) * Math.sin(haB) / Math.cos(altB);
-      const cosAzB = (Math.sin(decB) - Math.sin(altB)*Math.sin(latRad)) /
-                     (Math.cos(altB)*Math.cos(latRad));
+      const sinAzB = -Math.cos(decB) * Math.sin(haB) / Math.cos(altBTrue);
+      const cosAzB = (Math.sin(decB) - Math.sin(altBTrue) * Math.sin(latRad)) /
+                     (Math.cos(altBTrue) * Math.cos(latRad));
       const azB = Math.atan2(sinAzB, cosAzB);
 
       const pB = {
-        x: -Math.cos(altB) * Math.sin(azB),
+        x: -Math.cos(altBTrue) * Math.sin(azB),
         y:  Math.sin(altB),
-        z:  Math.cos(altB) * Math.cos(azB)
+        z:  Math.cos(altBTrue) * Math.cos(azB)
       };
 
       const yA = pA.y;
