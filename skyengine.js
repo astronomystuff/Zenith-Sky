@@ -3596,10 +3596,10 @@ document.getElementById("sky3d-constellations").addEventListener("change", (e) =
 });
 
 
-document.getElementById("sky3d-atmosphere").addEventListener("change", async (e) => {
+document.getElementById("sky3d-atmosphere").addEventListener("change", (e) => {
     if (!window.sky3dRootGroup) return;
 
-    await rebuildCelestialSphere(window.linesJson, window.sky3dStarBase, window.sky3dRootGroup);
+    rebuildCelestialSphere(window.linesJson, window.sky3dStarBase, window.sky3dRootGroup);
 });
 
 /* ============================================================
