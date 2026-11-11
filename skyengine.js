@@ -1,4 +1,4 @@
-// Display dynamical star distance with PM rathe than static
+// Display dynamical star distance with PM rathe than static, 900, one other
 window.onerror = function (msg, src, line, col, err) {
   alert(
     "JS ERROR:\n" +
@@ -897,6 +897,7 @@ if (!finite(dist) || dist <= 0) dist = 1000;
    XYZ → RA/Dec (parsec → parsec)
    ============================================================ */
 function xyzToRaDec(x, y, z) {
+  // Y is up/down
   const r = Math.sqrt(x*x + y*y + z*z);
 
   const ra  = Math.atan2(y, x);
