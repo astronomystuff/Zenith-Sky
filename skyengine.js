@@ -1190,14 +1190,21 @@ function applyPrecession(raDeg, decDeg, rbp, velOfEarth, eps, dpsi, deps, earthP
   return applyAnnualAberration(raDegPos, decDegPos, earthVel);
 }
 
-function applyAtmosphericRefraction(alt) {
-    const hPlusCorrection = alt + (10.3 / (alt + 5.11));
-    const hPlusCorrectionRad = hPlusCorrection * (Math.PI / 180);
-    
-    const refractionArcminutes = 1.02 / Math.tan(hPlusCorrectionRad);
-    const refractDeg = refractionArcminutes / 60.0;
 
-    return alt + refractDeg;
+function applyAtmosphericRefraction(alt) {
+  const showPlanets =
+    document.getElementById("sky3d-planets").checked;
+  if (showPlanets) {
+    return alt;
+  }
+  
+  const hPlusCorrection = alt + (10.3 / (alt + 5.11));
+  const hPlusCorrectionRad = hPlusCorrection * (Math.PI / 180);
+  
+  const refractionArcminutes = 1.02 / Math.tan(hPlusCorrectionRad);
+  const refractDeg = refractionArcminutes / 60.0;
+
+  return alt + refractDeg;
 }
 
 /* ============================================================
