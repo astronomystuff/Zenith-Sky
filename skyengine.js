@@ -1,3 +1,4 @@
+// Display dynamical star distance with PM rathe than static
 window.onerror = function (msg, src, line, col, err) {
   alert(
     "JS ERROR:\n" +
@@ -1558,6 +1559,7 @@ function isStarAboveHorizon(star) {
 }
 
 function nearestStarConstellation(raDeg, decDeg, stars) {
+    // IMPROVE THIS
     let best = null;
     let bestDist = Infinity;
 
@@ -2175,9 +2177,9 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     if (!remnant && years > (lifetime - age)) continue;
 
     // Azimuth
-    const cosAz = (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
-                  (Math.cos(alt) * Math.cos(latRad));
-    const sinAz = -Math.cos(decRad) * Math.sin(H) / Math.cos(alt);
+    const cosAz = (Math.sin(decRad) - Math.sin(altTrue) * Math.sin(latRad)) /
+                  (Math.cos(altTrue) * Math.cos(latRad));
+    const sinAz = -Math.cos(decRad) * Math.sin(H) / Math.cos(altTrue);
     const az = Math.atan2(sinAz, cosAz);
 
     // Convert alt/az → XYZ
@@ -2283,9 +2285,9 @@ async function buildCelestialSphere(dateCivil, latDeg, lonDeg, maxPoints = 15000
     const alt = altRefrac * (Math.PI / 180);
     if (alt <= 0) continue;
 
-    const cosAz = (Math.sin(decRad) - Math.sin(alt) * Math.sin(latRad)) /
-                  (Math.cos(alt) * Math.cos(latRad));
-    const sinAz = -Math.cos(decRad) * Math.sin(H) / Math.cos(alt);
+    const cosAz = (Math.sin(decRad) - Math.sin(altTrue) * Math.sin(latRad)) /
+                  (Math.cos(altTrue) * Math.cos(latRad));
+    const sinAz = -Math.cos(decRad) * Math.sin(H) / Math.cos(altTrue);
     const az = Math.atan2(sinAz, cosAz);
 
     const x = -Math.cos(alt) * Math.sin(az);
