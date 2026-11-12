@@ -1,4 +1,4 @@
-// Display dynamical star distance with PM rather than static, one other
+// 1562
 window.onerror = function (msg, src, line, col, err) {
   alert(
     "JS ERROR:\n" +
