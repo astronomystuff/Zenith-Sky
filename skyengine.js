@@ -3288,6 +3288,7 @@ function searchSky3D(query) {
     if (star.gaia) desigs.push(`Gaia ${star.gaia}`);
   const absMag = star.absmag;
   const lum = Math.pow(10, (4.83 - absMag) / 2.5);  // L/L☉
+  const dist = getStarDistanceLY(star, years);
   const raRad  = prec.raDeg * Math.PI / 180;
   const decRad = prec.decDeg * Math.PI / 180;
   const latRad = latDeg * Math.PI / 180;
@@ -3327,7 +3328,7 @@ function searchSky3D(query) {
   document.getElementById("sky3d-object-luminosity").textContent =
   `Luminosity: ${lum.toFixed(2)} L☉`;
   document.getElementById("sky3d-object-distance").textContent =
-    `Dist: ${(star.dist * 3.26156).toFixed(2)} ly`;
+    `Dist: ${dist.toFixed(2)} ly`;
   document.getElementById("sky3d-object-spectral").textContent =
     `Spectral: ${star.spect}`;
   document.getElementById("sky3d-object-designations").textContent =
