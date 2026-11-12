@@ -914,7 +914,7 @@ function xyzToRaDec(x, y, z) {
    ============================================================ */
 const KM_S_TO_PC_YR = 1 / 977792.221;
 
-function applyProperMotionFromXYZ (star, years) {
+function applyProperMotionFromXYZ(star, years) {
     let x = star.x0 + star.vx * KM_S_TO_PC_YR * years;
     let y = star.y0 + star.vy * KM_S_TO_PC_YR * years;
     let z = star.z0 + star.vz * KM_S_TO_PC_YR * years;
@@ -1607,6 +1607,10 @@ function nearestStarConstellation(raDeg, decDeg, stars) {
     return fullNames[best.con] || "Unknown";
 }
 
+function getStarDistanceLY(s, years) {
+  const result = applyProperMotionFromXYZ(s, years);
+  return result.distance * 3.26156;
+}
 
 async function horizonsStateVector(name, JD) {
     const jdString = JD.toFixed(6);
@@ -2873,11 +2877,15 @@ function onSky3DClick(event) {
       `Mag: ${picked.mag.toFixed(2)}<br>` +
       `Dist: ${(picked.dist).toFixed(2)} AU`;
   } else {
+    const civil = getCivilFieldsFromUI();
+    const jd = toJulianDate(civil);
+    const years = (jd - 2451545.0) / 365.25;
     const name = getStarNameFromRecord(picked);
+    const dist = getStarDistanceLY(picked, years);
     html =
       `<b>${name}</b><br>` +
-      `Mag: ${picked.mag}<br>` +
-      `Dist: ${(picked.dist * 3.26156).toFixed(2)} ly`;
+      `Mag: ${picked.mag.toFixed(2)}<br>` +
+      `Dist: ${(dist).toFixed(2)} ly`;
   }
 
   sky3dTooltip.innerHTML = html;
