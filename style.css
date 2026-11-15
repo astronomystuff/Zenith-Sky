@@ -450,7 +450,7 @@ button:active,
 .sky3d-input {
   width: 100%;
   background: #181818;
-  color: #eee;
+  color: #f2e9e1;
   border: 1px solid #333;
   padding: 6px;
   border-radius: 4px;
@@ -461,7 +461,7 @@ button:active,
   position: relative;
   isolation: isolate;
   width: 100%;
-  color: #eee;
+  color: ##f2e9e1;
   padding: 6px;
   border-radius: 6px 3px 5px 6px;
   box-sizing: border-box;
@@ -486,7 +486,7 @@ button:active,
 .sky3d-select {
   width: 100%;
   background: #181818;
-  color: #eee;
+  color: #f2e9e1;
   border: 1px solid #333;
   padding: 6px;
   border-radius: 4px;
