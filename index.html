@@ -359,24 +359,24 @@
         border-right:1px solid #333;
       ">
 
-        <h3>Date & Time</h3>
-        <label>Year</label>
+        <h3 class="sky3d-label">Date & Time</h3>
+        <label class="sky3d-label">Year</label>
         <div style="height: 1px;"></div>
         <input type="number" id="sky3d-year" class="sky3d-input" value="2025" style="width:100%;">
         <div style="height: 8.5px;"></div>
-        <label>Month</label>
+        <label class="sky3d-label">Month</label>
         <div style="height: 1px;"></div>
         <input type="number" id="sky3d-month" class="sky3d-input" value="1" min="1" max="12" style="width:100%;">
         <div style="height: 8.5px;"></div>
-        <label>Day</label>
+        <label class="sky3d-label">Day</label>
         <div style="height: 1px;"></div>
         <input type="number" id="sky3d-day" class="sky3d-input" value="1" min="1" max="31" style="width:100%;">
         <div style="height: 8.5px;"></div>
-        <label>Time (UTC)</label>
+        <label class="sky3d-label">Time (UTC)</label>
         <div style="height: 1px;"></div>
         <input type="time" id="sky3d-time" class="sky3d-input" value="00:00" style="width:100%;">
         <div style="height: 8.5px;"></div>
-        <label>Time Zone</label>
+        <label class="sky3d-label">Time Zone</label>
         <div style="height: 1px;"></div>
         <select id="sky3d-tz" class="sky3d-select" style="width:100%;">
           <option value="0">Greenwich Mean Time (UTC+0)</option>
@@ -416,25 +416,25 @@
           Daylight Savings
         </label>
         <div style="height: 10px;"></div>
-        <label>Era</label>
+        <label class="sky3d-label">Era</label>
         <div style="height: 1px;"></div>
         <select id="sky3d-era" class="sky3d-select" style="width:100%;">
-          <option value="CE" selected>CE</option>
+          <option value="CE" selected class="sky3d-label">CE</option>
           <option value="BCE">BCE</option>
         </select>
         <button id="sky3d-apply-datetime" style="margin-top:10px; width:100%;">Apply</button>
 
-        <h3 style="margin-top:20px;">Location</h3>
-        <label>Latitude</label>
+        <h3 class="sky3d-label" style="margin-top:20px;">Location</h3>
+        <label class="sky3d-label">Latitude</label>
         <div style="height: 1px;"></div>
         <input type="number" id="sky3d-lat" class="sky3d-input" step="0.0001" value="0" style="width:100%;">
         <div style="height: 8.5px;"></div>
-        <label>Longitude</label>
+        <label class="sky3d-label">Longitude</label>
         <div style="height: 1px;"></div>
         <input type="number" id="sky3d-lon" class="sky3d-input" step="0.0001" value="0" style="width:100%;">
         <button id="sky3d-apply-location" style="margin-top:10px; width:100%;">Apply</button>
 
-        <h3 style="margin-top:20px;">Layers</h3>
+        <h3 class="sky3d-label" style="margin-top:20px;">Layers</h3>
         <label><input type="checkbox" class="sky3d-checkbox" id="sky3d-planets" checked> Planets</label><br>
         <label><input type="checkbox" class="sky3d-checkbox" id="sky3d-asteroids" checked> Asteroids</label><br>
         <label><input type="checkbox" class="sky3d-checkbox" id="sky3d-constellations" checked> Constellations</label><br>
