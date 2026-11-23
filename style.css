@@ -503,7 +503,8 @@ button:active,
   appearance: none;
   width: 16px;
   height: 16px;
-  background: #eee;
+  background: #f2e9e1;
+  color: #f2e9e1;
   border-radius: 4px;
   vertical-align: middle;
   margin: 0 6px 0 0;
