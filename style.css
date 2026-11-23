@@ -524,6 +524,10 @@ button:active,
   left: 1px;
 }
 
+label:has(.sky3d-checkbox) {
+  color: #f2e9e1 !important;
+}
+
 .sky3d-label {
   color: #f2e9e1;
 }
