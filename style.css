@@ -528,6 +528,10 @@ button:active,
   color: #f2e9e1;
 }
 
+.sky3d-button {
+  color: #f2e9e1;
+}
+
 /* SMALL SCREENS */
 
 @page { size: 8.5in 11in; margin: 0; }
