@@ -536,6 +536,14 @@ label:has(.sky3d-checkbox) {
   color: #f2e9e1;
 }
 
+.sky3d-selectText {
+  color: #f2e9e1;
+}
+
+.sky3d-proximaOverview {
+  color: #f2e9e1;
+}
+
 /* SMALL SCREENS */
 
 @page { size: 8.5in 11in; margin: 0; }
