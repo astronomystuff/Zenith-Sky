@@ -461,7 +461,7 @@ button:active,
   position: relative;
   isolation: isolate;
   width: 100%;
-  color: ##f2e9e1;
+  color: #f2e9e1;
   padding: 6px;
   border-radius: 6px 3px 5px 6px;
   box-sizing: border-box;
@@ -524,6 +524,9 @@ button:active,
   left: 1px;
 }
 
+.sky3d-label {
+  color: #f2e9e1;
+}
 
 /* SMALL SCREENS */
 
